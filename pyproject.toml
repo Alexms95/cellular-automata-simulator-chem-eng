@@ -1,0 +1,12 @@
+[tool.poetry]
+name = "camada-limite"
+version = "1.0.0"
+description = "TCC Alex - Engenharia Química"
+
+[dependencies]
+python = "^3.10"
+Flask = "^3.0.2"
+
+[dev-dependencies]
+pytest = "^7.0"
+pytest-cov = "^3.0"
