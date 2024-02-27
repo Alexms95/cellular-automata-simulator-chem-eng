@@ -1,0 +1,12 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "1.0.0",
+  "tasks": [
+    {
+      "label": "init_python",
+      "type": "shell",
+      "command": "python -m venv env && cd env/Scripts && activate && cd ../.. && pip install . || echo 0"
+    }
+  ]
+}
