@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "TCC Alex - Engenharia Química"
 
 [dependencies]
-python = "^3.10"
+python = "^3.10.6"
 Flask = "^3.0.2"
 
 [dev-dependencies]
