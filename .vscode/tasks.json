@@ -6,7 +6,7 @@
     {
       "label": "init_python",
       "type": "shell",
-      "command": "cd env/Scripts && activate && cd ../.. && pip install . || echo 0"
+      "command": "python -m venv env && cd env/Scripts && activate && cd ../.. && pip install . || echo 0"
     }
   ]
 }

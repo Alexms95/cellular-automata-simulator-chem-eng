@@ -1,1 +1,1 @@
-GET http://localhost:5000/api/v1/exemplo
+GET http://localhost:5000/api/usuarios
