@@ -9,7 +9,7 @@
       "type": "debugpy",
       "python": "${workspaceFolder}/env/Scripts/python.exe",
       "request": "launch",
-      "module": "api",
+      "module": "app",
       "justMyCode": true,
       "preLaunchTask": "init_python"
     }
