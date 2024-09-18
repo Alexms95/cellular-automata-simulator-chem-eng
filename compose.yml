@@ -1,16 +1,15 @@
 services:
-  frontend:
-    build: .
-    container_name: frontend
+  backend:
+    image: alexms/api-simulador-automatos-celulares:1.0.0  # Substitua pelo nome da sua imagem do Docker Hub
+    container_name: fastapi-backend
+    ports:
+      - "8000:8000"  # Mapeia a porta 8000 do container para a porta 8000 da máquina host
+    environment:
+      - ENV=development  # Variáveis de ambiente, se necessário
+  nginx:
+    image: alexms/front-simulador-automatos-celulares:1.0.0
+    container_name: nginx
     ports:
       - "80:80"
     depends_on:
       - backend
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: backend-container
-    container_name: backend
-    ports:
-      - "8000:8000"
