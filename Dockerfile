@@ -59,8 +59,15 @@ WORKDIR /app/api
 # Copie o build do backend já preparado
 COPY --from=build-backend /app/api /app/api
 
+# Copie o ambiente virtual para o container final
+COPY --from=build-backend /opt/venv /opt/venv
+
+# Certifique-se de que o ambiente virtual esteja ativado no container final
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
 # Exponha a porta 8000
 EXPOSE 8000
 
 # Comando para iniciar a API FastAPI com Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/opt/venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
