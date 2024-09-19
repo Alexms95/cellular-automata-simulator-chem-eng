@@ -23,7 +23,7 @@ jobs:
         push: true
         target: build-backend
         tags: |
-          alexms/api-simulador-automatos-celulares:${{ github.run_number }}
+          alexms/api-simulador-automatos-celulares:v${{ github.run_number }}
           alexms/api-simulador-automatos-celulares:latest
     - name: Build and push UI image
       uses: docker/build-push-action@v6.7.0
@@ -33,7 +33,7 @@ jobs:
         push: true
         target: build-frontend
         tags: |
-          alexms/ui-simulador-automatos-celulares:${{ github.run_number }}
+          alexms/ui-simulador-automatos-celulares:$v{{ github.run_number }}
           alexms/ui-simulador-automatos-celulares:latest
     - name: Build and push nginx image
       uses: docker/build-push-action@v6.7.0
@@ -43,5 +43,5 @@ jobs:
         push: true
         target: nginx-container
         tags: |
-          alexms/front-simulador-automatos-celulares:${{ github.run_number }}
+          alexms/front-simulador-automatos-celulares:v${{ github.run_number }}
           alexms/front-simulador-automatos-celulares:latest
