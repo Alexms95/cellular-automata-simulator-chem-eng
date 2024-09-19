@@ -33,7 +33,7 @@ jobs:
         push: true
         target: build-frontend
         tags: |
-          alexms/ui-simulador-automatos-celulares:$v{{ github.run_number }}
+          alexms/ui-simulador-automatos-celulares:v${{ github.run_number }}
           alexms/ui-simulador-automatos-celulares:latest
     - name: Build and push nginx image
       uses: docker/build-push-action@v6.7.0
