@@ -1,13 +1,14 @@
 import './App.css'
+import { Simulador } from './pages/Simulador';
 
 function App() {
 
   return (
     <>
-      <p className='text-4xl font-bold'> Teste
-        </p>
+      <h1 className='text-center font-bold text-2xl'>CELLULAR AUTOMATA SIMULATOR</h1>
+      <Simulador/>
     </>
-  )
+  );
 }
 
 export default App
