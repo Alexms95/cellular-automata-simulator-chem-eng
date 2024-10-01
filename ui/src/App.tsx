@@ -1,14 +1,15 @@
-import './App.css'
-import { Simulador } from './pages/Simulador';
+import "./App.css";
+import { SimulationsList } from "./pages/SimulationsList";
 
 function App() {
-
   return (
-    <>
-      <h1 className='text-center font-bold text-2xl'>CELLULAR AUTOMATA SIMULATOR</h1>
-      <Simulador/>
-    </>
+    <div className="flex flex-col">
+      <h1 className="scroll-m-20 text-lg font-extrabold tracking-tight lg:text-xl">
+        CELLULAR AUTOMATA SIMULATOR
+      </h1>
+      <SimulationsList />
+    </div>
   );
 }
 
-export default App
+export default App;
