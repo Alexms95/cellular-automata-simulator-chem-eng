@@ -7,6 +7,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@radix-ui/react-tooltip";
+import { PenIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
 export const SimulationsList = () => {
@@ -41,14 +47,39 @@ export const SimulationsList = () => {
           {simulations?.map((simulation) => (
             <Card key={simulation.id} className="w-[250px] mx-auto my-2">
               <CardHeader>
-                <CardTitle>{simulation.name}</CardTitle>
+                <div className="flex justify-between items-center">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon">
+                        <PenIcon className="m-2" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-sm bg-zinc-600 rounded border-zinc-300 border px-2 py-1 mb-2 text-zinc-100">
+                        Edit
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <CardTitle>{simulation.name}</CardTitle>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="icon" variant="outline">
+                        <Trash2Icon className="m-2 text-red-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-sm bg-zinc-600 rounded border-zinc-300 border px-2 py-1 mb-2 text-zinc-100">
+                        Delete
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <CardDescription>
                   Deploy your new project in one-click.
                 </CardDescription>
               </CardHeader>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline">Edit</Button>
-                <Button>Open</Button>
+              <CardFooter>
+                <Button className="w-full">Open</Button>
               </CardFooter>
             </Card>
           ))}
