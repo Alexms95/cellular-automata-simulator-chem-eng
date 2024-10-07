@@ -12,6 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@radix-ui/react-tooltip";
+import { Link } from "@tanstack/react-router";
 import { PenIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
@@ -79,7 +80,9 @@ export const SimulationsList = () => {
                 </CardDescription>
               </CardHeader>
               <CardFooter>
-                <Button className="w-full">Open</Button>
+                <Link to="/about" className="w-full">
+                  <Button className="w-full">Open</Button>
+                </Link>
               </CardFooter>
             </Card>
           ))}

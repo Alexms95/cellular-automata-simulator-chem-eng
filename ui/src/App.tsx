@@ -1,5 +1,4 @@
-import "./App.css";
-import { SimulationsList } from "./pages/SimulationsList";
+import { SimulationsList } from "./pages/simulationsList";
 
 function App() {
   return (
