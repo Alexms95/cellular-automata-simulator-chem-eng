@@ -9,7 +9,7 @@ import {
   QueryClientProvider,
   QueryKey,
 } from "@tanstack/react-query";
-import axios from "axios";
+import httpClient from "./lib/httpClient";
 import { routeTree } from "./routeTree.gen";
 
 // Create a new router instance
@@ -23,9 +23,7 @@ declare module "@tanstack/react-router" {
 }
 
 const defaultQueryFn = async ({ queryKey }: { queryKey: QueryKey }) => {
-  const { data } = await axios.get(
-    `http://localhost:8000/${queryKey[0]}`
-  );
+  const { data } = await httpClient.get(`http://localhost:8000/${queryKey[0]}`);
   return data;
 };
 const queryClient = new QueryClient({
@@ -33,6 +31,7 @@ const queryClient = new QueryClient({
     queries: {
       queryFn: defaultQueryFn,
       refetchOnWindowFocus: false,
+      refetchInterval: 1000 * 60 * 5
     },
   },
 });

@@ -1,3 +1,4 @@
+import { NewSimulation } from "@/components/newSimulation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -6,35 +7,69 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@radix-ui/react-tooltip";
+} from "@/components/ui/tooltip";
+import { ApiResult } from "@/models/apiResult";
+import { Simulation } from "@/models/simulation";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { PenIcon, Trash2Icon } from "lucide-react";
-import { useState } from "react";
+import { PenIcon, PlusCircle, Trash2Icon } from "lucide-react";
 
 export const SimulationsList = () => {
-  const simulations = Array.from({ length: 6 }, (_, i) => ({
-    id: i + 1,
-    name: `Simulation ${i + 1}`,
-  }));
+  const { data, isLoading } = useQuery<ApiResult<Simulation[]>>({
+    queryKey: ["simulations"],
+  });
 
-  const [isLoading, setIsLoading] = useState(true);
-
-  setTimeout(() => {
-    setIsLoading(false);
-  }, 2000);
+  const simulations = data?.results;
 
   return (
     <div className="space-y-4 w-full flex flex-col">
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="self-end mr-4">
+            <PlusCircle className="mr-2"></PlusCircle>New Simulation
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>New Simulation</DialogTitle>
+            <DialogDescription>
+              Create a new simulation. Save it when you are done.
+            </DialogDescription>
+          </DialogHeader>
+          <NewSimulation />
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button
+                type="submit"
+                form="new-simulation-form"
+                className="w-full"
+              >
+                Save
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <h2 className="text-lg font-bold">Simulations</h2>
       {isLoading ? (
         <ul className="grid grid-cols-4">
-          {Array.from({ length: 8 }, () => (
-            <div className="flex flex-col space-y-3 mx-auto my-4">
+          {Array.from({ length: 8 }, (_, i) => (
+            <div key={i} className="flex flex-col space-y-3 mx-auto my-4">
               <Skeleton className="h-[100px] w-[250px] rounded-xl" />
               <div className="space-y-2">
                 <Skeleton className="h-4 w-[250px]" />
@@ -55,11 +90,7 @@ export const SimulationsList = () => {
                         <PenIcon className="m-2" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-sm bg-zinc-600 rounded border-zinc-300 border px-2 py-1 mb-2 text-zinc-100">
-                        Edit
-                      </p>
-                    </TooltipContent>
+                    <TooltipContent>Edit</TooltipContent>
                   </Tooltip>
                   <CardTitle>{simulation.name}</CardTitle>
                   <Tooltip>
@@ -68,11 +99,7 @@ export const SimulationsList = () => {
                         <Trash2Icon className="m-2 text-red-600" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-sm bg-zinc-600 rounded border-zinc-300 border px-2 py-1 mb-2 text-zinc-100">
-                        Delete
-                      </p>
-                    </TooltipContent>
+                    <TooltipContent>Delete</TooltipContent>
                   </Tooltip>
                 </div>
                 <CardDescription>

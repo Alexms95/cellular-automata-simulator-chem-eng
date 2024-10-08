@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
@@ -7,40 +6,46 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Label } from "./ui/label";
 
 const formSchema = z.object({
   simulationName: z.string().min(3, {
-    message: 'It must be at least 3 characters.',
+    message: "It must be at least 3 characters.",
   }),
   iterationsNumber: z.coerce
-    .number({ message: 'It must be a number.' })
-    .int('It must be an integer number.')
-    .positive('It must be a positive number.'),
-})
+    .number({ message: "It must be a number." })
+    .int("It must be an integer number.")
+    .positive("It must be a positive number."),
+});
 
 export const NewSimulation = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      simulationName: '',
+      simulationName: "",
       iterationsNumber: 1,
     },
-  })
+  });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values)
-  }
+    console.log(values);
+  };
 
   return (
     <Form {...form}>
+      <div className="grid w-full max-w-sm items-center gap-1.5">
+        <Label htmlFor="file">Import a file</Label>
+        <Input id="file" type="file" />
+      </div>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4 w-1/5 flex flex-col"
+        className="space-y-4 flex flex-col"
+        id="new-simulation-form"
       >
         <FormField
           control={form.control}
@@ -79,8 +84,7 @@ export const NewSimulation = () => {
             </FormItem>
           )}
         />
-        <Button type="submit">Run Simulation</Button>
       </form>
     </Form>
-  )
-}
+  );
+};
