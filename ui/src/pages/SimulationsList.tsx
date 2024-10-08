@@ -7,16 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -27,7 +17,7 @@ import { ApiResult } from "@/models/apiResult";
 import { Simulation } from "@/models/simulation";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { PenIcon, PlusCircle, Trash2Icon } from "lucide-react";
+import { PenIcon, Trash2Icon } from "lucide-react";
 
 export const SimulationsList = () => {
   const { data, isLoading } = useQuery<ApiResult<Simulation[]>>({
@@ -38,33 +28,7 @@ export const SimulationsList = () => {
 
   return (
     <div className="space-y-4 w-full flex flex-col">
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button className="self-end mr-4">
-            <PlusCircle className="mr-2"></PlusCircle>New Simulation
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>New Simulation</DialogTitle>
-            <DialogDescription>
-              Create a new simulation. Save it when you are done.
-            </DialogDescription>
-          </DialogHeader>
-          <NewSimulation />
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button
-                type="submit"
-                form="new-simulation-form"
-                className="w-full"
-              >
-                Save
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NewSimulation />
       <h2 className="text-lg font-bold">Simulations</h2>
       {isLoading ? (
         <ul className="grid grid-cols-4">
