@@ -1,13 +1,13 @@
 services:
   backend:
-    image: alexms/api-simulador-automatos-celulares:1.0.0
+    image: alexms/api-simulador-automatos-celulares:latest
     container_name: fastapi-backend
     ports:
       - "8000:8000"
     environment:
       - ENV=development
   nginx:
-    image: alexms/front-simulador-automatos-celulares:1.0.0
+    image: alexms/front-simulador-automatos-celulares:latest
     container_name: nginx
     ports:
       - "9000:80"

@@ -21,7 +21,7 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        target: build-backend
+        target: backend-container
         tags: |
           alexms/api-simulador-automatos-celulares:v${{ github.run_number }}
           alexms/api-simulador-automatos-celulares:latest
