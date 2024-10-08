@@ -24,7 +24,6 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Label } from "./ui/label";
-import { useEffect } from "react";
 
 const formSchema = z.object({
   simulationName: z.string().min(3, {

@@ -31,7 +31,6 @@ const queryClient = new QueryClient({
     queries: {
       queryFn: defaultQueryFn,
       refetchOnWindowFocus: false,
-      refetchInterval: 1000 * 60 * 5
     },
   },
 });
