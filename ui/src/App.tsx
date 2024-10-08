@@ -1,4 +1,4 @@
-import { SimulationsList } from "./pages/simulationsList";
+import { SimulationsList } from "./pages/SimulationsList";
 
 function App() {
   return (
