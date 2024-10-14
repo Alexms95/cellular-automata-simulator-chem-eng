@@ -26,7 +26,7 @@ const defaultQueryFn = async ({ queryKey }: { queryKey: QueryKey }) => {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,
+      staleTime: Infinity,
       queryFn: defaultQueryFn,
       refetchOnWindowFocus: false,
     },
