@@ -14,24 +14,23 @@ function About() {
     const cols = 10;
     const rows = cols;
     const resolution = 50;
+    const frameRate = 5;
     let recorder: MediaRecorder;
     let chunks: Blob[] = [];
     let isRecording = false;
 
     p5.setup = () => {
       p5.createCanvas(500, 500);
-      p5.frameRate(5);
+      p5.frameRate(frameRate);
       grid = createGrid();
     };
 
     p5.draw = () => {
       if (p5.frameCount === 1) {
         isRecording = true;
+
         recorder = new MediaRecorder(
-          p5.drawingContext.canvas.captureStream(5),
-          {
-            mimeType: "video/webm",
-          }
+          p5.drawingContext.canvas.captureStream(frameRate)
         );
 
         recorder.ondataavailable = (e) => {
@@ -39,7 +38,26 @@ function About() {
             chunks.push(e.data);
           }
         };
+
+        recorder.onstop = () => {
+          isRecording = false;
+          const blob = new Blob(chunks, { type: "video/mp4" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          document.body.appendChild(a);
+          a.href = url;
+          a.download = "cellular_automata.mp4";
+          a.click();
+          window.URL.revokeObjectURL(url);
+        };
         recorder.start();
+        return;
+      }
+
+      if (p5.frameCount >= 32) {
+        if (isRecording) stopRecording();
+        p5.noLoop();
+        return;
       }
       p5.background(220);
       for (let i = 0; i < cols; i++) {
@@ -49,6 +67,7 @@ function About() {
           if (grid[j][i] === 1) {
             p5.fill("orange");
             p5.stroke(220);
+            p5.text(p5.frameCount - 1, x, y);
             p5.rect(x, y, resolution - 1, resolution - 1);
           } else {
             p5.fill("blue");
@@ -58,11 +77,6 @@ function About() {
         }
       }
       grid = createGrid();
-      console.log(p5.frameCount);
-      if (p5.frameCount >= 30) {
-        p5.noLoop();
-        if (isRecording) stopRecording();
-      }
     };
 
     p5.updateWithProps = (props) => {
@@ -89,19 +103,6 @@ function About() {
 
     function stopRecording() {
       recorder.stop();
-
-      recorder.onstop = () => {
-        isRecording = false;
-        const blob = new Blob(chunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        document.body.appendChild(a);
-        a.style = "display: none";
-        a.href = url;
-        a.download = "cellular_automata.webm";
-        a.click();
-        window.URL.revokeObjectURL(url);
-      };
 
       setStartRecording(false);
     }
