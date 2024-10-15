@@ -3,7 +3,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
-// Import the generated route tree
 import {
   QueryClient,
   QueryClientProvider,
@@ -12,10 +11,8 @@ import {
 import httpClient from "./lib/httpClient";
 import { routeTree } from "./routeTree.gen";
 
-// Create a new router instance
 const router = createRouter({ routeTree });
 
-// Register the router instance for type safety
 declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
@@ -29,9 +26,9 @@ const defaultQueryFn = async ({ queryKey }: { queryKey: QueryKey }) => {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: Infinity,
       queryFn: defaultQueryFn,
       refetchOnWindowFocus: false,
-      refetchInterval: 1000 * 60 * 5
     },
   },
 });
