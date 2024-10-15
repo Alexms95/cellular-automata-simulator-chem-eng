@@ -14,6 +14,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as SimulationsIndexImport } from './routes/simulations/index'
+import { Route as SimulationsSimulationIdImport } from './routes/simulations/$simulationId'
 
 // Create Virtual Routes
 
@@ -37,6 +38,11 @@ const SimulationsIndexRoute = SimulationsIndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const SimulationsSimulationIdRoute = SimulationsSimulationIdImport.update({
+  path: '/simulations/$simulationId',
+  getParentRoute: () => rootRoute,
+} as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -55,6 +61,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutLazyImport
       parentRoute: typeof rootRoute
     }
+    '/simulations/$simulationId': {
+      id: '/simulations/$simulationId'
+      path: '/simulations/$simulationId'
+      fullPath: '/simulations/$simulationId'
+      preLoaderRoute: typeof SimulationsSimulationIdImport
+      parentRoute: typeof rootRoute
+    }
     '/simulations/': {
       id: '/simulations/'
       path: '/simulations'
@@ -70,12 +83,14 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
   '/about': typeof AboutLazyRoute
+  '/simulations/$simulationId': typeof SimulationsSimulationIdRoute
   '/simulations': typeof SimulationsIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexLazyRoute
   '/about': typeof AboutLazyRoute
+  '/simulations/$simulationId': typeof SimulationsSimulationIdRoute
   '/simulations': typeof SimulationsIndexRoute
 }
 
@@ -83,27 +98,35 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexLazyRoute
   '/about': typeof AboutLazyRoute
+  '/simulations/$simulationId': typeof SimulationsSimulationIdRoute
   '/simulations/': typeof SimulationsIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/simulations'
+  fullPaths: '/' | '/about' | '/simulations/$simulationId' | '/simulations'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/simulations'
-  id: '__root__' | '/' | '/about' | '/simulations/'
+  to: '/' | '/about' | '/simulations/$simulationId' | '/simulations'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/simulations/$simulationId'
+    | '/simulations/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
   AboutLazyRoute: typeof AboutLazyRoute
+  SimulationsSimulationIdRoute: typeof SimulationsSimulationIdRoute
   SimulationsIndexRoute: typeof SimulationsIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
   AboutLazyRoute: AboutLazyRoute,
+  SimulationsSimulationIdRoute: SimulationsSimulationIdRoute,
   SimulationsIndexRoute: SimulationsIndexRoute,
 }
 
@@ -121,6 +144,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/about",
+        "/simulations/$simulationId",
         "/simulations/"
       ]
     },
@@ -129,6 +153,9 @@ export const routeTree = rootRoute
     },
     "/about": {
       "filePath": "about.lazy.tsx"
+    },
+    "/simulations/$simulationId": {
+      "filePath": "simulations/$simulationId.tsx"
     },
     "/simulations/": {
       "filePath": "simulations/index.tsx"
