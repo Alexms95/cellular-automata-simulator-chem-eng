@@ -10,8 +10,9 @@ import {
 } from "@tanstack/react-query";
 import httpClient from "./lib/httpClient";
 import { routeTree } from "./routeTree.gen";
+import { Spinner } from "./components/ui/spinner";
 
-const router = createRouter({ routeTree });
+const router = createRouter({ routeTree, defaultPendingComponent: () => <Spinner/> });
 
 declare module "@tanstack/react-router" {
   interface Register {

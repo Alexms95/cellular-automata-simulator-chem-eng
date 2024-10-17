@@ -26,7 +26,7 @@ function About() {
           cell changes over time.
         </p>
         <p>
-          To get started, go to the <Link className="text-blue-600" to="/">Simulations</Link> page and click on the "New Simulation" button.
+          To get started, go to the <Link className="text-blue-600" to="/simulations">Simulations</Link> page and click on the "New Simulation" button.
         </p>
       </div>
     </div>
