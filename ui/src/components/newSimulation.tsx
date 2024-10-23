@@ -33,19 +33,35 @@ const formSchema = z.object({
     .number({ message: "It must be a number." })
     .int("It must be an integer number.")
     .positive("It must be a positive number."),
+  gridDimension: z.coerce
+    .number({ message: "It must be a number." })
+    .int("It must be an integer number.")
+    .positive("It must be a positive number."),
+  ingredientsNumber: z.coerce
+    .number({ message: "It must be a number." })
+    .int("It must be an integer number.")
+    .positive("It must be a positive number."),
+  namesOfIngredients: z.array(z.string()),
 });
 
+type NewSimulationForm = z.infer<typeof formSchema>;
+
 export const NewSimulation = () => {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<NewSimulationForm>({
     resolver: zodResolver(formSchema),
     mode: "onTouched",
     defaultValues: {
       simulationName: "",
       iterationsNumber: 1,
+      gridDimension: 1,
+      ingredientsNumber: 1,
+      namesOfIngredients: [],
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const ingredientsNumber = form.watch("ingredientsNumber");
+
+  const onSubmit = (values: NewSimulationForm) => {
     console.log(values);
   };
 
@@ -57,14 +73,14 @@ export const NewSimulation = () => {
             <PlusCircle className="mr-2"></PlusCircle>New Simulation
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[1000px]">
           <DialogHeader>
             <DialogTitle>New Simulation</DialogTitle>
             <DialogDescription>
               Create a new simulation. Save it when you are done.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid w-full max-w-sm items-center gap-1.5">
+          <div className="grid w-full max-w-sm items-center gap-2">
             <Label htmlFor="file">Import a file</Label>
             <Input id="file" type="file" />
           </div>
@@ -92,26 +108,101 @@ export const NewSimulation = () => {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="iterationsNumber"
-              render={({ field }) => (
-                <FormItem className="flex flex-col items-start">
-                  <FormLabel>Iterations Number</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Choose the number of iterations"
-                      type="number"
-                      {...field}
+            <div className="flex space-x-4">
+              <div className="w-1/2">
+                <FormField
+                  control={form.control}
+                  name="iterationsNumber"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col items-start">
+                      <FormLabel>Number of Iterations</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Choose the number of iterations"
+                          type="number"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        How many iterations will be performed.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="w-1/2">
+                <FormField
+                  control={form.control}
+                  name="gridDimension"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col items-start">
+                      <FormLabel>Grid Dimension</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Choose the grid dimension"
+                          type="number"
+                          {...field}
+                        />
+                      </FormControl>
+                      {!form.formState.errors.gridDimension && (
+                        <FormDescription>
+                          A grid of {form.getValues("gridDimension")} x{" "}
+                          {form.getValues("gridDimension")} will be created.
+                        </FormDescription>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="w-1/2">
+                <FormField
+                  control={form.control}
+                  name="ingredientsNumber"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col items-start">
+                      <FormLabel>Number of Ingredients</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Choose the number of ingredients"
+                          type="number"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        For default, the ingredients will be named as{" "}
+                        <strong>A</strong>, <strong>B</strong>,{" "}
+                        <strong>C</strong>, etc.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            <div className="flex space-x-4">
+              {ingredientsNumber > 0 &&
+                Array.from({ length: ingredientsNumber }).map((_, index) => (
+                  <div key={index} className="w-1/2">
+                    <FormField
+                      control={form.control}
+                      name={`namesOfIngredients.${index}`}
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col items-start">
+                          <FormLabel>
+                            {String.fromCharCode(65 + index)} will be
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormDescription>
-                    How many iterations will be performed.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  </div>
+                ))}
+            </div>
           </form>
           <DialogFooter>
             <DialogClose disabled={!form.formState.isValid} asChild>
