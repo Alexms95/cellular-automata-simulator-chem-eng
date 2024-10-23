@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusCircle } from "lucide-react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "./ui/button";
@@ -41,7 +42,11 @@ const formSchema = z.object({
     .number({ message: "It must be a number." })
     .int("It must be an integer number.")
     .positive("It must be a positive number."),
-  namesOfIngredients: z.array(z.string()),
+  namesOfIngredients: z.array(
+    z.string({ message: "Name required" }).min(1, {
+      message: "It must be at least 1 character.",
+    })
+  ),
 });
 
 type NewSimulationForm = z.infer<typeof formSchema>;
@@ -55,7 +60,7 @@ export const NewSimulation = () => {
       iterationsNumber: 1,
       gridDimension: 1,
       ingredientsNumber: 1,
-      namesOfIngredients: [],
+      namesOfIngredients: ["A"],
     },
   });
 
@@ -64,6 +69,20 @@ export const NewSimulation = () => {
   const onSubmit = (values: NewSimulationForm) => {
     console.log(values);
   };
+
+  useEffect(() => {
+    const currentLength = form.getValues("namesOfIngredients")?.length || 0;
+
+    if (ingredientsNumber < currentLength) {
+      form.setValue(
+        "namesOfIngredients",
+        form
+          .getValues("namesOfIngredients")
+          .slice(0, -(currentLength - ingredientsNumber))
+      );
+      form.trigger("namesOfIngredients");
+    }
+  }, [ingredientsNumber, form]);
 
   return (
     <Form {...form}>
@@ -187,7 +206,9 @@ export const NewSimulation = () => {
                   <div key={index} className="w-1/2">
                     <FormField
                       control={form.control}
+                      defaultValue={String.fromCharCode(65 + index)}
                       name={`namesOfIngredients.${index}`}
+                      shouldUnregister
                       render={({ field }) => (
                         <FormItem className="flex flex-col items-start">
                           <FormLabel>
