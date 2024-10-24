@@ -60,7 +60,7 @@ export const NewSimulation = () => {
       iterationsNumber: 1,
       gridDimension: 1,
       ingredientsNumber: 1,
-      namesOfIngredients: ["A"],
+      namesOfIngredients: [],
     },
   });
 
@@ -92,7 +92,7 @@ export const NewSimulation = () => {
             <PlusCircle className="mr-2"></PlusCircle>New Simulation
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[1000px]">
+        <DialogContent className="sm:max-w-[80%]">
           <DialogHeader>
             <DialogTitle>New Simulation</DialogTitle>
             <DialogDescription>
@@ -225,12 +225,17 @@ export const NewSimulation = () => {
                 ))}
             </div>
           </form>
-          <DialogFooter>
+          <DialogFooter className="sm:justify-between">
+            <DialogClose asChild>
+              <Button className="w-1/6" variant="outline">
+                Cancel
+              </Button>
+            </DialogClose>
             <DialogClose disabled={!form.formState.isValid} asChild>
               <Button
                 type="submit"
                 form="new-simulation-form"
-                className="w-full"
+                className="w-1/6"
               >
                 Save
               </Button>
