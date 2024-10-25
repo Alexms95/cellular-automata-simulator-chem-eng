@@ -9,9 +9,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PlusCircle } from "lucide-react";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { PlusCircle, TrashIcon } from "lucide-react";
+import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "./ui/button";
 import {
@@ -25,6 +24,7 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Label } from "./ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const formSchema = z.object({
   simulationName: z.string().min(3, {
@@ -38,13 +38,14 @@ const formSchema = z.object({
     .number({ message: "It must be a number." })
     .int("It must be an integer number.")
     .positive("It must be a positive number."),
-  ingredientsNumber: z.coerce
-    .number({ message: "It must be a number." })
-    .int("It must be an integer number.")
-    .positive("It must be a positive number."),
-  namesOfIngredients: z.array(
-    z.string({ message: "Name required" }).min(1, {
-      message: "It must be at least 1 character.",
+  ingredients: z.array(
+    z.object({
+      name: z.string().min(1, {
+        message: "It must be at least 1 character.",
+      }),
+      color: z.string().min(7, {
+        message: "It must be a color.",
+      }),
     })
   ),
 });
@@ -59,30 +60,18 @@ export const NewSimulation = () => {
       simulationName: "",
       iterationsNumber: 1,
       gridDimension: 1,
-      ingredientsNumber: 1,
-      namesOfIngredients: [],
+      ingredients: [{ name: "A", color: "fff" }],
     },
   });
 
-  const ingredientsNumber = form.watch("ingredientsNumber");
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "ingredients",
+  });
 
   const onSubmit = (values: NewSimulationForm) => {
     console.log(values);
   };
-
-  useEffect(() => {
-    const currentLength = form.getValues("namesOfIngredients")?.length || 0;
-
-    if (ingredientsNumber < currentLength) {
-      form.setValue(
-        "namesOfIngredients",
-        form
-          .getValues("namesOfIngredients")
-          .slice(0, -(currentLength - ingredientsNumber))
-      );
-      form.trigger("namesOfIngredients");
-    }
-  }, [ingredientsNumber, form]);
 
   return (
     <Form {...form}>
@@ -92,7 +81,7 @@ export const NewSimulation = () => {
             <PlusCircle className="mr-2"></PlusCircle>New Simulation
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[80%]">
+        <DialogContent className="sm:max-w-[80%] overflow-y-auto max-h-[90%]">
           <DialogHeader>
             <DialogTitle>New Simulation</DialogTitle>
             <DialogDescription>
@@ -175,54 +164,83 @@ export const NewSimulation = () => {
                   )}
                 />
               </div>
-              <div className="w-1/2">
-                <FormField
-                  control={form.control}
-                  name="ingredientsNumber"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col items-start">
-                      <FormLabel>Number of Ingredients</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Choose the number of ingredients"
-                          type="number"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        For default, the ingredients will be named as{" "}
-                        <strong>A</strong>, <strong>B</strong>,{" "}
-                        <strong>C</strong>, etc.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
             </div>
-            <div className="flex space-x-4">
-              {ingredientsNumber > 0 &&
-                Array.from({ length: ingredientsNumber }).map((_, index) => (
-                  <div key={index} className="w-1/2">
+            <div>
+              {fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="flex space-x-4 space-y-2 items-center"
+                >
+                  <p className="w-1/8 text-center text-sm font-semibold">
+                    Ingredient {String.fromCharCode(65 + index)}
+                  </p>
+                  <div className="w-1/2">
                     <FormField
                       control={form.control}
-                      defaultValue={String.fromCharCode(65 + index)}
-                      name={`namesOfIngredients.${index}`}
-                      shouldUnregister
+                      name={`ingredients.${index}.name`}
                       render={({ field }) => (
                         <FormItem className="flex flex-col items-start">
-                          <FormLabel>
-                            {String.fromCharCode(65 + index)} will be
-                          </FormLabel>
+                          <FormLabel>Name</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input
+                              placeholder="Choose the ingredient name"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
-                ))}
+                  <div className="w-1/2">
+                    <FormField
+                      control={form.control}
+                      name={`ingredients.${index}.color`}
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col items-start">
+                          <FormLabel>Color</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Choose the ingredient color"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => remove(index)}
+                        className="self-end"
+                        variant="destructive"
+                        size="icon"
+                      >
+                        <TrashIcon className="p-1"></TrashIcon>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      sideOffset={20}
+                      align="end"
+                      alignOffset={50}
+                      side="left"
+                    >
+                      Remove ingredient {String.fromCharCode(65 + index)}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              ))}
+            </div>
+            <Button
+              className="ml-auto py-2 px-3 text-xs"
+              onClick={() => append({ name: "", color: "" })}
+            >
+              <PlusCircle className="p-1 pl-0"></PlusCircle>Add Ingredient
+            </Button>
+            <div>
+              <p className="font-semibold">Parameters</p>
             </div>
           </form>
           <DialogFooter className="sm:justify-between">

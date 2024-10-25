@@ -8,11 +8,15 @@ import {
   QueryClientProvider,
   QueryKey,
 } from "@tanstack/react-query";
+import { Spinner } from "./components/ui/spinner";
+import { TooltipProvider } from "./components/ui/tooltip";
 import httpClient from "./lib/httpClient";
 import { routeTree } from "./routeTree.gen";
-import { Spinner } from "./components/ui/spinner";
 
-const router = createRouter({ routeTree, defaultPendingComponent: () => <Spinner/> });
+const router = createRouter({
+  routeTree,
+  defaultPendingComponent: () => <Spinner />,
+});
 
 declare module "@tanstack/react-router" {
   interface Register {
@@ -37,7 +41,9 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <TooltipProvider>
+        <RouterProvider router={router} />
+      </TooltipProvider>
     </QueryClientProvider>
   </StrictMode>
 );
