@@ -81,7 +81,7 @@ export const NewSimulation = () => {
             <PlusCircle className="mr-2"></PlusCircle>New Simulation
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[80%] overflow-y-auto max-h-[90%]">
+        <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%]">
           <DialogHeader>
             <DialogTitle>New Simulation</DialogTitle>
             <DialogDescription>
@@ -97,27 +97,29 @@ export const NewSimulation = () => {
             className="space-y-4 flex flex-col"
             id="new-simulation-form"
           >
-            <FormField
-              control={form.control}
-              name="simulationName"
-              render={({ field }) => (
-                <FormItem className="flex flex-col items-start">
-                  <FormLabel>Simulation Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Give a name for your simulation"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Choose an easy-to-find name.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <div className="flex space-x-4">
-              <div className="w-1/2">
+              <div className="w-1/3">
+                <FormField
+                  control={form.control}
+                  name="simulationName"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col items-start">
+                      <FormLabel>Simulation Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Give a name for your simulation"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Choose an easy-to-find name.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="w-1/3">
                 <FormField
                   control={form.control}
                   name="iterationsNumber"
@@ -139,7 +141,7 @@ export const NewSimulation = () => {
                   )}
                 />
               </div>
-              <div className="w-1/2">
+              <div className="w-1/3">
                 <FormField
                   control={form.control}
                   name="gridDimension"
@@ -165,13 +167,10 @@ export const NewSimulation = () => {
                 />
               </div>
             </div>
-            <div>
+            <div className="space-y-3">
               {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="flex space-x-4 space-y-2 items-center"
-                >
-                  <p className="w-1/8 text-center text-sm font-semibold">
+                <div key={field.id} className="flex space-x-4">
+                  <p className="w-1/8 text-sm font-semibold mt-8">
                     Ingredient {String.fromCharCode(65 + index)}
                   </p>
                   <div className="w-1/2">
@@ -179,7 +178,7 @@ export const NewSimulation = () => {
                       control={form.control}
                       name={`ingredients.${index}.name`}
                       render={({ field }) => (
-                        <FormItem className="flex flex-col items-start">
+                        <FormItem className="flex flex-col items-start justify-start">
                           <FormLabel>Name</FormLabel>
                           <FormControl>
                             <Input
@@ -214,11 +213,11 @@ export const NewSimulation = () => {
                     <TooltipTrigger asChild>
                       <Button
                         onClick={() => remove(index)}
-                        className="self-end"
                         variant="destructive"
                         size="icon"
+                        className="mt-6"
                       >
-                        <TrashIcon className="p-1"></TrashIcon>
+                        <TrashIcon className="p-1" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent
