@@ -8,8 +8,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { colors } from "@/models/colors";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusCircle, TrashIcon } from "lucide-react";
+import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "./ui/button";
@@ -24,6 +26,14 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Label } from "./ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const formSchema = z.object({
@@ -43,9 +53,7 @@ const formSchema = z.object({
       name: z.string().min(1, {
         message: "It must be at least 1 character.",
       }),
-      color: z.string().min(7, {
-        message: "It must be a color.",
-      }),
+      color: z.string(),
     })
   ),
 });
@@ -60,7 +68,7 @@ export const NewSimulation = () => {
       simulationName: "",
       iterationsNumber: 1,
       gridDimension: 1,
-      ingredients: [{ name: "A", color: "fff" }],
+      ingredients: [{ name: "A", color: "blue" }],
     },
   });
 
@@ -167,10 +175,11 @@ export const NewSimulation = () => {
                 />
               </div>
             </div>
-            <div className="space-y-3">
+            <Separator />
+            <div className="space-y-2">
               {fields.map((field, index) => (
                 <div key={field.id} className="flex space-x-4">
-                  <p className="w-1/8 text-sm font-semibold mt-8">
+                  <p className="w-1/8 text-sm font-semibold mt-10">
                     Ingredient {String.fromCharCode(65 + index)}
                   </p>
                   <div className="w-1/2">
@@ -178,7 +187,7 @@ export const NewSimulation = () => {
                       control={form.control}
                       name={`ingredients.${index}.name`}
                       render={({ field }) => (
-                        <FormItem className="flex flex-col items-start justify-start">
+                        <FormItem className="">
                           <FormLabel>Name</FormLabel>
                           <FormControl>
                             <Input
@@ -196,14 +205,33 @@ export const NewSimulation = () => {
                       control={form.control}
                       name={`ingredients.${index}.color`}
                       render={({ field }) => (
-                        <FormItem className="flex flex-col items-start">
+                        <FormItem>
                           <FormLabel>Color</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Choose the ingredient color"
-                              {...field}
-                            />
-                          </FormControl>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {colors.map((color) => (
+                                <SelectItem key={color.name} value={color.name}>
+                                  <div className="flex items-center justify-center">
+                                    <span
+                                      className="w-4 h-4 rounded-full mr-2"
+                                      style={{
+                                        backgroundColor: color.hex,
+                                      }}
+                                    ></span>
+                                    {color.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -215,7 +243,7 @@ export const NewSimulation = () => {
                         onClick={() => remove(index)}
                         variant="destructive"
                         size="icon"
-                        className="mt-6"
+                        className="mt-8"
                       >
                         <TrashIcon className="p-1" />
                       </Button>
@@ -232,12 +260,16 @@ export const NewSimulation = () => {
                 </div>
               ))}
             </div>
+            <FormMessage>
+              {form.formState.errors?.ingredients?.root?.message}
+            </FormMessage>
             <Button
               className="ml-auto py-2 px-3 text-xs"
-              onClick={() => append({ name: "", color: "" })}
+              onClick={() => append({ name: "", color: colors.filter((c) => !form.getValues("ingredients").flatMap(i => i.color).includes(c.name))[0].name })}
             >
               <PlusCircle className="p-1 pl-0"></PlusCircle>Add Ingredient
             </Button>
+            <Separator />
             <div>
               <p className="font-semibold">Parameters</p>
             </div>

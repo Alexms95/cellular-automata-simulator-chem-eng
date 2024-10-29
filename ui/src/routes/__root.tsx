@@ -1,5 +1,10 @@
 import { InfoCircledIcon } from "@radix-ui/react-icons";
-import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  Link,
+  Outlet,
+  redirect,
+} from "@tanstack/react-router";
 
 export const Route = createRootRoute({
   component: () => (
@@ -14,4 +19,9 @@ export const Route = createRootRoute({
       </footer>
     </>
   ),
+  beforeLoad: () => {
+    if (location.pathname === "/") {
+      throw redirect({ to: "/simulations" });
+    }
+  },
 });
