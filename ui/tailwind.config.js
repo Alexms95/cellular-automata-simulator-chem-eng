@@ -12,6 +12,10 @@ export default {
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
+      width: {
+        '1/10': '10%',
+        '1/8': '12.5%',
+      },
   		colors: {}
   	}
   },
