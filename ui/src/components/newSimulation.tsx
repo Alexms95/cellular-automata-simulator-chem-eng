@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { colors } from "@/models/colors";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusCircle, TrashIcon } from "lucide-react";
-import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "./ui/button";
@@ -35,6 +34,7 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import httpClient from "@/lib/httpClient";
 
 const formSchema = z.object({
   simulationName: z.string().min(3, {
@@ -78,7 +78,7 @@ export const NewSimulation = () => {
   });
 
   const onSubmit = (values: NewSimulationForm) => {
-    console.log(values);
+    httpClient.post("/simulations", values);
   };
 
   return (
@@ -265,7 +265,18 @@ export const NewSimulation = () => {
             </FormMessage>
             <Button
               className="ml-auto py-2 px-3 text-xs"
-              onClick={() => append({ name: "", color: colors.filter((c) => !form.getValues("ingredients").flatMap(i => i.color).includes(c.name))[0].name })}
+              onClick={() =>
+                append({
+                  name: "",
+                  color: colors.filter(
+                    (c) =>
+                      !form
+                        .getValues("ingredients")
+                        .flatMap((i) => i.color)
+                        .includes(c.name)
+                  )[0].name,
+                })
+              }
             >
               <PlusCircle className="p-1 pl-0"></PlusCircle>Add Ingredient
             </Button>
