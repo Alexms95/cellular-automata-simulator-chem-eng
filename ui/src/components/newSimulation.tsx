@@ -12,7 +12,6 @@ import httpClient from "@/lib/httpClient";
 import { colors } from "@/models/colors";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusCircle, TrashIcon } from "lucide-react";
-import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "./ui/button";
@@ -64,18 +63,20 @@ const formSchema = z.object({
   parameters: z.object({
     Pm: z.array(
       z.coerce
-        .number()
-        .gte(0, { message: "It must be greater or equal to 0." })
-        .lte(1, { message: "It must be less or equal to 1." })
+        .number({ message: "It must be a number." })
+        .positive("It must be a positive number.")
+        .gte(0, "It must be greater or equal to 0.")
+        .lte(1, "It must be less or equal to 1.")
     ),
     J: z.array(
       z.object({
         from: z.string({ message: "It must be a string." }),
         to: z.string({ message: "It must be a string." }),
         value: z.coerce
-          .number()
-          .gte(0, { message: "It must be greater or equal to 0." })
-          .lte(1, { message: "It must be less or equal to 1." }),
+          .number({ message: "It must be a number." })
+          .positive("It must be a positive number.")
+          .gte(0, "It must be greater or equal to 0.")
+          .lte(1, "It must be less or equal to 1."),
       })
     ),
   }),
@@ -92,10 +93,6 @@ export const NewSimulation = () => {
       iterationsNumber: 1,
       gridDimension: 1,
       ingredients: [{ name: "A", initialNumber: 1, color: "blue" }],
-      parameters: {
-        Pm: [1],
-        J: [{ from: "A", to: "A", value: 1 }],
-      },
     },
   });
 
@@ -104,27 +101,64 @@ export const NewSimulation = () => {
     name: "ingredients",
   });
 
-  const generatePairMatrix = (arraySize: number) => {
-    const result: number[][] = [];
+  const handleRemove = (index: number) => {
+    remove(index);
+    // Remove the parameters that have the ingredient letter
+    const parameters = form.getValues("parameters");
+    const newParameters = {
+      Pm: parameters.Pm.filter((_, i) => i !== index),
+      J: parameters.J.filter(
+        (param) =>
+          param.from !== String.fromCharCode(65 + index) &&
+          param.to !== String.fromCharCode(65 + index)
+      ),
+    };
 
+    form.setValue("parameters", newParameters);
+  };
+
+  function generatePairMatrix(arraySize: number) {
+    const lastIndex = arraySize - 1;
+
+    // Arrays separados para pares com e sem o último índice
+    const pairsWithLast: number[][] = [];
+    const pairsWithoutLast: number[][] = [];
+
+    // Gera todas as combinações possíveis de pares
     for (let i = 0; i < arraySize; i++) {
       for (let j = 0; j < arraySize; j++) {
-        result.push([i, j]);
+        // Se algum elemento do par for igual a (arraySize - 1),
+        // adiciona ao array de pares com último índice
+        if (i === lastIndex || j === lastIndex) {
+          pairsWithLast.push([i, j]);
+        } else {
+          pairsWithoutLast.push([i, j]);
+        }
       }
     }
 
-    return result;
-  };
+    // Concatena os arrays, colocando os pares com último índice no final
+    return [...pairsWithoutLast, ...pairsWithLast];
+  }
 
   const pairMatrix = generatePairMatrix(fields.length);
-
-  useEffect(() => {
-    console.log(form.getValues());
-  });
 
   const onSubmit = (values: NewSimulationForm) => {
     console.log(values);
     httpClient.post("/simulations", values);
+  };
+
+  const downloadJsonFile = () => {
+    const values = form.getValues();
+    const file = new Blob([JSON.stringify(form.getValues(), null, "\t")], {
+      type: "application/json",
+    });
+    const a = document.createElement("a");
+    const url = URL.createObjectURL(file);
+    a.href = url;
+    a.download = values.simulationName.replace(" ", "_") + "_inputs.json";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -144,7 +178,7 @@ export const NewSimulation = () => {
           </DialogHeader>
           <div className="grid w-full max-w-sm items-center gap-2">
             <Label htmlFor="file">Import a file</Label>
-            <Input id="file" type="file" />
+            <Input id="file" type="file" accept=".json" />
           </div>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -306,7 +340,7 @@ export const NewSimulation = () => {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        onClick={() => remove(index)}
+                        onClick={() => handleRemove(index)}
                         variant="destructive"
                         size="icon"
                         className="mt-8"
@@ -359,6 +393,7 @@ export const NewSimulation = () => {
                   control={form.control}
                   name={`parameters.Pm.${index}`}
                   defaultValue={1}
+                  shouldUnregister
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
@@ -379,62 +414,67 @@ export const NewSimulation = () => {
                 />
               ))}
             </div>
-            <div className="flex space-x-2">
-              {pairMatrix.map((comb, index) => (
-                <div key={index}>
-                  <FormField
-                    control={form.control}
-                    name={`parameters.J.${index}.from`}
-                    defaultValue={String.fromCharCode(65 + comb[0])}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input className="hidden" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`parameters.J.${index}.to`}
-                    defaultValue={String.fromCharCode(65 + comb[1])}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input className="hidden" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`parameters.J.${index}.value`}
-                    defaultValue={1}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          J (
-                          {String.fromCharCode(65 + comb[0]) +
-                            String.fromCharCode(65 + comb[1])}
-                          )
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            step={0.1}
-                            min={0}
-                            max={1}
-                            type="number"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              ))}
+            <div className="flex space-x-2 flex-wrap">
+              {pairMatrix.map((comb, index) => {
+                return (
+                  <div key={index}>
+                    <FormField
+                      control={form.control}
+                      shouldUnregister
+                      name={`parameters.J.${index}.from`}
+                      defaultValue={String.fromCharCode(65 + comb[0])}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input className="hidden" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`parameters.J.${index}.to`}
+                      shouldUnregister
+                      defaultValue={String.fromCharCode(65 + comb[1])}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input className="hidden" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`parameters.J.${index}.value`}
+                      shouldUnregister
+                      defaultValue={1}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            J (
+                            {String.fromCharCode(65 + comb[0]) +
+                              String.fromCharCode(65 + comb[1])}
+                            )
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              step={0.1}
+                              min={0}
+                              max={1}
+                              type="number"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </form>
           <DialogFooter className="sm:justify-between">
@@ -443,6 +483,13 @@ export const NewSimulation = () => {
                 Cancel
               </Button>
             </DialogClose>
+            <Button
+              disabled={!form.formState.isValid}
+              variant="secondary"
+              onClick={downloadJsonFile}
+            >
+              Export Config File
+            </Button>
             <DialogClose disabled={!form.formState.isValid} asChild>
               <Button
                 type="submit"
