@@ -36,8 +36,12 @@ function SimulationsList() {
         CELLULAR AUTOMATA SIMULATOR
       </h1>
       <div className="space-y-4 flex flex-col">
-        <NewSimulation />
-        <h2 className="text-lg font-bold">Simulations</h2>
+        <div className="flex">
+          <h2 className="text-lg font-bold w-[54%] text-right">Simulations</h2>
+          <div className="ml-auto">
+            <NewSimulation />
+          </div>
+        </div>
         {isLoading ? (
           <SimulationsSkeleton />
         ) : (

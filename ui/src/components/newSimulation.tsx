@@ -79,6 +79,17 @@ const formSchema = z.object({
           .lte(1, "It must be less or equal to 1."),
       })
     ),
+    Pb: z.array(
+      z.object({
+        from: z.string({ message: "It must be a string." }),
+        to: z.string({ message: "It must be a string." }),
+        value: z.coerce
+          .number({ message: "It must be a number." })
+          .positive("It must be a positive number.")
+          .gte(0, "It must be greater or equal to 0.")
+          .lte(1, "It must be less or equal to 1."),
+      })
+    ),
   }),
 });
 
@@ -110,6 +121,11 @@ export const NewSimulation = () => {
     const newParameters = {
       Pm: parameters.Pm.filter((_, i) => i !== index),
       J: parameters.J.filter(
+        (param) =>
+          param.from !== String.fromCharCode(65 + index) &&
+          param.to !== String.fromCharCode(65 + index)
+      ),
+      Pb: parameters.Pb.filter(
         (param) =>
           param.from !== String.fromCharCode(65 + index) &&
           param.to !== String.fromCharCode(65 + index)
@@ -181,7 +197,7 @@ export const NewSimulation = () => {
     <Form {...form}>
       <Dialog>
         <DialogTrigger asChild>
-          <Button className="self-end mr-4">
+          <Button className="self-end mr-5">
             <PlusCircle className="mr-2"></PlusCircle>New Simulation
           </Button>
         </DialogTrigger>
@@ -193,7 +209,7 @@ export const NewSimulation = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-between">
-            <div className="grid w-full max-w-sm items-center gap-2">
+            <div className="grid w-full max-w-md items-center gap-2">
               <Label htmlFor="file">Import a file</Label>
               <Input
                 onChange={(e) => fillInForm(e.target.files)}
@@ -443,6 +459,68 @@ export const NewSimulation = () => {
                   )}
                 />
               ))}
+            </div>
+            <div className="flex space-x-2 flex-wrap">
+              {pairMatrix.map((comb, index) => {
+                return (
+                  <div key={index}>
+                    <FormField
+                      control={form.control}
+                      shouldUnregister
+                      name={`parameters.Pb.${index}.from`}
+                      defaultValue={String.fromCharCode(65 + comb[0])}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input className="hidden" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`parameters.Pb.${index}.to`}
+                      shouldUnregister
+                      defaultValue={String.fromCharCode(65 + comb[1])}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input className="hidden" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`parameters.Pb.${index}.value`}
+                      shouldUnregister
+                      defaultValue={1}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            P<sub>B</sub> (
+                            {String.fromCharCode(65 + comb[0]) +
+                              String.fromCharCode(65 + comb[1])}
+                            )
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              step={0.1}
+                              min={0}
+                              max={1}
+                              type="number"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                );
+              })}
             </div>
             <div className="flex space-x-2 flex-wrap">
               {pairMatrix.map((comb, index) => {
