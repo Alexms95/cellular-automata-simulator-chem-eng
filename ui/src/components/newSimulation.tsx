@@ -85,6 +85,8 @@ const formSchema = z.object({
 type NewSimulationForm = z.infer<typeof formSchema>;
 
 export const NewSimulation = () => {
+  const defaultIngredients = [{ name: "A", initialNumber: 1, color: "blue" }];
+
   const form = useForm<NewSimulationForm>({
     resolver: zodResolver(formSchema),
     mode: "onTouched",
@@ -92,7 +94,7 @@ export const NewSimulation = () => {
       simulationName: "",
       iterationsNumber: 1,
       gridDimension: 1,
-      ingredients: [{ name: "A", initialNumber: 1, color: "blue" }],
+      ingredients: defaultIngredients,
     },
   });
 
@@ -161,6 +163,20 @@ export const NewSimulation = () => {
     URL.revokeObjectURL(url);
   };
 
+  const fillInForm = (files: FileList | null) => {
+    if (files && files[0]) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const result = e.target?.result;
+        if (typeof result === "string") {
+          const values = JSON.parse(result) as NewSimulationForm;
+          form.reset(values);
+        }
+      };
+      reader.readAsText(files[0]);
+    }
+  };
+
   return (
     <Form {...form}>
       <Dialog>
@@ -176,9 +192,23 @@ export const NewSimulation = () => {
               Create a new simulation. Save it when you are done.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid w-full max-w-sm items-center gap-2">
-            <Label htmlFor="file">Import a file</Label>
-            <Input id="file" type="file" accept=".json" />
+          <div className="flex justify-between">
+            <div className="grid w-full max-w-sm items-center gap-2">
+              <Label htmlFor="file">Import a file</Label>
+              <Input
+                onChange={(e) => fillInForm(e.target.files)}
+                id="file"
+                type="file"
+                accept=".json"
+              />
+            </div>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => form.reset({ ingredients: defaultIngredients })}
+            >
+              Reset to default
+            </Button>
           </div>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
