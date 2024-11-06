@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.controllers.simulation_controller import SimulationController
-from app.schemas.simulation_schema import NewSimulation, SimulationResult
+from app.schemas.simulation_schema import Simulation, SimulationResult
 
 router = APIRouter()
 
@@ -10,5 +10,5 @@ def get_simulations(controller: SimulationController = Depends()):
     return controller.get_simulations()
 
 @router.post("", response_model=None)
-def create_simulation(newSimulation: NewSimulation,controller: SimulationController = Depends()):
+def create_simulation(newSimulation: Simulation, controller: SimulationController = Depends()):
     return controller.create_simulation(newSimulation)

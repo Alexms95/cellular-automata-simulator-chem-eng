@@ -70,8 +70,8 @@ const formSchema = z.object({
     ),
     J: z.array(
       z.object({
-        from: z.string({ message: "It must be a string." }),
-        to: z.string({ message: "It must be a string." }),
+        fromIngr: z.string({ message: "It must be a string." }),
+        toIngr: z.string({ message: "It must be a string." }),
         value: z.coerce
           .number({ message: "It must be a number." })
           .positive("It must be a positive number.")
@@ -81,8 +81,8 @@ const formSchema = z.object({
     ),
     Pb: z.array(
       z.object({
-        from: z.string({ message: "It must be a string." }),
-        to: z.string({ message: "It must be a string." }),
+        fromIngr: z.string({ message: "It must be a string." }),
+        toIngr: z.string({ message: "It must be a string." }),
         value: z.coerce
           .number({ message: "It must be a number." })
           .positive("It must be a positive number.")
@@ -122,13 +122,13 @@ export const NewSimulation = () => {
       Pm: parameters.Pm.filter((_, i) => i !== index),
       J: parameters.J.filter(
         (param) =>
-          param.from !== String.fromCharCode(65 + index) &&
-          param.to !== String.fromCharCode(65 + index)
+          param.fromIngr !== String.fromCharCode(65 + index) &&
+          param.toIngr !== String.fromCharCode(65 + index)
       ),
       Pb: parameters.Pb.filter(
         (param) =>
-          param.from !== String.fromCharCode(65 + index) &&
-          param.to !== String.fromCharCode(65 + index)
+          param.fromIngr !== String.fromCharCode(65 + index) &&
+          param.toIngr !== String.fromCharCode(65 + index)
       ),
     };
 
@@ -210,13 +210,17 @@ export const NewSimulation = () => {
           </DialogHeader>
           <div className="flex justify-between">
             <div className="grid w-full max-w-md items-center gap-2">
-              <Label htmlFor="file">Import a file</Label>
+              <Label htmlFor="file">Import a configuration file</Label>
               <Input
                 onChange={(e) => fillInForm(e.target.files)}
                 id="file"
                 type="file"
                 accept=".json"
               />
+              <span className="text-xs text-zinc-500">
+                On importing it, all fields will be
+                overwritten.
+              </span>
             </div>
             <Button
               variant="secondary"
@@ -467,7 +471,7 @@ export const NewSimulation = () => {
                     <FormField
                       control={form.control}
                       shouldUnregister
-                      name={`parameters.Pb.${index}.from`}
+                      name={`parameters.Pb.${index}.fromIngr`}
                       defaultValue={String.fromCharCode(65 + comb[0])}
                       render={({ field }) => (
                         <FormItem>
@@ -480,7 +484,7 @@ export const NewSimulation = () => {
                     />
                     <FormField
                       control={form.control}
-                      name={`parameters.Pb.${index}.to`}
+                      name={`parameters.Pb.${index}.toIngr`}
                       shouldUnregister
                       defaultValue={String.fromCharCode(65 + comb[1])}
                       render={({ field }) => (
@@ -529,7 +533,7 @@ export const NewSimulation = () => {
                     <FormField
                       control={form.control}
                       shouldUnregister
-                      name={`parameters.J.${index}.from`}
+                      name={`parameters.J.${index}.fromIngr`}
                       defaultValue={String.fromCharCode(65 + comb[0])}
                       render={({ field }) => (
                         <FormItem>
@@ -542,7 +546,7 @@ export const NewSimulation = () => {
                     />
                     <FormField
                       control={form.control}
-                      name={`parameters.J.${index}.to`}
+                      name={`parameters.J.${index}.toIngr`}
                       shouldUnregister
                       defaultValue={String.fromCharCode(65 + comb[1])}
                       render={({ field }) => (
@@ -591,13 +595,30 @@ export const NewSimulation = () => {
                 Cancel
               </Button>
             </DialogClose>
-            <Button
-              disabled={!form.formState.isValid}
-              variant="secondary"
-              onClick={downloadJsonFile}
-            >
-              Export Config File
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <Button
+                    disabled={!form.formState.isValid}
+                    variant="secondary"
+                    onClick={downloadJsonFile}
+                  >
+                    Export Config File
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {" "}
+                {form.formState.isValid ? (
+                  <span>Download the simulation configuration file</span>
+                ) : (
+                  <span>
+                    Check if all fields are accordingly filled in before
+                    downloading the simulation file
+                  </span>
+                )}{" "}
+              </TooltipContent>
+            </Tooltip>
             <DialogClose disabled={!form.formState.isValid} asChild>
               <Button
                 type="submit"
