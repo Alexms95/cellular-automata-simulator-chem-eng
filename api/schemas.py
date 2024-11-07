@@ -1,7 +1,8 @@
+from typing import Any
 from pydantic import BaseModel
 
 class SimulationResult(BaseModel):
-  results: list['SimulationMock']
+  results: Any
     
 class SimulationMock(BaseModel):
   id: int

@@ -1,11 +1,11 @@
-from app.schemas.simulation_schema import Simulation, Simulation, SimulationMock, SimulationResult
+from schemas import Simulation, SimulationMock, SimulationResult
 
-class SimulationController:
+class SimulationData:
   def get_simulations(self) -> SimulationResult:
     results = [ SimulationMock(id=i, name=f"Simulation {i}") for i in range(1, 6) ]
     return SimulationResult(results=results)
     
-  def create_simulation(self, newSimulation: Simulation) -> None:
+  def create_simulation(self, newSimulation: Simulation) -> SimulationResult:
     print(f"\n\nSimulation Details:\n"
       f"  Name: {newSimulation.simulationName}\n"
       f"  Iterations: {newSimulation.iterationsNumber}\n"
@@ -14,3 +14,5 @@ class SimulationController:
     for ingredient in newSimulation.ingredients:
       print(f"  - {ingredient.name} ({ingredient.color})")
     print("\n")
+    
+    return SimulationResult(results=None)

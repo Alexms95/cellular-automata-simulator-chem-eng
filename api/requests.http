@@ -1,1 +1,36 @@
 GET http://localhost:8000/simulations
+
+###
+
+POST http://localhost:8000/simulations
+Content-Type: application/json
+
+{
+  "simulationName": "Simulação Exemplo",
+  "iterationsNumber": 100,
+  "gridDimension": 50,
+  "ingredients": [
+    {
+      "name": "Água",
+      "initialNumber": 10,
+      "color": "blue"
+    }
+  ],
+  "parameters": {
+    "Pm": [1.0],
+    "Pb": [
+      {
+        "fromIngr": "A",
+        "toIngr": "A",
+        "value": 1.0
+      }
+    ],
+    "J": [
+      {
+        "fromIngr": "A",
+        "toIngr": "A",
+        "value": 1.0
+      }
+    ]
+  }
+}
