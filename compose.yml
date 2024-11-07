@@ -5,7 +5,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - ENV=development
+      - ENVIRONMENT=production
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres  # Pode vir de variável de ambiente do host
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=fastapi_db
+    depends_on:
+      db:
+        condition: service_healthy
   nginx:
     image: alexms/front-simulador-automatos-celulares:latest
     container_name: nginx
@@ -13,3 +21,22 @@ services:
       - "9000:80"
     depends_on:
       - backend
+  db:
+    image: postgres:16.4-alpine3.20
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    shm_size: 128mb
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=fastapi_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+volumes:
+  postgres_data:

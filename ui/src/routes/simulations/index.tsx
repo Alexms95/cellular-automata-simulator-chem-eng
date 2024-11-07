@@ -1,17 +1,27 @@
-import { NewSimulation } from '@/components/newSimulation';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ApiResult } from '@/models/apiResult';
-import { Simulation } from '@/models/simulation';
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { PenIcon, Trash2Icon } from 'lucide-react';
+import { NewSimulation } from "@/components/newSimulation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ApiResult } from "@/models/apiResult";
+import { Simulation } from "@/models/simulation";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { CopyIcon, Trash2Icon } from "lucide-react";
 
-export const Route = createFileRoute('/simulations/')({
+export const Route = createFileRoute("/simulations/")({
   component: () => <SimulationsList />,
-})
+});
 
 function SimulationsList() {
   const { data, isLoading } = useQuery<ApiResult<Simulation[]>>({
@@ -26,8 +36,12 @@ function SimulationsList() {
         CELLULAR AUTOMATA SIMULATOR
       </h1>
       <div className="space-y-4 flex flex-col">
-        <NewSimulation />
-        <h2 className="text-lg font-bold">Simulations</h2>
+        <div className="flex">
+          <h2 className="text-lg font-bold w-[54%] text-right">Simulations</h2>
+          <div className="ml-auto">
+            <NewSimulation />
+          </div>
+        </div>
         {isLoading ? (
           <SimulationsSkeleton />
         ) : (
@@ -39,10 +53,10 @@ function SimulationsList() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button variant="outline" size="icon">
-                          <PenIcon className="m-2" />
+                          <CopyIcon className="m-2" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Edit</TooltipContent>
+                      <TooltipContent>Create a copy</TooltipContent>
                     </Tooltip>
                     <CardTitle>{simulation.name}</CardTitle>
                     <Tooltip>

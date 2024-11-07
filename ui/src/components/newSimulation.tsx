@@ -8,6 +8,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import httpClient from "@/lib/httpClient";
 import { colors } from "@/models/colors";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusCircle, TrashIcon } from "lucide-react";
@@ -34,7 +35,6 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import httpClient from "@/lib/httpClient";
 
 const formSchema = z.object({
   simulationName: z.string().min(3, {
@@ -54,13 +54,50 @@ const formSchema = z.object({
         message: "It must be at least 1 character.",
       }),
       color: z.string(),
+      initialNumber: z.coerce
+        .number({ message: "It must be a number." })
+        .int("It must be an integer number.")
+        .positive("It must be a positive number."),
     })
   ),
+  parameters: z.object({
+    Pm: z.array(
+      z.coerce
+        .number({ message: "It must be a number." })
+        .positive("It must be a positive number.")
+        .gte(0, "It must be greater or equal to 0.")
+        .lte(1, "It must be less or equal to 1.")
+    ),
+    J: z.array(
+      z.object({
+        fromIngr: z.string({ message: "It must be a string." }),
+        toIngr: z.string({ message: "It must be a string." }),
+        value: z.coerce
+          .number({ message: "It must be a number." })
+          .positive("It must be a positive number.")
+          .gte(0, "It must be greater or equal to 0.")
+          .lte(1, "It must be less or equal to 1."),
+      })
+    ),
+    Pb: z.array(
+      z.object({
+        fromIngr: z.string({ message: "It must be a string." }),
+        toIngr: z.string({ message: "It must be a string." }),
+        value: z.coerce
+          .number({ message: "It must be a number." })
+          .positive("It must be a positive number.")
+          .gte(0, "It must be greater or equal to 0.")
+          .lte(1, "It must be less or equal to 1."),
+      })
+    ),
+  }),
 });
 
 type NewSimulationForm = z.infer<typeof formSchema>;
 
 export const NewSimulation = () => {
+  const defaultIngredients = [{ name: "A", initialNumber: 1, color: "blue" }];
+
   const form = useForm<NewSimulationForm>({
     resolver: zodResolver(formSchema),
     mode: "onTouched",
@@ -68,7 +105,7 @@ export const NewSimulation = () => {
       simulationName: "",
       iterationsNumber: 1,
       gridDimension: 1,
-      ingredients: [{ name: "A", color: "blue" }],
+      ingredients: defaultIngredients,
     },
   });
 
@@ -77,15 +114,90 @@ export const NewSimulation = () => {
     name: "ingredients",
   });
 
+  const handleRemove = (index: number) => {
+    remove(index);
+    // Remove the parameters that have the ingredient letter
+    const parameters = form.getValues("parameters");
+    const newParameters = {
+      Pm: parameters.Pm.filter((_, i) => i !== index),
+      J: parameters.J.filter(
+        (param) =>
+          param.fromIngr !== String.fromCharCode(65 + index) &&
+          param.toIngr !== String.fromCharCode(65 + index)
+      ),
+      Pb: parameters.Pb.filter(
+        (param) =>
+          param.fromIngr !== String.fromCharCode(65 + index) &&
+          param.toIngr !== String.fromCharCode(65 + index)
+      ),
+    };
+
+    form.setValue("parameters", newParameters);
+  };
+
+  function generatePairMatrix(arraySize: number) {
+    const lastIndex = arraySize - 1;
+
+    // Arrays separados para pares com e sem o último índice
+    const pairsWithLast: number[][] = [];
+    const pairsWithoutLast: number[][] = [];
+
+    // Gera todas as combinações possíveis de pares
+    for (let i = 0; i < arraySize; i++) {
+      for (let j = 0; j < arraySize; j++) {
+        // Se algum elemento do par for igual a (arraySize - 1),
+        // adiciona ao array de pares com último índice
+        if (i === lastIndex || j === lastIndex) {
+          pairsWithLast.push([i, j]);
+        } else {
+          pairsWithoutLast.push([i, j]);
+        }
+      }
+    }
+
+    // Concatena os arrays, colocando os pares com último índice no final
+    return [...pairsWithoutLast, ...pairsWithLast];
+  }
+
+  const pairMatrix = generatePairMatrix(fields.length);
+
   const onSubmit = (values: NewSimulationForm) => {
+    console.log(values);
     httpClient.post("/simulations", values);
+  };
+
+  const downloadJsonFile = () => {
+    const values = form.getValues();
+    const file = new Blob([JSON.stringify(form.getValues(), null, "\t")], {
+      type: "application/json",
+    });
+    const a = document.createElement("a");
+    const url = URL.createObjectURL(file);
+    a.href = url;
+    a.download = values.simulationName.replace(" ", "_") + "_inputs.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const fillInForm = (files: FileList | null) => {
+    if (files && files[0]) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const result = e.target?.result;
+        if (typeof result === "string") {
+          const values = JSON.parse(result) as NewSimulationForm;
+          form.reset(values);
+        }
+      };
+      reader.readAsText(files[0]);
+    }
   };
 
   return (
     <Form {...form}>
       <Dialog>
         <DialogTrigger asChild>
-          <Button className="self-end mr-4">
+          <Button className="self-end mr-5">
             <PlusCircle className="mr-2"></PlusCircle>New Simulation
           </Button>
         </DialogTrigger>
@@ -96,9 +208,27 @@ export const NewSimulation = () => {
               Create a new simulation. Save it when you are done.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid w-full max-w-sm items-center gap-2">
-            <Label htmlFor="file">Import a file</Label>
-            <Input id="file" type="file" />
+          <div className="flex justify-between">
+            <div className="grid w-full max-w-md items-center gap-2">
+              <Label htmlFor="file">Import a configuration file</Label>
+              <Input
+                onChange={(e) => fillInForm(e.target.files)}
+                id="file"
+                type="file"
+                accept=".json"
+              />
+              <span className="text-xs text-zinc-500">
+                On importing it, all fields will be
+                overwritten.
+              </span>
+            </div>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => form.reset({ ingredients: defaultIngredients })}
+            >
+              Reset to default
+            </Button>
           </div>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -178,7 +308,7 @@ export const NewSimulation = () => {
             <Separator />
             <div className="space-y-2">
               {fields.map((field, index) => (
-                <div key={field.id} className="flex space-x-4">
+                <div key={field.id} className="flex space-x-2">
                   <p className="w-1/8 text-sm font-semibold mt-10">
                     Ingredient {String.fromCharCode(65 + index)}
                   </p>
@@ -200,7 +330,27 @@ export const NewSimulation = () => {
                       )}
                     />
                   </div>
-                  <div className="w-1/2">
+                  <div className="w-1/4">
+                    <FormField
+                      control={form.control}
+                      name={`ingredients.${index}.initialNumber`}
+                      defaultValue={1}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Initial number</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Initial count of the ingredient"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="w-1/5">
                     <FormField
                       control={form.control}
                       name={`ingredients.${index}.color`}
@@ -240,7 +390,7 @@ export const NewSimulation = () => {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        onClick={() => remove(index)}
+                        onClick={() => handleRemove(index)}
                         variant="destructive"
                         size="icon"
                         className="mt-8"
@@ -265,9 +415,10 @@ export const NewSimulation = () => {
             </FormMessage>
             <Button
               className="ml-auto py-2 px-3 text-xs"
+              type="button"
               onClick={() =>
                 append({
-                  name: "",
+                  name: String.fromCharCode(65 + fields.length),
                   color: colors.filter(
                     (c) =>
                       !form
@@ -275,14 +426,167 @@ export const NewSimulation = () => {
                         .flatMap((i) => i.color)
                         .includes(c.name)
                   )[0].name,
+                  initialNumber: 1,
                 })
               }
             >
               <PlusCircle className="p-1 pl-0"></PlusCircle>Add Ingredient
             </Button>
             <Separator />
-            <div>
-              <p className="font-semibold">Parameters</p>
+            <h4 className="scroll-m-20 font-semibold tracking-tight">
+              Parameters
+            </h4>
+            <div className="flex space-x-2">
+              {fields.map((field, index) => (
+                <FormField
+                  key={field.id}
+                  control={form.control}
+                  name={`parameters.Pm.${index}`}
+                  defaultValue={1}
+                  shouldUnregister
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        P<sub>M</sub> ({String.fromCharCode(65 + index)})
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          step={0.1}
+                          min={0}
+                          max={1}
+                          type="number"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+            </div>
+            <div className="flex space-x-2 flex-wrap">
+              {pairMatrix.map((comb, index) => {
+                return (
+                  <div key={index}>
+                    <FormField
+                      control={form.control}
+                      shouldUnregister
+                      name={`parameters.Pb.${index}.fromIngr`}
+                      defaultValue={String.fromCharCode(65 + comb[0])}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input className="hidden" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`parameters.Pb.${index}.toIngr`}
+                      shouldUnregister
+                      defaultValue={String.fromCharCode(65 + comb[1])}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input className="hidden" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`parameters.Pb.${index}.value`}
+                      shouldUnregister
+                      defaultValue={1}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            P<sub>B</sub> (
+                            {String.fromCharCode(65 + comb[0]) +
+                              String.fromCharCode(65 + comb[1])}
+                            )
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              step={0.1}
+                              min={0}
+                              max={1}
+                              type="number"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex space-x-2 flex-wrap">
+              {pairMatrix.map((comb, index) => {
+                return (
+                  <div key={index}>
+                    <FormField
+                      control={form.control}
+                      shouldUnregister
+                      name={`parameters.J.${index}.fromIngr`}
+                      defaultValue={String.fromCharCode(65 + comb[0])}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input className="hidden" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`parameters.J.${index}.toIngr`}
+                      shouldUnregister
+                      defaultValue={String.fromCharCode(65 + comb[1])}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input className="hidden" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`parameters.J.${index}.value`}
+                      shouldUnregister
+                      defaultValue={1}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            J (
+                            {String.fromCharCode(65 + comb[0]) +
+                              String.fromCharCode(65 + comb[1])}
+                            )
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              step={0.1}
+                              min={0}
+                              max={1}
+                              type="number"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </form>
           <DialogFooter className="sm:justify-between">
@@ -291,6 +595,30 @@ export const NewSimulation = () => {
                 Cancel
               </Button>
             </DialogClose>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <Button
+                    disabled={!form.formState.isValid}
+                    variant="secondary"
+                    onClick={downloadJsonFile}
+                  >
+                    Export Config File
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {" "}
+                {form.formState.isValid ? (
+                  <span>Download the simulation configuration file</span>
+                ) : (
+                  <span>
+                    Check if all fields are accordingly filled in before
+                    downloading the simulation file
+                  </span>
+                )}{" "}
+              </TooltipContent>
+            </Tooltip>
             <DialogClose disabled={!form.formState.isValid} asChild>
               <Button
                 type="submit"

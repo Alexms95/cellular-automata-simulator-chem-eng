@@ -41,7 +41,7 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+      <TooltipProvider delayDuration={300}>
         <RouterProvider router={router} />
       </TooltipProvider>
     </QueryClientProvider>
