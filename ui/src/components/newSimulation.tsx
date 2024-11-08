@@ -37,14 +37,14 @@ import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const formSchema = z.object({
-  simulationName: z.string().min(3, {
+  name: z.string().min(3, {
     message: "It must be at least 3 characters.",
   }),
   iterationsNumber: z.coerce
     .number({ message: "It must be a number." })
     .int("It must be an integer number.")
     .positive("It must be a positive number."),
-  gridDimension: z.coerce
+  gridSize: z.coerce
     .number({ message: "It must be a number." })
     .int("It must be an integer number.")
     .positive("It must be a positive number."),
@@ -93,18 +93,18 @@ const formSchema = z.object({
   }),
 });
 
-type NewSimulationForm = z.infer<typeof formSchema>;
+export type NewSimulation = z.infer<typeof formSchema>;
 
 export const NewSimulation = () => {
   const defaultIngredients = [{ name: "A", initialNumber: 1, color: "blue" }];
 
-  const form = useForm<NewSimulationForm>({
+  const form = useForm<NewSimulation>({
     resolver: zodResolver(formSchema),
     mode: "onTouched",
     defaultValues: {
-      simulationName: "",
+      name: "",
       iterationsNumber: 1,
-      gridDimension: 1,
+      gridSize: 1,
       ingredients: defaultIngredients,
     },
   });
@@ -161,7 +161,7 @@ export const NewSimulation = () => {
 
   const pairMatrix = generatePairMatrix(fields.length);
 
-  const onSubmit = (values: NewSimulationForm) => {
+  const onSubmit = (values: NewSimulation) => {
     console.log(values);
     httpClient.post("/simulations", values);
   };
@@ -174,7 +174,7 @@ export const NewSimulation = () => {
     const a = document.createElement("a");
     const url = URL.createObjectURL(file);
     a.href = url;
-    a.download = values.simulationName.replace(" ", "_") + "_inputs.json";
+    a.download = values.name.replace(" ", "_") + "_inputs.json";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -185,7 +185,7 @@ export const NewSimulation = () => {
       reader.onload = function (e) {
         const result = e.target?.result;
         if (typeof result === "string") {
-          const values = JSON.parse(result) as NewSimulationForm;
+          const values = JSON.parse(result) as NewSimulation;
           form.reset(values);
         }
       };
@@ -218,8 +218,7 @@ export const NewSimulation = () => {
                 accept=".json"
               />
               <span className="text-xs text-zinc-500">
-                On importing it, all fields will be
-                overwritten.
+                On importing it, all fields will be overwritten.
               </span>
             </div>
             <Button
@@ -239,7 +238,7 @@ export const NewSimulation = () => {
               <div className="w-1/3">
                 <FormField
                   control={form.control}
-                  name="simulationName"
+                  name="name"
                   render={({ field }) => (
                     <FormItem className="flex flex-col items-start">
                       <FormLabel>Simulation Name</FormLabel>
@@ -282,7 +281,7 @@ export const NewSimulation = () => {
               <div className="w-1/3">
                 <FormField
                   control={form.control}
-                  name="gridDimension"
+                  name="gridSize"
                   render={({ field }) => (
                     <FormItem className="flex flex-col items-start">
                       <FormLabel>Grid Dimension</FormLabel>
@@ -293,10 +292,10 @@ export const NewSimulation = () => {
                           {...field}
                         />
                       </FormControl>
-                      {!form.formState.errors.gridDimension && (
+                      {!form.formState.errors.gridSize && (
                         <FormDescription>
-                          A grid of {form.getValues("gridDimension")} x{" "}
-                          {form.getValues("gridDimension")} will be created.
+                          A grid of {form.getValues("gridSize")} x{" "}
+                          {form.getValues("gridSize")} will be created.
                         </FormDescription>
                       )}
                       <FormMessage />

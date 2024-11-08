@@ -1,11 +1,11 @@
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import create_engine
 from queries import SimulationData
 
 from config import get_settings
-from schemas import Simulation, SimulationResult
+from schemas import SimulationCreate, SimulationResponse
 
 settings = get_settings()
 
@@ -32,13 +32,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/simulations", response_model=SimulationResult)
-def get_simulations(dataAccess: SimulationData = Depends()):
-    return dataAccess.get_simulations()
+@app.get("/simulations", response_model=list[SimulationResponse])
+def get_simulations(dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)):
+    return dataAccess.get_simulations(db)
 
-@app.post("/simulations", response_model=SimulationResult)
-def create_simulation(newSimulation: Simulation, dataAccess: SimulationData = Depends()):
-    return dataAccess.create_simulation(newSimulation)
+@app.post("/simulations", response_model=None)
+def create_simulation(newSimulation: SimulationCreate, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)):
+    return dataAccess.create_simulation(newSimulation, db)
 
 @app.get("/")
 def read_root():

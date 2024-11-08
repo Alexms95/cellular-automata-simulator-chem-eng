@@ -13,7 +13,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ApiResult } from "@/models/apiResult";
 import { Simulation } from "@/models/simulation";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -24,11 +23,9 @@ export const Route = createFileRoute("/simulations/")({
 });
 
 function SimulationsList() {
-  const { data, isLoading } = useQuery<ApiResult<Simulation[]>>({
+  const { data, isLoading } = useQuery<Simulation[]>({
     queryKey: ["simulations"],
   });
-
-  const simulations = data?.results;
 
   return (
     <div className="flex flex-col">
@@ -46,7 +43,7 @@ function SimulationsList() {
           <SimulationsSkeleton />
         ) : (
           <ul className="grid grid-cols-4 xl:grid-cols-5">
-            {simulations?.map((simulation) => (
+            {data?.map((simulation) => (
               <Card key={simulation.id} className="w-[250px] mx-auto my-2">
                 <CardHeader>
                   <div className="flex justify-between items-center">
@@ -69,7 +66,15 @@ function SimulationsList() {
                     </Tooltip>
                   </div>
                   <CardDescription>
-                    Deploy your new project in one-click.
+                    <p>{simulation.iterationsNumber} iterations</p>
+                    <p>
+                      Grid Size:{" "}
+                      {`${simulation.gridSize} x ${simulation.gridSize}`}
+                    </p>
+                    <p>
+                      Ingredients:{" "}
+                      {simulation.ingredients.flatMap((i) => i.name).join(", ")}
+                    </p>
                   </CardDescription>
                 </CardHeader>
                 <CardFooter>

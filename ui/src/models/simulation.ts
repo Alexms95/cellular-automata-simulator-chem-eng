@@ -1,4 +1,5 @@
-export interface Simulation {
-  id: number;
-  name: string;
-}
+import { NewSimulation } from "@/components/newSimulation";
+
+export type Simulation = {
+  id: string;
+} & NewSimulation

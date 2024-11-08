@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { Simulation } from "@/models/simulation";
 import { ReactP5Wrapper, Sketch } from "@p5-wrapper/react";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 
@@ -10,6 +12,13 @@ export const Route = createFileRoute("/simulations/$simulationId")({
 
 function SimulationDetail() {
   const { simulationId } = Route.useParams();
+
+  const { data } = useQuery<Simulation[]>({
+    queryKey: ["simulations"],
+  });
+
+  const simulation = data?.find((simulation) => simulation.id === simulationId);
+
   const chunks = useRef<Blob[]>([]);
 
   const [isRecording, setIsRecording] = useState(true);
@@ -99,7 +108,7 @@ function SimulationDetail() {
     <div className="flex items-center justify-center gap-2">
       {memoizedReactP5Wrapper}
       <div className="w-1/3 space-y-4">
-        <p>Simulation ID: {simulationId}</p>
+        <p>{simulation?.name}</p>
         <Button
           className="w-1/2"
           disabled={isRecording}
