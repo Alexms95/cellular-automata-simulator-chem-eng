@@ -13,19 +13,64 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import httpClient from "@/lib/httpClient";
 import { Simulation } from "@/models/simulation";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CopyIcon, Trash2Icon } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/simulations/")({
   component: () => <SimulationsList />,
 });
 
 function SimulationsList() {
+  const queryClient = useQueryClient();
+
   const { data, isLoading } = useQuery<Simulation[]>({
     queryKey: ["simulations"],
   });
+
+  const deleteSimulation = useMutation({
+    mutationFn: (id: string) => httpClient.delete(`/simulations/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["simulations"] });
+    },
+  });
+
+  const copySimulation = useMutation({
+    mutationFn: (values: NewSimulation) =>
+      httpClient.post(`/simulations`, values),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["simulations"] });
+    },
+  });
+
+  const onDelete = async (id: string) => {
+    const mutation = deleteSimulation.mutateAsync(id);
+    const simulation = data?.find((s) => s.id === id);
+    toast.promise(mutation, {
+      loading: "Deleting simulation...",
+      success: `Simulation ${simulation?.name} deleted!`,
+      error: "Error deleting simulation",
+    });
+  };
+
+  const onCopy = async (id: string) => {
+    const simulation = data?.find((s) => s.id === id);
+    if (!simulation) {
+      toast.error("Error copying simulation");
+      return;
+    }
+    const copy = { ...simulation, name: `${simulation.name}_(copy)` };
+    const name = simulation.name;
+    const mutation = copySimulation.mutateAsync(copy);
+    toast.promise(mutation, {
+      loading: `Creating a copy of "${name}"...`,
+      success: `Created a copy of "${name}"!`,
+      error: `Error copying ${name}`,
+    });
+  };
 
   return (
     <div className="flex flex-col">
@@ -49,7 +94,11 @@ function SimulationsList() {
                   <div className="flex justify-between items-center">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon">
+                        <Button
+                          onClick={() => onCopy(simulation.id)}
+                          variant="outline"
+                          size="icon"
+                        >
                           <CopyIcon className="m-2" />
                         </Button>
                       </TooltipTrigger>
@@ -58,7 +107,11 @@ function SimulationsList() {
                     <CardTitle>{simulation.name}</CardTitle>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="icon" variant="outline">
+                        <Button
+                          onClick={() => onDelete(simulation.id)}
+                          size="icon"
+                          variant="outline"
+                        >
                           <Trash2Icon className="m-2 text-red-600" />
                         </Button>
                       </TooltipTrigger>
@@ -66,15 +119,15 @@ function SimulationsList() {
                     </Tooltip>
                   </div>
                   <CardDescription>
-                    <p>{simulation.iterationsNumber} iterations</p>
-                    <p>
+                    <span>{simulation.iterationsNumber} iterations</span>
+                    <span>
                       Grid Size:{" "}
                       {`${simulation.gridSize} x ${simulation.gridSize}`}
-                    </p>
-                    <p>
+                    </span>
+                    <span>
                       Ingredients:{" "}
                       {simulation.ingredients.flatMap((i) => i.name).join(", ")}
-                    </p>
+                    </span>
                   </CardDescription>
                 </CardHeader>
                 <CardFooter>

@@ -40,6 +40,10 @@ def get_simulations(dataAccess: SimulationData = Depends(), db: Session = Depend
 def create_simulation(newSimulation: SimulationCreate, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)):
     return dataAccess.create_simulation(newSimulation, db)
 
+@app.delete("/simulations/{simulation_id}", response_model=None)
+def delete_simulation(simulation_id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)):
+    return dataAccess.delete_simulation(simulation_id, db)
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}

@@ -11,8 +11,10 @@ import { Input } from "@/components/ui/input";
 import httpClient from "@/lib/httpClient";
 import { colors } from "@/models/colors";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusCircle, TrashIcon } from "lucide-react";
 import { useFieldArray, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "./ui/button";
 import {
@@ -96,6 +98,8 @@ const formSchema = z.object({
 export type NewSimulation = z.infer<typeof formSchema>;
 
 export const NewSimulation = () => {
+  const queryClient = useQueryClient();
+
   const defaultIngredients = [{ name: "A", initialNumber: 1, color: "blue" }];
 
   const form = useForm<NewSimulation>({
@@ -161,9 +165,22 @@ export const NewSimulation = () => {
 
   const pairMatrix = generatePairMatrix(fields.length);
 
-  const onSubmit = (values: NewSimulation) => {
-    console.log(values);
-    httpClient.post("/simulations", values);
+  const saveSimulation = useMutation({
+    mutationFn: (values: NewSimulation) =>
+      httpClient.post("/simulations", values),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["simulations"] });
+      form.reset();
+    },
+  });
+
+  const onSubmit = async (values: NewSimulation) => {
+    const mutation = saveSimulation.mutateAsync(values);
+    toast.promise(mutation, {
+      loading: "Saving simulation...",
+      success: `Simulation ${values.name} created!`,
+      error: "Error saving simulation",
+    });
   };
 
   const downloadJsonFile = () => {
