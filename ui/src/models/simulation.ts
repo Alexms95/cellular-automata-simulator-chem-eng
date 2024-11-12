@@ -1,5 +1,5 @@
-import { NewSimulation } from "@/components/newSimulation";
+import { SimulationForm } from "@/lib/utils";
 
 export type Simulation = {
   id: string;
-} & NewSimulation
+} & SimulationForm;

@@ -1,3 +1,4 @@
+import { EditSimulation } from "@/components/editSimulation";
 import { NewSimulation } from "@/components/newSimulation";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,10 +15,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import httpClient from "@/lib/httpClient";
+import { SimulationForm } from "@/lib/utils";
 import { Simulation } from "@/models/simulation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CopyIcon, Trash2Icon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/simulations/")({
@@ -39,7 +41,7 @@ function SimulationsList() {
   });
 
   const copySimulation = useMutation({
-    mutationFn: (values: NewSimulation) =>
+    mutationFn: (values: SimulationForm) =>
       httpClient.post(`/simulations`, values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simulations"] });
@@ -87,30 +89,31 @@ function SimulationsList() {
         {isLoading ? (
           <SimulationsSkeleton />
         ) : (
-          <ul className="grid grid-cols-4 xl:grid-cols-5">
+          <ul className="grid grid-cols-3 xl:grid-cols-4 gap-4 my-2">
             {data?.map((simulation) => (
-              <Card key={simulation.id} className="w-[250px] mx-auto my-2">
+              <Card key={simulation.id}>
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          onClick={() => onCopy(simulation.id)}
                           variant="outline"
                           size="icon"
+                          className="w-8 h-8"
                         >
-                          <CopyIcon className="m-2" />
+                          <EditSimulation id={simulation.id} />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Create a copy</TooltipContent>
+                      <TooltipContent>Edit</TooltipContent>
                     </Tooltip>
-                    <CardTitle>{simulation.name}</CardTitle>
+                    <CardTitle className="text-sm">{simulation.name}</CardTitle>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           onClick={() => onDelete(simulation.id)}
                           size="icon"
                           variant="outline"
+                          className="w-8 h-8"
                         >
                           <Trash2Icon className="m-2 text-red-600" />
                         </Button>
@@ -118,21 +121,36 @@ function SimulationsList() {
                       <TooltipContent>Delete</TooltipContent>
                     </Tooltip>
                   </div>
-                  <CardDescription>
-                    <span>{simulation.iterationsNumber} iterations</span>
+                  <CardDescription className="text-xs">
                     <span>
-                      Grid Size:{" "}
-                      {`${simulation.gridSize} x ${simulation.gridSize}`}
-                    </span>
-                    <span>
-                      Ingredients:{" "}
-                      {simulation.ingredients.flatMap((i) => i.name).join(", ")}
+                      <span className="block">
+                        {simulation.iterationsNumber} iterations
+                      </span>
+                      <span className="block">
+                        Grid Size:{" "}
+                        {`${simulation.gridSize} x ${simulation.gridSize}`}
+                      </span>
+                      <span className="block">
+                        Ingredients:{" "}
+                        {simulation.ingredients
+                          .flatMap((i) => i.name)
+                          .join(", ")}
+                      </span>
                     </span>
                   </CardDescription>
                 </CardHeader>
-                <CardFooter>
-                  <Link to={`/simulations/${simulation.id}`} className="w-full">
-                    <Button className="w-full">Open</Button>
+                <CardFooter className="gap-2">
+                  <div className="w-1/2">
+                    <Button
+                      onClick={() => onCopy(simulation.id)}
+                      className="w-full h-8 text-xs"
+                      variant="outline"
+                    >
+                      Create a copy
+                    </Button>
+                  </div>
+                  <Link to={`/simulations/${simulation.id}`} className="w-1/2">
+                    <Button className="w-full h-8 text-xs">Open</Button>
                   </Link>
                 </CardFooter>
               </Card>
