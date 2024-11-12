@@ -99,18 +99,17 @@ export const EditSimulation = ({ id }: { id: string }) => {
 
   const saveSimulation = useMutation({
     mutationFn: (values: SimulationForm) =>
-      httpClient.put("/simulations", values),
+      httpClient.put(`/simulations/${id}`, values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simulations"] });
-      form.reset();
     },
   });
 
   const onSubmit = async (values: SimulationForm) => {
     const mutation = saveSimulation.mutateAsync(values);
     toast.promise(mutation, {
-      loading: "Editing simulation...",
-      success: `Simulation ${values.name} edited!`,
+      loading: "Saving simulation...",
+      success: `Simulation ${values.name} saved!`,
       error: "Error editing simulation",
     });
   };

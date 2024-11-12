@@ -1,3 +1,4 @@
+from pyexpat import model
 from fastapi import HTTPException
 from models import SimulationModel
 from schemas import SimulationCreate
@@ -10,6 +11,15 @@ class SimulationData:
   def create_simulation(self, newSimulation: SimulationCreate, db: Session) -> None:
     db_simulation = SimulationModel(**newSimulation.model_dump())
     db.add(db_simulation)
+    db.commit()
+    db.refresh(db_simulation)
+    
+  def update_simulation(self, simulation_id: str, updatedSimulation: SimulationCreate, db: Session) -> None:
+    db_simulation = db.query(SimulationModel).filter(SimulationModel.id == simulation_id).first()
+    if db_simulation is None:
+      raise HTTPException(status_code=400, detail="Simulation not found")
+    for key, value in updatedSimulation.model_dump(exclude_unset=True).items():
+        setattr(db_simulation, key, value)
     db.commit()
     db.refresh(db_simulation)
     

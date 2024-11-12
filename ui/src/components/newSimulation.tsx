@@ -130,8 +130,8 @@ export const NewSimulation = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="self-end mr-5">
-          <PlusCircle className="mr-2"></PlusCircle>New Simulation
+        <Button className="self-end text-xs">
+          <PlusCircle className="mr-2 w-5 h-5"></PlusCircle>New Simulation
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%]">
