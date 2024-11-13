@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel
 
@@ -28,5 +29,7 @@ class SimulationCreate(SimulationBase):
 
 class SimulationResponse(SimulationBase):
   id: UUID
+  created_at: datetime
+  updated_at: datetime
   class Config:
     from_attributes = True

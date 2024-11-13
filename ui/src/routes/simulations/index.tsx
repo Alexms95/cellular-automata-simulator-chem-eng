@@ -108,7 +108,7 @@ function SimulationsList() {
           <SimulationsSkeleton />
         ) : (
           <ul className="grid grid-cols-3 xl:grid-cols-4 gap-4 my-2">
-            {data?.map((simulation) => (
+            {data?.sort((a, b) => a.updated_at < b.updated_at ? 1 : -1).map((simulation) => (
               <Card key={simulation.id}>
                 <CardHeader>
                   <div className="flex justify-between items-center">
@@ -177,6 +177,12 @@ function SimulationsList() {
                           .flatMap((i) => i.name)
                           .join(", ")}
                       </span>
+                        <span className="block">
+                          Created at: {new Date(simulation.created_at + 'Z').toLocaleString()}
+                        </span>
+                        <span className="block">
+                          Last updated at: {new Date(simulation.updated_at + 'Z').toLocaleString()}
+                        </span>
                     </span>
                   </CardDescription>
                 </CardHeader>

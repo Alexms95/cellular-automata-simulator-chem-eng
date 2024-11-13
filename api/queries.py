@@ -21,7 +21,8 @@ class SimulationData:
     
     if db_simulation is None:
       raise HTTPException(status_code=400, detail="Simulation not found")
-    already_exists = db.query(SimulationModel).filter(SimulationModel.name == updatedSimulation.name).first()
+    
+    already_exists = db.query(SimulationModel).filter(SimulationModel.id != simulation_id, SimulationModel.name == updatedSimulation.name).first()
     
     if already_exists:
       raise HTTPException(status_code=409, detail=f"A simulation named {updatedSimulation.name} already exists")
