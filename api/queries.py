@@ -1,18 +1,31 @@
-from schemas import Simulation, SimulationMock, SimulationResult
+from pyexpat import model
+from fastapi import HTTPException
+from models import SimulationModel
+from schemas import SimulationCreate
+from sqlalchemy.orm import Session
 
 class SimulationData:
-  def get_simulations(self) -> SimulationResult:
-    results = [ SimulationMock(id=i, name=f"Simulation {i}") for i in range(1, 6) ]
-    return SimulationResult(results=results)
+  def get_simulations(self, db: Session) -> list[SimulationModel]:
+    return db.query(SimulationModel).all()
     
-  def create_simulation(self, newSimulation: Simulation) -> SimulationResult:
-    print(f"\n\nSimulation Details:\n"
-      f"  Name: {newSimulation.simulationName}\n"
-      f"  Iterations: {newSimulation.iterationsNumber}\n"
-      f"  Grid Dimension: {newSimulation.gridDimension}\n"
-      f"  Ingredients:")
-    for ingredient in newSimulation.ingredients:
-      print(f"  - {ingredient.name} ({ingredient.color})")
-    print("\n")
+  def create_simulation(self, newSimulation: SimulationCreate, db: Session) -> None:
+    db_simulation = SimulationModel(**newSimulation.model_dump())
+    db.add(db_simulation)
+    db.commit()
+    db.refresh(db_simulation)
     
-    return SimulationResult(results=None)
+  def update_simulation(self, simulation_id: str, updatedSimulation: SimulationCreate, db: Session) -> None:
+    db_simulation = db.query(SimulationModel).filter(SimulationModel.id == simulation_id).first()
+    if db_simulation is None:
+      raise HTTPException(status_code=400, detail="Simulation not found")
+    for key, value in updatedSimulation.model_dump(exclude_unset=True).items():
+        setattr(db_simulation, key, value)
+    db.commit()
+    db.refresh(db_simulation)
+    
+  def delete_simulation(self, simulation_id: str, db: Session) -> None:
+    db_simulation = db.query(SimulationModel).filter(SimulationModel.id == simulation_id).first()
+    if db_simulation is None:
+      raise HTTPException(status_code=400, detail="Simulation not found")
+    db.delete(db_simulation)
+    db.commit()

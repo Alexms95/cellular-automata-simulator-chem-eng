@@ -3,12 +3,12 @@ GET http://localhost:8000/simulations
 ###
 
 POST http://localhost:8000/simulations
-Content-Type: application/json
+Content-Type: application/json; charset=utf-8
 
 {
-  "simulationName": "Simulação Exemplo",
+  "name": "Simulação aaa",
   "iterationsNumber": 100,
-  "gridDimension": 50,
+  "gridSize": 50,
   "ingredients": [
     {
       "name": "Água",

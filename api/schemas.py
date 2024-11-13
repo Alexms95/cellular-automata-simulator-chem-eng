@@ -1,12 +1,5 @@
-from typing import Any
+from uuid import UUID
 from pydantic import BaseModel
-
-class SimulationResult(BaseModel):
-  results: Any
-    
-class SimulationMock(BaseModel):
-  id: int
-  name: str
 
 class Ingredient(BaseModel):
   name: str
@@ -23,9 +16,17 @@ class Parameters(BaseModel):
   Pb: list[PairParameter]
   J: list[PairParameter]
     
-class Simulation(BaseModel):
-  simulationName: str
+class SimulationBase(BaseModel):
+  name: str
   iterationsNumber: int
-  gridDimension: int
+  gridSize: int
   ingredients: list[Ingredient]
   parameters: Parameters
+  
+class SimulationCreate(SimulationBase):
+  pass
+
+class SimulationResponse(SimulationBase):
+  id: UUID
+  class Config:
+    from_attributes = True

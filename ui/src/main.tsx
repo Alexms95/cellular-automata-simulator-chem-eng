@@ -1,6 +1,7 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { Toaster } from "sonner";
 import "./index.css";
 
 import {
@@ -41,6 +42,7 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
+      <Toaster expand={true} position="top-right" richColors />
       <TooltipProvider delayDuration={300}>
         <RouterProvider router={router} />
       </TooltipProvider>

@@ -1,3 +1,4 @@
+import { EditSimulation } from "@/components/editSimulation";
 import { NewSimulation } from "@/components/newSimulation";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,22 +14,65 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ApiResult } from "@/models/apiResult";
+import httpClient from "@/lib/httpClient";
+import { SimulationForm } from "@/lib/utils";
 import { Simulation } from "@/models/simulation";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CopyIcon, Trash2Icon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/simulations/")({
   component: () => <SimulationsList />,
 });
 
 function SimulationsList() {
-  const { data, isLoading } = useQuery<ApiResult<Simulation[]>>({
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useQuery<Simulation[]>({
     queryKey: ["simulations"],
   });
 
-  const simulations = data?.results;
+  const deleteSimulation = useMutation({
+    mutationFn: (id: string) => httpClient.delete(`/simulations/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["simulations"] });
+    },
+  });
+
+  const copySimulation = useMutation({
+    mutationFn: (values: SimulationForm) =>
+      httpClient.post(`/simulations`, values),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["simulations"] });
+    },
+  });
+
+  const onDelete = async (id: string) => {
+    const mutation = deleteSimulation.mutateAsync(id);
+    const simulation = data?.find((s) => s.id === id);
+    toast.promise(mutation, {
+      loading: "Deleting simulation...",
+      success: `Simulation ${simulation?.name} deleted!`,
+      error: "Error deleting simulation",
+    });
+  };
+
+  const onCopy = async (id: string) => {
+    const simulation = data?.find((s) => s.id === id);
+    if (!simulation) {
+      toast.error("Error copying simulation");
+      return;
+    }
+    const copy = { ...simulation, name: `${simulation.name}_(copy)` };
+    const name = simulation.name;
+    const mutation = copySimulation.mutateAsync(copy);
+    toast.promise(mutation, {
+      loading: `Creating a copy of "${name}"...`,
+      success: `Created a copy of "${name}"!`,
+      error: `Error copying ${name}`,
+    });
+  };
 
   return (
     <div className="flex flex-col">
@@ -45,36 +89,68 @@ function SimulationsList() {
         {isLoading ? (
           <SimulationsSkeleton />
         ) : (
-          <ul className="grid grid-cols-4 xl:grid-cols-5">
-            {simulations?.map((simulation) => (
-              <Card key={simulation.id} className="w-[250px] mx-auto my-2">
+          <ul className="grid grid-cols-3 xl:grid-cols-4 gap-4 my-2">
+            {data?.map((simulation) => (
+              <Card key={simulation.id}>
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon">
-                          <CopyIcon className="m-2" />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="w-8 h-8"
+                        >
+                          <EditSimulation id={simulation.id} />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Create a copy</TooltipContent>
+                      <TooltipContent>Edit</TooltipContent>
                     </Tooltip>
-                    <CardTitle>{simulation.name}</CardTitle>
+                    <CardTitle className="text-sm">{simulation.name}</CardTitle>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="icon" variant="outline">
+                        <Button
+                          onClick={() => onDelete(simulation.id)}
+                          size="icon"
+                          variant="outline"
+                          className="w-8 h-8"
+                        >
                           <Trash2Icon className="m-2 text-red-600" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Delete</TooltipContent>
                     </Tooltip>
                   </div>
-                  <CardDescription>
-                    Deploy your new project in one-click.
+                  <CardDescription className="text-xs">
+                    <span>
+                      <span className="block">
+                        {simulation.iterationsNumber} iterations
+                      </span>
+                      <span className="block">
+                        Grid Size:{" "}
+                        {`${simulation.gridSize} x ${simulation.gridSize}`}
+                      </span>
+                      <span className="block">
+                        Ingredients:{" "}
+                        {simulation.ingredients
+                          .flatMap((i) => i.name)
+                          .join(", ")}
+                      </span>
+                    </span>
                   </CardDescription>
                 </CardHeader>
-                <CardFooter>
-                  <Link to={`/simulations/${simulation.id}`} className="w-full">
-                    <Button className="w-full">Open</Button>
+                <CardFooter className="gap-2">
+                  <div className="w-1/2">
+                    <Button
+                      onClick={() => onCopy(simulation.id)}
+                      className="w-full h-8 text-xs"
+                      variant="outline"
+                    >
+                      Create a copy
+                    </Button>
+                  </div>
+                  <Link to={`/simulations/${simulation.id}`} className="w-1/2">
+                    <Button className="w-full h-8 text-xs">Open</Button>
                   </Link>
                 </CardFooter>
               </Card>

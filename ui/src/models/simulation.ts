@@ -1,4 +1,5 @@
-export interface Simulation {
-  id: number;
-  name: string;
-}
+import { SimulationForm } from "@/lib/utils";
+
+export type Simulation = {
+  id: string;
+} & SimulationForm;

@@ -9,10 +9,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import httpClient from "@/lib/httpClient";
+import { formSchema, generatePairMatrix, SimulationForm } from "@/lib/utils";
 import { colors } from "@/models/colors";
+import { Simulation } from "@/models/simulation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { PlusCircle, TrashIcon } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { PenIcon, PlusCircle, TrashIcon } from "lucide-react";
+import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
@@ -36,9 +39,8 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { formSchema, generatePairMatrix, SimulationForm } from "@/lib/utils";
 
-export const NewSimulation = () => {
+export const EditSimulation = ({ id }: { id: string }) => {
   const queryClient = useQueryClient();
 
   const defaultIngredients = [{ name: "A", initialNumber: 1, color: "blue" }];
@@ -58,6 +60,19 @@ export const NewSimulation = () => {
     control: form.control,
     name: "ingredients",
   });
+
+  const { data } = useQuery<Simulation[]>({
+    queryKey: ["simulations"],
+  });
+
+  useEffect(() => {
+    if (data) {
+      const simulation = data.find((s) => s.id === id);
+      if (simulation) {
+        form.reset(simulation);
+      }
+    }
+  }, [data, id]);
 
   const handleRemove = (index: number) => {
     remove(index);
@@ -84,10 +99,9 @@ export const NewSimulation = () => {
 
   const saveSimulation = useMutation({
     mutationFn: (values: SimulationForm) =>
-      httpClient.post("/simulations", values),
+      httpClient.put(`/simulations/${id}`, values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simulations"] });
-      form.reset();
     },
   });
 
@@ -95,8 +109,8 @@ export const NewSimulation = () => {
     const mutation = saveSimulation.mutateAsync(values);
     toast.promise(mutation, {
       loading: "Saving simulation...",
-      success: `Simulation ${values.name} created!`,
-      error: "Error saving simulation",
+      success: `Simulation ${values.name} saved!`,
+      error: "Error editing simulation",
     });
   };
 
@@ -130,39 +144,37 @@ export const NewSimulation = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="self-end text-xs">
-          <PlusCircle className="mr-2 w-5 h-5"></PlusCircle>New Simulation
-        </Button>
+        <PenIcon className="m-2" />
       </DialogTrigger>
       <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%]">
         <DialogHeader>
-          <DialogTitle>New Simulation</DialogTitle>
+          <DialogTitle>Edit Simulation</DialogTitle>
           <DialogDescription>
-            Create a new simulation. Save it when you are done.
+            You are editing this simulation. Save it when you are done.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <div className="flex justify-between">
-            <div className="grid w-full max-w-md items-center gap-2">
-              <Label htmlFor="file">Import a configuration file</Label>
-              <Input
-                onChange={(e) => fillInForm(e.target.files)}
-                id="file"
-                type="file"
-                accept=".json"
-              />
-              <span className="text-xs text-zinc-500">
-                On importing it, all fields will be overwritten.
-              </span>
-            </div>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => form.reset({ ingredients: defaultIngredients })}
-            >
-              Reset to default
-            </Button>
+        <div className="flex justify-between">
+          <div className="grid w-full max-w-md items-center gap-2">
+            <Label htmlFor="file">Import a configuration file</Label>
+            <Input
+              onChange={(e) => fillInForm(e.target.files)}
+              id="file"
+              type="file"
+              accept=".json"
+            />
+            <span className="text-xs text-zinc-500">
+              On importing it, all fields will be overwritten.
+            </span>
           </div>
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => form.reset({ ingredients: defaultIngredients })}
+          >
+            Reset to default
+          </Button>
+        </div>
+        <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4 flex flex-col"
@@ -522,47 +534,43 @@ export const NewSimulation = () => {
               })}
             </div>
           </form>
-          <DialogFooter className="sm:justify-between">
-            <DialogClose asChild>
-              <Button className="w-1/6" variant="outline">
-                Cancel
-              </Button>
-            </DialogClose>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <Button
-                    disabled={!form.formState.isValid}
-                    variant="secondary"
-                    onClick={downloadJsonFile}
-                  >
-                    Export Config File
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                {" "}
-                {form.formState.isValid ? (
-                  <span>Download the simulation configuration file</span>
-                ) : (
-                  <span>
-                    Check if all fields are accordingly filled in before
-                    downloading the simulation file
-                  </span>
-                )}{" "}
-              </TooltipContent>
-            </Tooltip>
-            <DialogClose disabled={!form.formState.isValid} asChild>
-              <Button
-                type="submit"
-                form="new-simulation-form"
-                className="w-1/6"
-              >
-                Save
-              </Button>
-            </DialogClose>
-          </DialogFooter>
         </Form>
+        <DialogFooter className="sm:justify-between">
+          <DialogClose asChild>
+            <Button className="w-1/6" variant="outline">
+              Cancel
+            </Button>
+          </DialogClose>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Button
+                  disabled={!form.formState.isValid}
+                  variant="secondary"
+                  onClick={downloadJsonFile}
+                >
+                  Export Config File
+                </Button>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              {" "}
+              {form.formState.isValid ? (
+                <span>Download the simulation configuration file</span>
+              ) : (
+                <span>
+                  Check if all fields are accordingly filled in before
+                  downloading the simulation file
+                </span>
+              )}{" "}
+            </TooltipContent>
+          </Tooltip>
+          <DialogClose disabled={!form.formState.isValid} asChild>
+            <Button type="submit" form="new-simulation-form" className="w-1/6">
+              Save
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

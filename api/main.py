@@ -1,13 +1,23 @@
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import create_engine
+from sqlalchemy_utils import database_exists, create_database
 from queries import SimulationData
 
 from config import get_settings
-from schemas import Simulation, SimulationResult
+from schemas import SimulationCreate, SimulationResponse
 
 settings = get_settings()
+
+# Função para criar o banco se não existir
+def create_database_if_not_exists(url: str) -> None:
+    if not database_exists(url):
+        create_database(url)
+        print(f"Database {settings.POSTGRES_DB} created successfully!")
+
+# Criar o banco se não existir
+create_database_if_not_exists(settings.DATABASE_URL)
 
 engine = create_engine(settings.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -32,13 +42,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/simulations", response_model=SimulationResult)
-def get_simulations(dataAccess: SimulationData = Depends()):
-    return dataAccess.get_simulations()
+@app.get("/simulations", response_model=list[SimulationResponse])
+def get_simulations(dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)):
+    return dataAccess.get_simulations(db)
 
-@app.post("/simulations", response_model=SimulationResult)
-def create_simulation(newSimulation: Simulation, dataAccess: SimulationData = Depends()):
-    return dataAccess.create_simulation(newSimulation)
+@app.post("/simulations", response_model=None)
+def create_simulation(newSimulation: SimulationCreate, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)):
+    return dataAccess.create_simulation(newSimulation, db)
+
+@app.put("/simulations/{id}", response_model=None)
+def update_simulation(id: str, updatedSimulation: SimulationCreate, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)):
+    return dataAccess.update_simulation(id, updatedSimulation, db)
+
+@app.delete("/simulations/{id}", response_model=None)
+def delete_simulation(id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)):
+    return dataAccess.delete_simulation(id, db)
 
 @app.get("/")
 def read_root():
