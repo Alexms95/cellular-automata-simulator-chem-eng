@@ -1,5 +1,4 @@
 fastapi==0.111.1
 sqlalchemy==2.0.23
-sqlalchemy-utils==0.41.2
 psycopg2-binary==2.9.9
 alembic==1.14.0

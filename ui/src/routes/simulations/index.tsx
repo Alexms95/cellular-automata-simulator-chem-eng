@@ -1,5 +1,17 @@
 import { EditSimulation } from "@/components/editSimulation";
 import { NewSimulation } from "@/components/newSimulation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogActionDestructive,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -107,19 +119,42 @@ function SimulationsList() {
                       <TooltipContent>Edit</TooltipContent>
                     </Tooltip>
                     <CardTitle className="text-sm">{simulation.name}</CardTitle>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          onClick={() => onDelete(simulation.id)}
-                          size="icon"
-                          variant="outline"
-                          className="w-8 h-8"
-                        >
-                          <Trash2Icon className="m-2 text-red-600" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Delete</TooltipContent>
-                    </Tooltip>
+                    <AlertDialog>
+                      <Tooltip>
+                        <AlertDialogTrigger asChild>
+                          <div>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="w-8 h-8"
+                              >
+                                <Trash2Icon className="m-2 text-red-600" />
+                              </Button>
+                            </TooltipTrigger>
+                          </div>
+                        </AlertDialogTrigger>
+                        <TooltipContent>Delete</TooltipContent>
+                      </Tooltip>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Are you sure you want to delete {simulation.name}?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogActionDestructive
+                            onClick={() => onDelete(simulation.id)}
+                          >
+                            Yes, Delete
+                          </AlertDialogActionDestructive>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                   <CardDescription className="text-xs">
                     <span>
@@ -141,13 +176,35 @@ function SimulationsList() {
                 </CardHeader>
                 <CardFooter className="gap-2">
                   <div className="w-1/2">
-                    <Button
-                      onClick={() => onCopy(simulation.id)}
-                      className="w-full h-8 text-xs"
-                      variant="outline"
-                    >
-                      Create a copy
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          className="w-full h-8 text-xs"
+                          variant="outline"
+                        >
+                          Create a copy
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Do you wish to create a copy of {simulation.name}?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action will create a new simulation with the
+                            same configurations as {simulation.name}.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => onCopy(simulation.id)}
+                          >
+                            Create
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                   <Link to={`/simulations/${simulation.id}`} className="w-1/2">
                     <Button className="w-full h-8 text-xs">Open</Button>

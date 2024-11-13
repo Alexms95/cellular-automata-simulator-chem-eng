@@ -1,4 +1,3 @@
-import datetime
 import uuid
 from sqlalchemy import JSON, Column, DateTime, Integer, String
 from sqlalchemy.sql import func
