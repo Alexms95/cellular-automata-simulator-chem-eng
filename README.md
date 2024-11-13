@@ -9,8 +9,31 @@
     cd tcc-eng-quimica
     ```
 
-2. **Install Dependencies:**
-    Ensure you have [Python](https://www.python.org/downloads/) installed (version 3.12.6). Then, install the required packages:
+2. **Install API Dependencies:**
+
+    Ensure you have [Python](https://www.python.org/downloads/) installed (version 3.12.6).
+
+    2.1. **Create a python virtual environment and activate it**
+
+    ```sh
+    cd api
+
+    python -m venv venv
+    ```
+
+    On Windows, execute:
+
+    ```sh
+    venv\Scripts\activate
+    ```
+
+    On Linux/MacOS, execute:
+
+    ```sh
+    source venv/bin/activate
+    ```
+
+    2.2. **Install the dependencies**
 
     ```sh
     pip install -r requirements.txt
@@ -20,7 +43,7 @@
     Execute the main script:
 
     ```sh
-    fastapi dev
+    uvicorn main:app --host: 0.0.0.0 --port 8000
     ```
 
 4. **Configuration:**
