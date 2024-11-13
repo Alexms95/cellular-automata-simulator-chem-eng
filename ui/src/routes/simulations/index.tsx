@@ -66,7 +66,10 @@ function SimulationsList() {
     toast.promise(mutation, {
       loading: "Deleting simulation...",
       success: `Simulation ${simulation?.name} deleted!`,
-      error: "Error deleting simulation",
+      error: (error) => {
+        const message = error.response?.data?.detail;
+        return message ?? `Error deleting ${simulation?.name}`;
+      },
     });
   };
 
@@ -82,7 +85,10 @@ function SimulationsList() {
     toast.promise(mutation, {
       loading: `Creating a copy of "${name}"...`,
       success: `Created a copy of "${name}"!`,
-      error: `Error copying ${name}`,
+      error: (error) => {
+        const message = error.response?.data?.detail;
+        return message ?? `Error creating a copy of ${simulation.name}`;
+      },
     });
   };
 

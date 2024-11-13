@@ -96,7 +96,10 @@ export const NewSimulation = () => {
     toast.promise(mutation, {
       loading: "Saving simulation...",
       success: `Simulation ${values.name} created!`,
-      error: "Error saving simulation",
+      error: (error) => {
+        const message = error.response?.data?.detail;
+        return message ?? `Error saving simulation`;
+      },
     });
   };
 
