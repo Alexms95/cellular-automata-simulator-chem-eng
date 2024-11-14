@@ -110,7 +110,10 @@ export const EditSimulation = ({ id }: { id: string }) => {
     toast.promise(mutation, {
       loading: "Saving simulation...",
       success: `Simulation ${values.name} saved!`,
-      error: "Error editing simulation",
+      error: (error) => {
+        const message = error.response?.data?.detail;
+        return message ?? `Error editing simulation ${values.name}`;
+      },
     });
   };
 

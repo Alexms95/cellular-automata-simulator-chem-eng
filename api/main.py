@@ -10,15 +10,6 @@ from schemas import SimulationCreate, SimulationResponse
 
 settings = get_settings()
 
-# Função para criar o banco se não existir
-def create_database_if_not_exists(url: str) -> None:
-    if not database_exists(url):
-        create_database(url)
-        print(f"Database {settings.POSTGRES_DB} created successfully!")
-
-# Criar o banco se não existir
-create_database_if_not_exists(settings.DATABASE_URL)
-
 engine = create_engine(settings.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
