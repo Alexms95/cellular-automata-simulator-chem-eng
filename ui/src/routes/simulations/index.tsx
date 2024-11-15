@@ -168,11 +168,11 @@ function SimulationsList() {
                         {simulation.iterationsNumber} iterations
                       </span>
                       <span className="block">
-                        Grid Size:{" "}
-                        {`${simulation.gridSize} x ${simulation.gridSize}`}
+                        Grid Dimensions:{" "}
+                        {`${simulation.gridLenght} x ${simulation.gridHeight} (${simulation.gridLenght * simulation.gridHeight} cells)`}
                       </span>
                       <span className="block">
-                        Ingredients:{" "}
+                        Components:{" "}
                         {simulation.ingredients
                           .flatMap((i) => i.name)
                           .join(", ")}
@@ -204,7 +204,7 @@ function SimulationsList() {
                           </AlertDialogTitle>
                           <AlertDialogDescription>
                             This action will create a new simulation with the
-                            same configurations as {simulation.name}.
+                            same configuration as {simulation.name}.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

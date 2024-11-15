@@ -20,7 +20,8 @@ class Parameters(BaseModel):
 class SimulationBase(BaseModel):
   name: str
   iterationsNumber: int
-  gridSize: int
+  gridLenght: int
+  gridHeight: int
   ingredients: list[Ingredient]
   parameters: Parameters
   

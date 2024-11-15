@@ -16,7 +16,11 @@ export const formSchema = z.object({
     .number({ message: "It must be a number." })
     .int("It must be an integer number.")
     .positive("It must be a positive number."),
-  gridSize: z.coerce
+  gridHeight: z.coerce
+    .number({ message: "It must be a number." })
+    .int("It must be an integer number.")
+    .positive("It must be a positive number."),
+  gridLenght: z.coerce
     .number({ message: "It must be a number." })
     .int("It must be an integer number.")
     .positive("It must be a positive number."),
@@ -26,10 +30,11 @@ export const formSchema = z.object({
         message: "It must be at least 1 character.",
       }),
       color: z.string(),
-      initialNumber: z.coerce
+      molarFraction: z.coerce
         .number({ message: "It must be a number." })
-        .int("It must be an integer number.")
-        .positive("It must be a positive number."),
+        .positive("It must be a positive number.")
+        .gte(0, "It must be greater or equal to 0.")
+        .lte(1, "It must be less or equal to 1."),
     })
   ),
   parameters: z.object({

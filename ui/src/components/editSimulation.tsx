@@ -7,14 +7,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Input, InputWithIcon } from "@/components/ui/input";
 import httpClient from "@/lib/httpClient";
 import { formSchema, generatePairMatrix, SimulationForm } from "@/lib/utils";
 import { colors } from "@/models/colors";
 import { Simulation } from "@/models/simulation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PenIcon, PlusCircle, TrashIcon } from "lucide-react";
+import { PenIcon, Percent, PlusCircle, TrashIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -51,7 +51,8 @@ export const EditSimulation = ({ id }: { id: string }) => {
     defaultValues: {
       name: "",
       iterationsNumber: 1,
-      gridSize: 1,
+      gridHeight: 1,
+      gridLenght: 1,
       ingredients: defaultIngredients,
     },
   });
@@ -184,7 +185,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
             id="new-simulation-form"
           >
             <div className="flex space-x-4">
-              <div className="w-1/3">
+              <div className="w-1/2">
                 <FormField
                   control={form.control}
                   name="name"
@@ -227,30 +228,48 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   )}
                 />
               </div>
-              <div className="w-1/3">
-                <FormField
-                  control={form.control}
-                  name="gridSize"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col items-start">
-                      <FormLabel>Grid Dimension</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Choose the grid dimension"
-                          type="number"
-                          {...field}
-                        />
-                      </FormControl>
-                      {!form.formState.errors.gridSize && (
-                        <FormDescription>
-                          A grid of {form.getValues("gridSize")} x{" "}
-                          {form.getValues("gridSize")} will be created.
-                        </FormDescription>
+              <div>
+                <div className="flex gap-4">
+                  <div className="w-1/2">
+                    <FormField
+                      control={form.control}
+                      name="gridLenght"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col items-start">
+                          <FormLabel>Grid Lenght</FormLabel>
+                          <FormControl>
+                            <Input min={1} type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                      <FormMessage />
-                    </FormItem>
+                    />
+                  </div>
+                  <div className="w-1/2">
+                    <FormField
+                      control={form.control}
+                      name="gridHeight"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col items-start">
+                          <FormLabel>Grid Height</FormLabel>
+                          <FormControl>
+                            <Input min={1} type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                {!form.formState.errors.gridHeight &&
+                  !form.formState.errors.gridLenght && (
+                    <FormDescription className="mt-2">
+                      A grid of {form.watch("gridLenght")} x{" "}
+                      {form.watch("gridHeight")} will be created (
+                      {form.watch("gridLenght") * form.watch("gridHeight")}{" "}
+                      cells).
+                    </FormDescription>
                   )}
-                />
               </div>
             </div>
             <Separator />
@@ -258,7 +277,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
               {fields.map((field, index) => (
                 <div key={field.id} className="flex space-x-2">
                   <p className="w-1/8 text-sm font-semibold mt-10">
-                    Ingredient {String.fromCharCode(65 + index)}
+                    Component {String.fromCharCode(65 + index)}
                   </p>
                   <div className="w-1/2">
                     <FormField
@@ -269,7 +288,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
                           <FormLabel>Name</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Choose the ingredient name"
+                              placeholder="Choose the component name"
                               {...field}
                             />
                           </FormControl>
@@ -281,15 +300,18 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   <div className="w-1/4">
                     <FormField
                       control={form.control}
-                      name={`ingredients.${index}.initialNumber`}
+                      name={`ingredients.${index}.molarFraction`}
                       defaultValue={1}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Initial number</FormLabel>
+                          <FormLabel>Molar Fraction</FormLabel>
                           <FormControl>
-                            <Input
+                            <InputWithIcon
+                              min={0}
+                              max={1}
+                              step={0.1}
                               type="number"
-                              placeholder="Initial count of the ingredient"
+                              endIcon={Percent}
                               {...field}
                             />
                           </FormControl>
@@ -352,7 +374,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
                       alignOffset={50}
                       side="left"
                     >
-                      Remove ingredient {String.fromCharCode(65 + index)}
+                      Remove component {String.fromCharCode(65 + index)}
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -374,11 +396,11 @@ export const EditSimulation = ({ id }: { id: string }) => {
                         .flatMap((i) => i.color)
                         .includes(c.name)
                   )[0].name,
-                  initialNumber: 1,
+                  molarFraction: 0,
                 })
               }
             >
-              <PlusCircle className="p-1 pl-0"></PlusCircle>Add Ingredient
+              <PlusCircle className="p-1 pl-0"></PlusCircle>Add Component
             </Button>
             <Separator />
             <h4 className="scroll-m-20 font-semibold tracking-tight">
