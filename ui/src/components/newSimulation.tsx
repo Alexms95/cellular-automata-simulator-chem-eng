@@ -289,14 +289,12 @@ export const NewSimulation = () => {
                     <FormField
                       control={form.control}
                       name={`ingredients.${index}.molarFraction`}
-                      defaultValue={1}
+                      defaultValue={0}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Molar Fraction</FormLabel>
                           <FormControl>
                             <InputWithIcon
-                              min={0}
-                              max={1}
                               step={0.1}
                               type="number"
                               endIcon={Percent}

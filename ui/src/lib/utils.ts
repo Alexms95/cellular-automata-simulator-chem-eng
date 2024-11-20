@@ -32,16 +32,14 @@ export const formSchema = z.object({
       color: z.string(),
       molarFraction: z.coerce
         .number({ message: "It must be a number." })
-        .positive("It must be a positive number.")
         .gte(0, "It must be greater or equal to 0.")
-        .lte(1, "It must be less or equal to 1."),
+        .lte(100, "It must be less or equal to 100."),
     })
   ),
   parameters: z.object({
     Pm: z.array(
       z.coerce
         .number({ message: "It must be a number." })
-        .positive("It must be a positive number.")
         .gte(0, "It must be greater or equal to 0.")
         .lte(1, "It must be less or equal to 1.")
     ),
@@ -51,7 +49,6 @@ export const formSchema = z.object({
         toIngr: z.string({ message: "It must be a string." }),
         value: z.coerce
           .number({ message: "It must be a number." })
-          .positive("It must be a positive number.")
           .gte(0, "It must be greater or equal to 0.")
           .lte(1, "It must be less or equal to 1."),
       })
@@ -62,7 +59,6 @@ export const formSchema = z.object({
         toIngr: z.string({ message: "It must be a string." }),
         value: z.coerce
           .number({ message: "It must be a number." })
-          .positive("It must be a positive number.")
           .gte(0, "It must be greater or equal to 0.")
           .lte(1, "It must be less or equal to 1."),
       })
@@ -71,25 +67,13 @@ export const formSchema = z.object({
 });
 
 export function generatePairMatrix(arraySize: number) {
-  const lastIndex = arraySize - 1;
+  const result: number[][] = [];
 
-  // Arrays separados para pares com e sem o último índice
-  const pairsWithLast: number[][] = [];
-  const pairsWithoutLast: number[][] = [];
-
-  // Gera todas as combinações possíveis de pares
   for (let i = 0; i < arraySize; i++) {
-    for (let j = 0; j < arraySize; j++) {
-      // Se algum elemento do par for igual a (arraySize - 1),
-      // adiciona ao array de pares com último índice
-      if (i === lastIndex || j === lastIndex) {
-        pairsWithLast.push([i, j]);
-      } else {
-        pairsWithoutLast.push([i, j]);
-      }
+    for (let j = 0; j <= i; j++) {
+      result.push([j, i]);
     }
   }
 
-  // Concatena os arrays, colocando os pares com último índice no final
-  return [...pairsWithoutLast, ...pairsWithLast];
+  return result;
 }
