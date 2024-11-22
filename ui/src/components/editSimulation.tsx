@@ -9,14 +9,14 @@ import {
 } from "@/components/ui/form";
 import { Input, InputWithIcon } from "@/components/ui/input";
 import httpClient from "@/lib/httpClient";
-import { formSchema, generatePairMatrix, SimulationForm } from "@/lib/utils";
+import { calculateFractions, formSchema, generatePairMatrix, SimulationForm } from "@/lib/utils";
 import { colors } from "@/models/colors";
 import { Simulation } from "@/models/simulation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PenIcon, Percent, PlusCircle, TrashIcon } from "lucide-react";
-import { useEffect } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useCallback, useEffect, useState } from "react";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import {
@@ -43,7 +43,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 export const EditSimulation = ({ id }: { id: string }) => {
   const queryClient = useQueryClient();
 
-  const defaultIngredients = [{ name: "A", initialNumber: 1, color: "blue" }];
+  const defaultIngredients = [{ name: "A", molarFraction: 1, color: "blue" }];
 
   const form = useForm<SimulationForm>({
     resolver: zodResolver(formSchema),
@@ -75,6 +75,32 @@ export const EditSimulation = ({ id }: { id: string }) => {
     }
   }, [data, id]);
 
+  const [componentsCount, setComponentsCount] = useState<number[]>([]);
+
+  const ingredients = useWatch({ control: form.control, name: "ingredients" });
+  const totalCells =
+    useWatch({ control: form.control, name: "gridLenght" }) *
+    useWatch({ control: form.control, name: "gridHeight" });
+
+  const calculateComponentsCount = useCallback(
+    (total: number, percentages: number[]) =>
+      calculateFractions(total, percentages),
+    []
+  );
+
+  useEffect(() => {
+    if (ingredients && totalCells > 0) {
+      const percentages = ingredients.map(
+        (i: { molarFraction: number }) => i.molarFraction
+      );
+      const calculatedComponents = calculateComponentsCount(
+        totalCells,
+        percentages
+      );
+      setComponentsCount(calculatedComponents);
+    }
+  }, [ingredients, totalCells, calculateComponentsCount]);
+
   const handleRemove = (index: number) => {
     remove(index);
     // Remove the parameters that have the ingredient letter
@@ -97,6 +123,10 @@ export const EditSimulation = ({ id }: { id: string }) => {
   };
 
   const pairMatrix = generatePairMatrix(fields.length);
+
+  const molarFractionsSum = fields
+    .map((_, index) => form.watch(`ingredients.${index}.molarFraction`))
+    .reduce((acc, curr) => acc + Number(curr), 0);
 
   const saveSimulation = useMutation({
     mutationFn: (values: SimulationForm) =>
@@ -297,27 +327,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                       )}
                     />
                   </div>
-                  <div className="w-1/4">
-                    <FormField
-                      control={form.control}
-                      name={`ingredients.${index}.molarFraction`}
-                      defaultValue={0}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Molar Fraction</FormLabel>
-                          <FormControl>
-                            <InputWithIcon
-                              step={0.1}
-                              type="number"
-                              endIcon={Percent}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
                   <div className="w-1/5">
                     <FormField
                       control={form.control}
@@ -355,6 +364,30 @@ export const EditSimulation = ({ id }: { id: string }) => {
                       )}
                     />
                   </div>
+                  <div className="w-1/5">
+                    <FormField
+                      control={form.control}
+                      name={`ingredients.${index}.molarFraction`}
+                      defaultValue={0}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Molar Fraction</FormLabel>
+                          <FormControl>
+                            <InputWithIcon
+                              step={0.1}
+                              type="number"
+                              endIcon={Percent}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Approx. {componentsCount[index]} cells
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -378,9 +411,12 @@ export const EditSimulation = ({ id }: { id: string }) => {
                 </div>
               ))}
             </div>
-            <FormMessage>
-              {form.formState.errors?.ingredients?.root?.message}
-            </FormMessage>
+            {molarFractionsSum !== 100 && (
+              <FormMessage>
+                The sum of molar fractions must be 100%. Current:{" "}
+                {`${molarFractionsSum}%`}.
+              </FormMessage>
+            )}
             <Button
               className="ml-auto py-2 px-3 text-xs"
               type="button"
