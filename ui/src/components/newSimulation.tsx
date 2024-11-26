@@ -408,7 +408,8 @@ export const NewSimulation = () => {
             </div>
             {molarFractionsSum !== 100 && (
               <FormMessage>
-                The sum of molar fractions must be 100%. Current: {`${molarFractionsSum}%`}.
+                The sum of molar fractions must be 100%. Current:{" "}
+                {molarFractionsSum}%.
               </FormMessage>
             )}
             <Button

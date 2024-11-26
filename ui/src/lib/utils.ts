@@ -92,15 +92,18 @@ export function generatePairMatrix(arraySize: number) {
   return result;
 }
 
-export function calculateFractions(total: number, percentages: number[]): number[] {
-  const fractions = percentages.map((p) => p ? (p / 100) * total : 0);
-
-  fractions.forEach((value, index) => {
-    if (!value) fractions[index] = 0;
-  });
+export function calculateFractions(
+  total: number,
+  percentages: number[]
+): number[] {
+  const accSum = (acc: number, curr: number) => acc + curr;
+  
+  const fractions = percentages.map((p) => (p ? (p / 100) * total : 0));
 
   const roundedFractions = fractions.map(Math.floor);
-  const error = total - roundedFractions.reduce((acc, curr) => acc + curr, 0);
+  const error = Math.abs(
+    fractions.reduce(accSum, 0) - roundedFractions.reduce(accSum, 0)
+  );
 
   if (error === 0) return roundedFractions;
 
@@ -114,11 +117,6 @@ export function calculateFractions(total: number, percentages: number[]): number
   adjustments.sort((a, b) => b.difference - a.difference);
 
   for (let i = 0; i < error; i++) {
-
-    // Ele quebra com valores ímpares específicos. Ex 5, 7
-    // Colocar 50 50 e deletar o 0
-    console.log(adjustments);
-    console.log(error);
     roundedFractions[adjustments[i].index]++;
   }
 
