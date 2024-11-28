@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from calculations import calculateCellsCount
+from calculations import calculate_cell_counts
 from models import SimulationModel
 from schemas import SimulationCreate
 from sqlalchemy.orm import Session
@@ -18,7 +18,7 @@ class SimulationData:
     
     totalCells = newSimulation.gridLenght * newSimulation.gridHeight
     
-    ingredientCellsCount = calculateCellsCount(totalCells, map(lambda ingredient: ingredient.molarFraction, newSimulation.ingredients))
+    ingredientCellsCount = calculate_cell_counts(totalCells, map(lambda ingredient: ingredient.molarFraction, newSimulation.ingredients))
     
     for i, cellsCount in enumerate(ingredientCellsCount):
       db_simulation.ingredients[i]["initialCellsCount"] = cellsCount
@@ -43,7 +43,7 @@ class SimulationData:
     
     totalCells = updatedSimulation.gridLenght * updatedSimulation.gridHeight
     
-    ingredientCellsCount = calculateCellsCount(totalCells, map(lambda ingredient: ingredient.molarFraction, updatedSimulation.ingredients))
+    ingredientCellsCount = calculate_cell_counts(totalCells, map(lambda ingredient: ingredient.molarFraction, updatedSimulation.ingredients))
     
     for i, cellsCount in enumerate(ingredientCellsCount):
       db_simulation.ingredients[i]["initialCellsCount"] = cellsCount
