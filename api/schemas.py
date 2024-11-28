@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 class Ingredient(BaseModel):
   name: str
-  molarFraction: int
+  molarFraction: float
   color: str
 
 class PairParameter(BaseModel):
