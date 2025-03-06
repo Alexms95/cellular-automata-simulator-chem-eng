@@ -7,7 +7,7 @@ services:
     environment:
       - ENVIRONMENT=production
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres  # Pode vir de variável de ambiente do host
+      - POSTGRES_PASSWORD=postgres
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - POSTGRES_DB=simulator_db
