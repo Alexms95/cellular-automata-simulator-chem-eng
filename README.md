@@ -18,19 +18,19 @@
     ```sh
     cd api
 
-    python -m venv venv
+    python -m venv .venv
     ```
 
     On Windows, execute:
 
     ```sh
-    venv\Scripts\activate
+    .venv\Scripts\activate
     ```
 
     On Linux/MacOS, execute:
 
     ```sh
-    source venv/bin/activate
+    source .venv/bin/activate
     ```
 
     2.2. **Install the dependencies**
