@@ -48,6 +48,10 @@ def update_simulation(id: str, updatedSimulation: SimulationCreate, dataAccess: 
 def delete_simulation(id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)):
     return dataAccess.delete_simulation(id, db)
 
+@app.post("/simulations/{id}/run", response_model=None)
+def run_simulation(id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)):
+    return dataAccess.run_simulation(id, db)
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}

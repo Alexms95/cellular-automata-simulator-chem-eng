@@ -1,4 +1,6 @@
 from math import floor
+import numpy as np
+from schemas import SimulationBase
 
 def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
   fractional_counts = [percentage * total / 100 for percentage in percentages]
@@ -24,4 +26,14 @@ def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
   
   return rounded_counts
 
+def calculate_cellular_automata(simulation: SimulationBase) -> None:
+    
+    NL = simulation.gridHeight
+    NC = simulation.gridLenght
 
+    NTOT = NC * NL
+
+    NCOMP = len(simulation.ingredients)
+    NOME_COMP = [ingredient.name for ingredient in simulation.ingredients]
+
+    C = np.array([37, 20, 3, 3, 3, 3])/100
