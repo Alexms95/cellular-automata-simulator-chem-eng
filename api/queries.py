@@ -103,7 +103,10 @@ class SimulationData:
         )
         if db_simulation is None:
             raise HTTPException(status_code=400, detail="Simulation not found")
-        
+
         simulation = SimulationBase(**db_simulation.__dict__)
-        
-        calculate_cellular_automata(simulation)
+
+        resulting_matrix = calculate_cellular_automata(simulation)
+        db_simulation.iterations = resulting_matrix.tolist()
+        db.commit()
+        db.refresh(db_simulation)
