@@ -1,7 +1,12 @@
+from enum import Enum
 from math import floor
 import numpy as np
 from schemas import SimulationBase
 
+NL = 0
+NC = 0
+
+SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
 
 def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
     fractional_counts = [percentage * total / 100 for percentage in percentages]
@@ -31,6 +36,10 @@ def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
 def calculate_cellular_automata(simulation: SimulationBase) -> np.ndarray:
     NL = simulation.gridHeight
     NC = simulation.gridLenght
+
+    surface_type = SurfaceTypes.Box
+
+    print(surface_type)
 
     print(NL, NC)
 
@@ -72,7 +81,9 @@ def calculate_cellular_automata(simulation: SimulationBase) -> np.ndarray:
     #     [0, 1, 1, 3, 2, 3, 1, 3, 3, 2],
     # ]
     # M = np.array(matrix)
+
     M = np.zeros((NL, NC), dtype=int)
+
     # Randomly distribute the components in the matrix
     for i in range(NCOMP):
         for j in range(Ni[i]):
@@ -93,7 +104,6 @@ def calculate_cellular_automata(simulation: SimulationBase) -> np.ndarray:
     # Shuffle the neighborhood
     np.random.shuffle(NEIGH)
 
-    # Define the number of iterations
     n_iter = simulation.iterationsNumber
 
     moved_components = set()
@@ -108,7 +118,7 @@ def calculate_cellular_automata(simulation: SimulationBase) -> np.ndarray:
                     for n in range(len(NEIGH)):
                         r = i + NEIGH[n, 0]
                         c = j + NEIGH[n, 1]
-                        if r >= 0 and r < NL and c >= 0 and c < NC:
+                        if check_constraints(surface_type, r, c):
                             if M_new[r, c] == 0:
                                 pm_component = parameters.Pm[i_comp - 1]
                                 if maybe_execute(pm_component):
@@ -117,7 +127,8 @@ def calculate_cellular_automata(simulation: SimulationBase) -> np.ndarray:
                                     moved_components.add((r, c))
                                     np.random.shuffle(NEIGH)
                                     break
-        M = M_new.copy()
+    M = M_new.copy()
+    M_new = None
 
     print("Final matrix:")
     show_matrix(M)
@@ -134,3 +145,10 @@ def show_matrix(M: np.ndarray):
 
 def maybe_execute(probability: float) -> bool:
     return np.random.random() < probability
+
+def check_constraints(surface_type: SurfaceTypes, r: int, c: int) -> bool:
+    if surface_type == SurfaceTypes.Box:
+        return r >= 0 and r < NL and c >= 0 and c < NC
+    if surface_type == SurfaceTypes.Cylinder:
+        return r >= 0 and r < NL
+    return True
