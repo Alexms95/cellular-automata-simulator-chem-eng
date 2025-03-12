@@ -1,5 +1,5 @@
+from calculations import Calculations
 from fastapi import HTTPException
-from calculations import calculate_cell_counts, calculate_cellular_automata
 from models import SimulationModel
 from schemas import SimulationBase, SimulationCreate
 from sqlalchemy.orm import Session
@@ -26,7 +26,7 @@ class SimulationData:
 
         totalCells = newSimulation.gridLenght * newSimulation.gridHeight
 
-        ingredientCellsCount = calculate_cell_counts(
+        ingredientCellsCount = Calculations.calculate_cell_counts(
             totalCells,
             map(lambda ingredient: ingredient.molarFraction, newSimulation.ingredients),
         )
@@ -70,7 +70,7 @@ class SimulationData:
 
         totalCells = updatedSimulation.gridLenght * updatedSimulation.gridHeight
 
-        ingredientCellsCount = calculate_cell_counts(
+        ingredientCellsCount = Calculations.calculate_cell_counts(
             totalCells,
             map(
                 lambda ingredient: ingredient.molarFraction,
@@ -106,7 +106,7 @@ class SimulationData:
 
         simulation = SimulationBase(**db_simulation.__dict__)
 
-        resulting_matrix = calculate_cellular_automata(simulation)
+        resulting_matrix = Calculations.calculate_cellular_automata(simulation)
         db_simulation.iterations = resulting_matrix.tolist()
         db.commit()
         db.refresh(db_simulation)
