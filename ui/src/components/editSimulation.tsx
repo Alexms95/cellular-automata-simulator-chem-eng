@@ -9,7 +9,12 @@ import {
 } from "@/components/ui/form";
 import { Input, InputWithIcon } from "@/components/ui/input";
 import httpClient from "@/lib/httpClient";
-import { calculateFractions, formSchema, generatePairMatrix, SimulationForm } from "@/lib/utils";
+import {
+  calculateFractions,
+  formSchema,
+  generatePairMatrix,
+  SimulationForm,
+} from "@/lib/utils";
 import { colors } from "@/models/colors";
 import { Simulation } from "@/models/simulation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -85,17 +90,17 @@ export const EditSimulation = ({ id }: { id: string }) => {
   const calculateComponentsCount = useCallback(
     (total: number, percentages: number[]) =>
       calculateFractions(total, percentages),
-    []
+    [],
   );
 
   useEffect(() => {
     if (ingredients && totalCells > 0) {
       const percentages = ingredients.map(
-        (i: { molarFraction: number }) => i.molarFraction
+        (i: { molarFraction: number }) => i.molarFraction,
       );
       const calculatedComponents = calculateComponentsCount(
         totalCells,
-        percentages
+        percentages,
       );
       setComponentsCount(calculatedComponents);
     }
@@ -110,12 +115,12 @@ export const EditSimulation = ({ id }: { id: string }) => {
       J: parameters.J.filter(
         (param) =>
           param.fromIngr !== String.fromCharCode(65 + index) &&
-          param.toIngr !== String.fromCharCode(65 + index)
+          param.toIngr !== String.fromCharCode(65 + index),
       ),
       Pb: parameters.Pb.filter(
         (param) =>
           param.fromIngr !== String.fromCharCode(65 + index) &&
-          param.toIngr !== String.fromCharCode(65 + index)
+          param.toIngr !== String.fromCharCode(65 + index),
       ),
     };
 
@@ -178,7 +183,9 @@ export const EditSimulation = ({ id }: { id: string }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <PenIcon className="m-2" />
+        <Button variant="outline" size="icon" className="w-8 h-8">
+          <PenIcon className="m-2" />
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%]">
         <DialogHeader>
@@ -428,7 +435,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
                       !form
                         .getValues("ingredients")
                         .flatMap((i) => i.color)
-                        .includes(c.name)
+                        .includes(c.name),
                   )[0].name,
                   molarFraction: 0,
                 })

@@ -108,122 +108,131 @@ function SimulationsList() {
           <SimulationsSkeleton />
         ) : (
           <ul className="grid grid-cols-3 xl:grid-cols-4 gap-4 my-2">
-            {data?.sort((a, b) => a.updated_at < b.updated_at ? 1 : -1).map((simulation) => (
-              <Card key={simulation.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="w-8 h-8"
-                        >
-                          <EditSimulation id={simulation.id} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Edit</TooltipContent>
-                    </Tooltip>
-                    <CardTitle className="text-sm">{simulation.name}</CardTitle>
-                    <AlertDialog>
+            {data
+              ?.sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1))
+              .map((simulation) => (
+                <Card key={simulation.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
                       <Tooltip>
-                        <AlertDialogTrigger asChild>
+                        <TooltipTrigger asChild>
                           <div>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                className="w-8 h-8"
-                              >
-                                <Trash2Icon className="m-2 text-red-600" />
-                              </Button>
-                            </TooltipTrigger>
+                            <EditSimulation id={simulation.id} />
                           </div>
-                        </AlertDialogTrigger>
-                        <TooltipContent>Delete</TooltipContent>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit</TooltipContent>
                       </Tooltip>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Are you sure you want to delete {simulation.name}?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogActionDestructive
-                            onClick={() => onDelete(simulation.id)}
-                          >
-                            Yes, Delete
-                          </AlertDialogActionDestructive>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                  <CardDescription className="text-xs">
-                    <span>
-                      <span className="block">
-                        {simulation.iterationsNumber} iterations
-                      </span>
-                      <span className="block">
-                        Grid Dimensions:{" "}
-                        {`${simulation.gridLenght} x ${simulation.gridHeight} (${simulation.gridLenght * simulation.gridHeight} cells)`}
-                      </span>
-                      <span className="block">
-                        Components:{" "}
-                        {simulation.ingredients
-                          .flatMap((i) => i.name)
-                          .join(", ")}
-                      </span>
+                      <CardTitle className="text-sm">
+                        {simulation.name}
+                      </CardTitle>
+                      <AlertDialog>
+                        <Tooltip>
+                          <AlertDialogTrigger asChild>
+                            <div>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  className="w-8 h-8"
+                                >
+                                  <Trash2Icon className="m-2 text-red-600" />
+                                </Button>
+                              </TooltipTrigger>
+                            </div>
+                          </AlertDialogTrigger>
+                          <TooltipContent>Delete</TooltipContent>
+                        </Tooltip>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Are you sure you want to delete {simulation.name}?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogActionDestructive
+                              onClick={() => onDelete(simulation.id)}
+                            >
+                              Yes, Delete
+                            </AlertDialogActionDestructive>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                    <CardDescription className="text-xs">
+                      <span>
                         <span className="block">
-                          Created at: {new Date(simulation.created_at + 'Z').toLocaleString()}
+                          {simulation.iterationsNumber} iterations
                         </span>
                         <span className="block">
-                          Last updated at: {new Date(simulation.updated_at + 'Z').toLocaleString()}
+                          Grid Dimensions:{" "}
+                          {`${simulation.gridLenght} x ${simulation.gridHeight} (${simulation.gridLenght * simulation.gridHeight} cells)`}
                         </span>
-                    </span>
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter className="gap-2">
-                  <div className="w-1/2">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          className="w-full h-8 text-xs"
-                          variant="outline"
-                        >
-                          Create a copy
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Do you wish to create a copy of {simulation.name}?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action will create a new simulation with the
-                            same configuration as {simulation.name}.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => onCopy(simulation.id)}
+                        <span className="block">
+                          Components:{" "}
+                          {simulation.ingredients
+                            .flatMap((i) => i.name)
+                            .join(", ")}
+                        </span>
+                        <span className="block">
+                          Created at:{" "}
+                          {new Date(
+                            simulation.created_at + "Z",
+                          ).toLocaleString()}
+                        </span>
+                        <span className="block">
+                          Last updated at:{" "}
+                          {new Date(
+                            simulation.updated_at + "Z",
+                          ).toLocaleString()}
+                        </span>
+                      </span>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardFooter className="gap-2">
+                    <div className="w-1/2">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            className="w-full h-8 text-xs"
+                            variant="outline"
                           >
-                            Create
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                  <Link to={`/simulations/${simulation.id}`} className="w-1/2">
-                    <Button className="w-full h-8 text-xs">Open</Button>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
+                            Create a copy
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Do you wish to create a copy of {simulation.name}?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action will create a new simulation with the
+                              same configuration as {simulation.name}.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onCopy(simulation.id)}
+                            >
+                              Create
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                    <Link
+                      to={`/simulations/${simulation.id}`}
+                      className="w-1/2"
+                    >
+                      <Button className="w-full h-8 text-xs">Open</Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              ))}
           </ul>
         )}
       </div>
