@@ -36,6 +36,7 @@ class Calculations:
 
         return rounded_counts
 
+    @staticmethod
     def calculate_cellular_automata(simulation: SimulationBase) -> np.ndarray:
         Calculations.NL = simulation.gridHeight
         Calculations.NC = simulation.gridLenght

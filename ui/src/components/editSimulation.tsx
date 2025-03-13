@@ -78,7 +78,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
         form.reset(simulation);
       }
     }
-  }, [data, id]);
+  }, [data, id, form]);
 
   const [componentsCount, setComponentsCount] = useState<number[]>([]);
 
@@ -454,7 +454,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   control={form.control}
                   name={`parameters.Pm.${index}`}
                   defaultValue={1}
-                  shouldUnregister
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
@@ -481,7 +480,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   <div key={index}>
                     <FormField
                       control={form.control}
-                      shouldUnregister
                       name={`parameters.Pb.${index}.fromIngr`}
                       defaultValue={String.fromCharCode(65 + comb[0])}
                       render={({ field }) => (
@@ -496,7 +494,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                     <FormField
                       control={form.control}
                       name={`parameters.Pb.${index}.toIngr`}
-                      shouldUnregister
                       defaultValue={String.fromCharCode(65 + comb[1])}
                       render={({ field }) => (
                         <FormItem>
@@ -510,7 +507,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                     <FormField
                       control={form.control}
                       name={`parameters.Pb.${index}.value`}
-                      shouldUnregister
                       defaultValue={1}
                       render={({ field }) => (
                         <FormItem>
@@ -543,7 +539,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   <div key={index}>
                     <FormField
                       control={form.control}
-                      shouldUnregister
                       name={`parameters.J.${index}.fromIngr`}
                       defaultValue={String.fromCharCode(65 + comb[0])}
                       render={({ field }) => (
@@ -558,7 +553,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                     <FormField
                       control={form.control}
                       name={`parameters.J.${index}.toIngr`}
-                      shouldUnregister
                       defaultValue={String.fromCharCode(65 + comb[1])}
                       render={({ field }) => (
                         <FormItem>
@@ -572,7 +566,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                     <FormField
                       control={form.control}
                       name={`parameters.J.${index}.value`}
-                      shouldUnregister
                       defaultValue={1}
                       render={({ field }) => (
                         <FormItem>
