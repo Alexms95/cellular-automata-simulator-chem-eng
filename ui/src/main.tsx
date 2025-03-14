@@ -1,3 +1,4 @@
+import { scan, getReport } from "react-scan";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -13,6 +14,15 @@ import { Spinner } from "./components/ui/spinner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import httpClient from "./lib/httpClient";
 import { routeTree } from "./routeTree.gen";
+
+if (typeof window !== "undefined") {
+  scan({
+    enabled: false,
+    log: true, // logs render info to console (default: false)
+  });
+  const a = getReport();
+  console.log(a);
+}
 
 const router = createRouter({
   routeTree,

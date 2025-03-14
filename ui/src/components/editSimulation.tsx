@@ -7,16 +7,21 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Input, InputWithIcon } from "@/components/ui/input";
 import httpClient from "@/lib/httpClient";
-import { formSchema, generatePairMatrix, SimulationForm } from "@/lib/utils";
+import {
+  calculateFractions,
+  formSchema,
+  generatePairMatrix,
+  SimulationForm,
+} from "@/lib/utils";
 import { colors } from "@/models/colors";
 import { Simulation } from "@/models/simulation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PenIcon, PlusCircle, TrashIcon } from "lucide-react";
-import { useEffect } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { PenIcon, Percent, PlusCircle, TrashIcon } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import {
@@ -43,7 +48,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 export const EditSimulation = ({ id }: { id: string }) => {
   const queryClient = useQueryClient();
 
-  const defaultIngredients = [{ name: "A", initialNumber: 1, color: "blue" }];
+  const defaultIngredients = [{ name: "A", molarFraction: 1, color: "blue" }];
 
   const form = useForm<SimulationForm>({
     resolver: zodResolver(formSchema),
@@ -51,7 +56,8 @@ export const EditSimulation = ({ id }: { id: string }) => {
     defaultValues: {
       name: "",
       iterationsNumber: 1,
-      gridSize: 1,
+      gridHeight: 1,
+      gridLenght: 1,
       ingredients: defaultIngredients,
     },
   });
@@ -64,15 +70,41 @@ export const EditSimulation = ({ id }: { id: string }) => {
   const { data } = useQuery<Simulation[]>({
     queryKey: ["simulations"],
   });
-
-  useEffect(() => {
+  
+  const resetSimulationData = useCallback((data?: Simulation[]) => {
     if (data) {
       const simulation = data.find((s) => s.id === id);
       if (simulation) {
         form.reset(simulation);
       }
     }
-  }, [data, id]);
+  }, [form, id])
+
+  const [componentsCount, setComponentsCount] = useState<number[]>([]);
+
+  const ingredients = useWatch({ control: form.control, name: "ingredients" });
+  const totalCells =
+    useWatch({ control: form.control, name: "gridLenght" }) *
+    useWatch({ control: form.control, name: "gridHeight" });
+
+  const calculateComponentsCount = useCallback(
+    (total: number, percentages: number[]) =>
+      calculateFractions(total, percentages),
+    [],
+  );
+
+  useEffect(() => {
+    if (ingredients && totalCells > 0) {
+      const percentages = ingredients.map(
+        (i: { molarFraction: number }) => i.molarFraction,
+      );
+      const calculatedComponents = calculateComponentsCount(
+        totalCells,
+        percentages,
+      );
+      setComponentsCount(calculatedComponents);
+    }
+  }, [ingredients, totalCells, calculateComponentsCount]);
 
   const handleRemove = (index: number) => {
     remove(index);
@@ -83,12 +115,12 @@ export const EditSimulation = ({ id }: { id: string }) => {
       J: parameters.J.filter(
         (param) =>
           param.fromIngr !== String.fromCharCode(65 + index) &&
-          param.toIngr !== String.fromCharCode(65 + index)
+          param.toIngr !== String.fromCharCode(65 + index),
       ),
       Pb: parameters.Pb.filter(
         (param) =>
           param.fromIngr !== String.fromCharCode(65 + index) &&
-          param.toIngr !== String.fromCharCode(65 + index)
+          param.toIngr !== String.fromCharCode(65 + index),
       ),
     };
 
@@ -96,6 +128,10 @@ export const EditSimulation = ({ id }: { id: string }) => {
   };
 
   const pairMatrix = generatePairMatrix(fields.length);
+
+  const molarFractionsSum = fields
+    .map((_, index) => form.watch(`ingredients.${index}.molarFraction`))
+    .reduce((acc, curr) => acc + Number(curr), 0);
 
   const saveSimulation = useMutation({
     mutationFn: (values: SimulationForm) =>
@@ -146,8 +182,10 @@ export const EditSimulation = ({ id }: { id: string }) => {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <PenIcon className="m-2" />
+      <DialogTrigger onClick={() => resetSimulationData(data)} asChild>
+        <Button variant="outline" size="icon" className="w-8 h-8">
+          <PenIcon className="m-2" />
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%]">
         <DialogHeader>
@@ -184,7 +222,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
             id="new-simulation-form"
           >
             <div className="flex space-x-4">
-              <div className="w-1/3">
+              <div className="w-1/2">
                 <FormField
                   control={form.control}
                   name="name"
@@ -227,30 +265,48 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   )}
                 />
               </div>
-              <div className="w-1/3">
-                <FormField
-                  control={form.control}
-                  name="gridSize"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col items-start">
-                      <FormLabel>Grid Dimension</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Choose the grid dimension"
-                          type="number"
-                          {...field}
-                        />
-                      </FormControl>
-                      {!form.formState.errors.gridSize && (
-                        <FormDescription>
-                          A grid of {form.getValues("gridSize")} x{" "}
-                          {form.getValues("gridSize")} will be created.
-                        </FormDescription>
+              <div>
+                <div className="flex gap-4">
+                  <div className="w-1/2">
+                    <FormField
+                      control={form.control}
+                      name="gridLenght"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col items-start">
+                          <FormLabel>Grid Lenght</FormLabel>
+                          <FormControl>
+                            <Input min={1} type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                      <FormMessage />
-                    </FormItem>
+                    />
+                  </div>
+                  <div className="w-1/2">
+                    <FormField
+                      control={form.control}
+                      name="gridHeight"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col items-start">
+                          <FormLabel>Grid Height</FormLabel>
+                          <FormControl>
+                            <Input min={1} type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                {!form.formState.errors.gridHeight &&
+                  !form.formState.errors.gridLenght && (
+                    <FormDescription className="mt-2">
+                      A grid of {form.watch("gridLenght")} x{" "}
+                      {form.watch("gridHeight")} will be created (
+                      {form.watch("gridLenght") * form.watch("gridHeight")}{" "}
+                      cells).
+                    </FormDescription>
                   )}
-                />
               </div>
             </div>
             <Separator />
@@ -258,7 +314,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
               {fields.map((field, index) => (
                 <div key={field.id} className="flex space-x-2">
                   <p className="w-1/8 text-sm font-semibold mt-10">
-                    Ingredient {String.fromCharCode(65 + index)}
+                    Component {String.fromCharCode(65 + index)}
                   </p>
                   <div className="w-1/2">
                     <FormField
@@ -269,27 +325,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
                           <FormLabel>Name</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Choose the ingredient name"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="w-1/4">
-                    <FormField
-                      control={form.control}
-                      name={`ingredients.${index}.initialNumber`}
-                      defaultValue={1}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Initial number</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="Initial count of the ingredient"
+                              placeholder="Choose the component name"
                               {...field}
                             />
                           </FormControl>
@@ -335,6 +371,30 @@ export const EditSimulation = ({ id }: { id: string }) => {
                       )}
                     />
                   </div>
+                  <div className="w-1/5">
+                    <FormField
+                      control={form.control}
+                      name={`ingredients.${index}.molarFraction`}
+                      defaultValue={0}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Molar Fraction</FormLabel>
+                          <FormControl>
+                            <InputWithIcon
+                              step={0.1}
+                              type="number"
+                              endIcon={Percent}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Approx. {componentsCount[index]} cells
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -352,15 +412,18 @@ export const EditSimulation = ({ id }: { id: string }) => {
                       alignOffset={50}
                       side="left"
                     >
-                      Remove ingredient {String.fromCharCode(65 + index)}
+                      Remove component {String.fromCharCode(65 + index)}
                     </TooltipContent>
                   </Tooltip>
                 </div>
               ))}
             </div>
-            <FormMessage>
-              {form.formState.errors?.ingredients?.root?.message}
-            </FormMessage>
+            {molarFractionsSum !== 100 && (
+              <FormMessage>
+                The sum of molar fractions must be 100%. Current:{" "}
+                {`${molarFractionsSum}%`}.
+              </FormMessage>
+            )}
             <Button
               className="ml-auto py-2 px-3 text-xs"
               type="button"
@@ -372,13 +435,13 @@ export const EditSimulation = ({ id }: { id: string }) => {
                       !form
                         .getValues("ingredients")
                         .flatMap((i) => i.color)
-                        .includes(c.name)
+                        .includes(c.name),
                   )[0].name,
-                  initialNumber: 1,
+                  molarFraction: 0,
                 })
               }
             >
-              <PlusCircle className="p-1 pl-0"></PlusCircle>Add Ingredient
+              <PlusCircle className="p-1 pl-0"></PlusCircle>Add Component
             </Button>
             <Separator />
             <h4 className="scroll-m-20 font-semibold tracking-tight">
@@ -391,7 +454,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   control={form.control}
                   name={`parameters.Pm.${index}`}
                   defaultValue={1}
-                  shouldUnregister
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
@@ -418,7 +480,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   <div key={index}>
                     <FormField
                       control={form.control}
-                      shouldUnregister
                       name={`parameters.Pb.${index}.fromIngr`}
                       defaultValue={String.fromCharCode(65 + comb[0])}
                       render={({ field }) => (
@@ -433,7 +494,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                     <FormField
                       control={form.control}
                       name={`parameters.Pb.${index}.toIngr`}
-                      shouldUnregister
                       defaultValue={String.fromCharCode(65 + comb[1])}
                       render={({ field }) => (
                         <FormItem>
@@ -447,7 +507,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                     <FormField
                       control={form.control}
                       name={`parameters.Pb.${index}.value`}
-                      shouldUnregister
                       defaultValue={1}
                       render={({ field }) => (
                         <FormItem>
@@ -480,7 +539,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   <div key={index}>
                     <FormField
                       control={form.control}
-                      shouldUnregister
                       name={`parameters.J.${index}.fromIngr`}
                       defaultValue={String.fromCharCode(65 + comb[0])}
                       render={({ field }) => (
@@ -495,7 +553,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                     <FormField
                       control={form.control}
                       name={`parameters.J.${index}.toIngr`}
-                      shouldUnregister
                       defaultValue={String.fromCharCode(65 + comb[1])}
                       render={({ field }) => (
                         <FormItem>
@@ -509,7 +566,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                     <FormField
                       control={form.control}
                       name={`parameters.J.${index}.value`}
-                      shouldUnregister
                       defaultValue={1}
                       render={({ field }) => (
                         <FormItem>
