@@ -70,15 +70,19 @@ export const EditSimulation = ({ id }: { id: string }) => {
   const { data } = useQuery<Simulation[]>({
     queryKey: ["simulations"],
   });
-
-  useEffect(() => {
+  
+  const resetSimulationData = useCallback((data?: Simulation[]) => {
     if (data) {
       const simulation = data.find((s) => s.id === id);
       if (simulation) {
         form.reset(simulation);
       }
     }
-  }, [data, id, form]);
+  }, [form, id])
+
+  useEffect(() => {
+    resetSimulationData(data);
+  }, [data, id, form, resetSimulationData]);
 
   const [componentsCount, setComponentsCount] = useState<number[]>([]);
 
@@ -595,7 +599,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
           </form>
         </Form>
         <DialogFooter className="sm:justify-between">
-          <DialogClose asChild>
+          <DialogClose onClick={() => resetSimulationData(data)} asChild>
             <Button className="w-1/6" variant="outline">
               Cancel
             </Button>
