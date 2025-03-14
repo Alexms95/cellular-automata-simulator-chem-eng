@@ -80,10 +80,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
     }
   }, [form, id])
 
-  useEffect(() => {
-    resetSimulationData(data);
-  }, [data, id, form, resetSimulationData]);
-
   const [componentsCount, setComponentsCount] = useState<number[]>([]);
 
   const ingredients = useWatch({ control: form.control, name: "ingredients" });
@@ -186,7 +182,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
+      <DialogTrigger onClick={() => resetSimulationData(data)} asChild>
         <Button variant="outline" size="icon" className="w-8 h-8">
           <PenIcon className="m-2" />
         </Button>
@@ -599,7 +595,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
           </form>
         </Form>
         <DialogFooter className="sm:justify-between">
-          <DialogClose onClick={() => resetSimulationData(data)} asChild>
+          <DialogClose asChild>
             <Button className="w-1/6" variant="outline">
               Cancel
             </Button>
