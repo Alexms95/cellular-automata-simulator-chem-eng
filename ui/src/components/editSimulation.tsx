@@ -70,15 +70,18 @@ export const EditSimulation = ({ id }: { id: string }) => {
   const { data } = useQuery<Simulation[]>({
     queryKey: ["simulations"],
   });
-  
-  const resetSimulationData = useCallback((data?: Simulation[]) => {
-    if (data) {
-      const simulation = data.find((s) => s.id === id);
-      if (simulation) {
-        form.reset(simulation);
+
+  const resetSimulationData = useCallback(
+    (data?: Simulation[]) => {
+      if (data) {
+        const simulation = data.find((s) => s.id === id);
+        if (simulation) {
+          form.reset(simulation);
+        }
       }
-    }
-  }, [form, id])
+    },
+    [form, id],
+  );
 
   const [componentsCount, setComponentsCount] = useState<number[]>([]);
 
@@ -113,11 +116,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
     const newParameters = {
       Pm: parameters.Pm.filter((_, i) => i !== index),
       J: parameters.J.filter(
-        (param) =>
-          param.fromIngr !== String.fromCharCode(65 + index) &&
-          param.toIngr !== String.fromCharCode(65 + index),
-      ),
-      Pb: parameters.Pb.filter(
         (param) =>
           param.fromIngr !== String.fromCharCode(65 + index) &&
           param.toIngr !== String.fromCharCode(65 + index),
@@ -473,65 +471,6 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   )}
                 />
               ))}
-            </div>
-            <div className="flex space-x-2 flex-wrap">
-              {pairMatrix.map((comb, index) => {
-                return (
-                  <div key={index}>
-                    <FormField
-                      control={form.control}
-                      name={`parameters.Pb.${index}.fromIngr`}
-                      defaultValue={String.fromCharCode(65 + comb[0])}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input className="hidden" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`parameters.Pb.${index}.toIngr`}
-                      defaultValue={String.fromCharCode(65 + comb[1])}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input className="hidden" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`parameters.Pb.${index}.value`}
-                      defaultValue={1}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            P<sub>B</sub> (
-                            {String.fromCharCode(65 + comb[0]) +
-                              String.fromCharCode(65 + comb[1])}
-                            )
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              step={0.1}
-                              min={0}
-                              max={1}
-                              type="number"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                );
-              })}
             </div>
             <div className="flex space-x-2 flex-wrap">
               {pairMatrix.map((comb, index) => {

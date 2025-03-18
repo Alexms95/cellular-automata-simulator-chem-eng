@@ -35,12 +35,12 @@ export const formSchema = z.object({
           .number({ message: "It must be a number." })
           .gte(0, "It must be greater or equal to 0.")
           .lte(100, "It must be less or equal to 100."),
-      })
+      }),
     )
     .superRefine((value, ctx) => {
       const sum = value.reduce(
         (acc, curr) => acc + Number(curr.molarFraction),
-        0
+        0,
       );
 
       if (sum !== 100) {
@@ -55,7 +55,7 @@ export const formSchema = z.object({
       z.coerce
         .number({ message: "It must be a number." })
         .gte(0, "It must be greater or equal to 0.")
-        .lte(1, "It must be less or equal to 1.")
+        .lte(1, "It must be less or equal to 1."),
     ),
     J: z.array(
       z.object({
@@ -65,17 +65,7 @@ export const formSchema = z.object({
           .number({ message: "It must be a number." })
           .gte(0, "It must be greater or equal to 0.")
           .lte(1, "It must be less or equal to 1."),
-      })
-    ),
-    Pb: z.array(
-      z.object({
-        fromIngr: z.string({ message: "It must be a string." }),
-        toIngr: z.string({ message: "It must be a string." }),
-        value: z.coerce
-          .number({ message: "It must be a number." })
-          .gte(0, "It must be greater or equal to 0.")
-          .lte(1, "It must be less or equal to 1."),
-      })
+      }),
     ),
   }),
 });
@@ -94,15 +84,15 @@ export function generatePairMatrix(arraySize: number) {
 
 export function calculateFractions(
   total: number,
-  percentages: number[]
+  percentages: number[],
 ): number[] {
   const accSum = (acc: number, curr: number) => acc + curr;
-  
+
   const fractions = percentages.map((p) => (p ? (p / 100) * total : 0));
 
   const roundedFractions = fractions.map(Math.floor);
   const error = Math.abs(
-    fractions.reduce(accSum, 0) - roundedFractions.reduce(accSum, 0)
+    fractions.reduce(accSum, 0) - roundedFractions.reduce(accSum, 0),
   );
 
   if (error === 0) return roundedFractions;

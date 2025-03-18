@@ -77,11 +77,7 @@ export const NewSimulation = () => {
           param.fromIngr !== String.fromCharCode(65 + index) &&
           param.toIngr !== String.fromCharCode(65 + index)
       ),
-      Pb: parameters.Pb.filter(
-        (param) =>
-          param.fromIngr !== String.fromCharCode(65 + index) &&
-          param.toIngr !== String.fromCharCode(65 + index)
-      ),
+      
     };
 
     form.setValue("parameters", newParameters);
@@ -103,17 +99,23 @@ export const NewSimulation = () => {
   const calculateComponentsCount = useCallback(
     (total: number, percentages: number[]) =>
       calculateFractions(total, percentages),
-    []
+    [],
   );
+
+  useEffect(() => {
+    console.log(form.formState.errors);
+    console.log(form.formState.isValid);
+    console.log(!!form.formState.errors)
+  });
 
   useEffect(() => {
     if (ingredients && totalCells > 0) {
       const percentages = ingredients.map(
-        (i: { molarFraction: number }) => i.molarFraction
+        (i: { molarFraction: number }) => i.molarFraction,
       );
       const calculatedComponents = calculateComponentsCount(
         totalCells,
-        percentages
+        percentages,
       );
       setComponentsCount(calculatedComponents);
     }
@@ -423,7 +425,7 @@ export const NewSimulation = () => {
                       !form
                         .getValues("ingredients")
                         .flatMap((i) => i.color)
-                        .includes(c.name)
+                        .includes(c.name),
                   )[0].name,
                   molarFraction: 0,
                 })
@@ -462,68 +464,6 @@ export const NewSimulation = () => {
                   )}
                 />
               ))}
-            </div>
-            <div className="flex space-x-2 flex-wrap">
-              {pairMatrix.map((comb, index) => {
-                return (
-                  <div key={index}>
-                    <FormField
-                      control={form.control}
-                      shouldUnregister
-                      name={`parameters.Pb.${index}.fromIngr`}
-                      defaultValue={String.fromCharCode(65 + comb[0])}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input className="hidden" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`parameters.Pb.${index}.toIngr`}
-                      shouldUnregister
-                      defaultValue={String.fromCharCode(65 + comb[1])}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input className="hidden" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`parameters.Pb.${index}.value`}
-                      shouldUnregister
-                      defaultValue={1}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            P<sub>B</sub> (
-                            {String.fromCharCode(65 + comb[0]) +
-                              String.fromCharCode(65 + comb[1])}
-                            )
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              step={0.1}
-                              min={0}
-                              max={1}
-                              type="number"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                );
-              })}
             </div>
             <div className="flex space-x-2 flex-wrap">
               {pairMatrix.map((comb, index) => {

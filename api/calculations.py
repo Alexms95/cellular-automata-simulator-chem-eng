@@ -2,7 +2,7 @@ from enum import Enum
 from math import floor
 
 import numpy as np
-from schemas import SimulationBase
+from schemas import PairParameter, SimulationBase
 
 SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
 
@@ -105,12 +105,17 @@ class Calculations:
         Calculations.show_matrix(M)
 
         # Define the Von Neumann neighborhood
-        NEIGH = np.array([[-1, 0], [1, 0], [0, -1], [0, 1]], dtype=int)
+        von_neumann_neigh = np.array([[-1, 0], [1, 0], [0, -1], [0, 1]], dtype=int)
 
         # Shuffle the neighborhood
-        np.random.shuffle(NEIGH)
+        np.random.shuffle(von_neumann_neigh)
 
         n_iter = simulation.iterationsNumber
+
+        pbs = Calculations.calculate_pbs(parameters.J)
+
+        for pb in pbs:
+            print(pb.get("value"))
 
         moved_components = set()
 
@@ -121,9 +126,9 @@ class Calculations:
                 for j in range(NC):
                     i_comp = M[i, j]
                     if i_comp > 0 and (i, j) not in moved_components:
-                        for n in range(len(NEIGH)):
-                            r = i + NEIGH[n, 0]
-                            c = j + NEIGH[n, 1]
+                        for n in range(len(von_neumann_neigh)):
+                            r = i + von_neumann_neigh[n, 0]
+                            c = j + von_neumann_neigh[n, 1]
                             if Calculations.check_constraints(surface_type, r, c):
                                 if M_new[r, c] == 0:
                                     pm_component = parameters.Pm[i_comp - 1]
@@ -131,7 +136,7 @@ class Calculations:
                                         M_new[r, c] = i_comp
                                         M_new[i, j] = 0
                                         moved_components.add((r, c))
-                                        np.random.shuffle(NEIGH)
+                                        np.random.shuffle(von_neumann_neigh)
                                         break
         M = M_new.copy()
         M_new = None
@@ -160,3 +165,10 @@ class Calculations:
         if surface_type == SurfaceTypes.Cylinder:
             return r >= 0 and r < Calculations.NL
         return True
+
+    @staticmethod
+    def calculate_pbs(js: list[PairParameter]):
+        return [
+            {"from": j.fromIngr, "to": j.toIngr, "value": (3 / 2) / (j.value + (3 / 2))}
+            for j in js
+        ]
