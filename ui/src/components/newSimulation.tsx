@@ -103,12 +103,6 @@ export const NewSimulation = () => {
   );
 
   useEffect(() => {
-    console.log(form.formState.errors);
-    console.log(form.formState.isValid);
-    console.log(!!form.formState.errors)
-  });
-
-  useEffect(() => {
     if (ingredients && totalCells > 0) {
       const percentages = ingredients.map(
         (i: { molarFraction: number }) => i.molarFraction,
@@ -468,7 +462,7 @@ export const NewSimulation = () => {
             <div className="flex space-x-2 flex-wrap">
               {pairMatrix.map((comb, index) => {
                 return (
-                  <div key={index}>
+                  <div key={index} className="w-1/10">
                     <FormField
                       control={form.control}
                       shouldUnregister
@@ -512,9 +506,8 @@ export const NewSimulation = () => {
                           </FormLabel>
                           <FormControl>
                             <Input
-                              step={0.1}
+                              step={1}
                               min={0}
-                              max={1}
                               type="number"
                               {...field}
                             />

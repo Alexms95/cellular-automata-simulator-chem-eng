@@ -59,12 +59,11 @@ export const formSchema = z.object({
     ),
     J: z.array(
       z.object({
-        fromIngr: z.string({ message: "It must be a string." }),
-        toIngr: z.string({ message: "It must be a string." }),
+        fromIngr: z.string(),
+        toIngr: z.string(),
         value: z.coerce
           .number({ message: "It must be a number." })
           .gte(0, "It must be greater or equal to 0.")
-          .lte(1, "It must be less or equal to 1."),
       }),
     ),
   }),

@@ -475,7 +475,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
             <div className="flex space-x-2 flex-wrap">
               {pairMatrix.map((comb, index) => {
                 return (
-                  <div key={index}>
+                  <div key={index} className="w-1/10">
                     <FormField
                       control={form.control}
                       name={`parameters.J.${index}.fromIngr`}
@@ -516,9 +516,8 @@ export const EditSimulation = ({ id }: { id: string }) => {
                           </FormLabel>
                           <FormControl>
                             <Input
-                              step={0.1}
+                              step={1}
                               min={0}
-                              max={1}
                               type="number"
                               {...field}
                             />

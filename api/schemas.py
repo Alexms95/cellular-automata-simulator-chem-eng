@@ -18,7 +18,6 @@ class PairParameter(BaseModel):
 
 class Parameters(BaseModel):
     Pm: list[float]
-    Pb: list[PairParameter]
     J: list[PairParameter]
 
 

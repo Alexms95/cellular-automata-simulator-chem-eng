@@ -107,9 +107,6 @@ class Calculations:
         # Define the Von Neumann neighborhood
         von_neumann_neigh = np.array([[-1, 0], [1, 0], [0, -1], [0, 1]], dtype=int)
 
-        # Shuffle the neighborhood
-        np.random.shuffle(von_neumann_neigh)
-
         n_iter = simulation.iterationsNumber
 
         pbs = Calculations.calculate_pbs(parameters.J)
@@ -124,8 +121,24 @@ class Calculations:
             moved_components.clear()
             for i in range(NL):
                 for j in range(NC):
+                    current_position = np.array([i, j])
                     i_comp = M[i, j]
                     if i_comp > 0 and (i, j) not in moved_components:
+                        inner_neighbors_position = von_neumann_neigh + current_position
+
+                        empty_neighbors = []
+                        components_inner_neighbors = []
+
+                        # New version
+                        for position in inner_neighbors_position:
+                            r, c = position
+                            if Calculations.check_constraints(surface_type, r, c):
+                                if M[r, c] == 0:
+                                    empty_neighbors.append((r, c))
+                                else:
+                                    components_inner_neighbors.append((r, c))
+
+                        # Old version
                         for n in range(len(von_neumann_neigh)):
                             r = i + von_neumann_neigh[n, 0]
                             c = j + von_neumann_neigh[n, 1]
@@ -136,7 +149,6 @@ class Calculations:
                                         M_new[r, c] = i_comp
                                         M_new[i, j] = 0
                                         moved_components.add((r, c))
-                                        np.random.shuffle(von_neumann_neigh)
                                         break
         M = M_new.copy()
         M_new = None
