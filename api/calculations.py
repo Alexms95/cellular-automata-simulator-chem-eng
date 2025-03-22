@@ -2,6 +2,7 @@ from enum import Enum
 from math import floor
 
 import numpy as np
+from utils import get_component_index
 from schemas import PairParameter, SimulationBase
 
 SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
@@ -121,22 +122,48 @@ class Calculations:
             moved_components.clear()
             for i in range(NL):
                 for j in range(NC):
-                    current_position = np.array([i, j])
+                    current_position = (i, j)
                     i_comp = M[i, j]
-                    if i_comp > 0 and (i, j) not in moved_components:
+                    if i_comp > 0 and current_position not in moved_components:
                         inner_neighbors_position = von_neumann_neigh + current_position
+                        outer_neighbors_position = 2 * von_neumann_neigh + current_position
 
                         empty_neighbors = []
-                        components_inner_neighbors = []
+                        occuped_inner_neighbors = []
+
+                        J_neighbors = []
+                        j_components = 0
 
                         # New version
-                        for position in inner_neighbors_position:
-                            r, c = position
-                            if Calculations.check_constraints(surface_type, r, c):
-                                if M[r, c] == 0:
-                                    empty_neighbors.append((r, c))
+                        for i in range(len(inner_neighbors_position)):
+                            row_index, column_index = inner_neighbors_position[i]
+                            if Calculations.check_constraints(
+                                surface_type, row_index, column_index
+                            ):
+                                if M[row_index, column_index] == 0:
+                                    o_row, o_column = outer_neighbors_position[i]
+                                    outer_component = M[o_row, o_column]
+                                    print(outer_component)
+                                    if outer_component != 0:
+                                        # Search in the list for the probability J of the component
+                                        j_components = next((j.value for j in parameters.J if (get_component_index(j.fromIngr) == i_comp and get_component_index(j.toIngr) == outer_component) or (get_component_index(j.fromIngr) == outer_component and get_component_index(j.toIngr) == i_comp)))
+                                        print(j_components)
+                                    J_neighbors.append((i, j_components))
+                                    print(J_neighbors)
                                 else:
-                                    components_inner_neighbors.append((r, c))
+                                    occuped_inner_neighbors.append((row_index, column_index))
+                        if len(J_neighbors) == 0:
+                            continue
+
+                        J_max = max(J_neighbors, key=lambda x: x[1])
+                        print(J_max)
+
+                        if J_max[1] == 0:
+                            continue
+
+
+                        # Analize the neighbors to find which sides the component may move to
+                        outer_empty_neighbors = []
 
                         # Old version
                         for n in range(len(von_neumann_neigh)):
@@ -184,3 +211,4 @@ class Calculations:
             {"from": j.fromIngr, "to": j.toIngr, "value": (3 / 2) / (j.value + (3 / 2))}
             for j in js
         ]
+    
