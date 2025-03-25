@@ -95,6 +95,8 @@ class Calculations:
 
         moved_components = set()
 
+        random_generator = np.random.default_rng()
+
         for n in range(n_iter):
             M_new = M.copy()
             moved_components.clear()
@@ -160,28 +162,31 @@ class Calculations:
                             continue
 
                         J_max = max(J_neighbors, key=lambda x: x[1])
-                        print(J_max)
 
                         if J_max[1] == 0:
-                            continue
+                            # If J_max is 0, all empty neighbors have J = 0 and are equal in terms of "afinity", so pick one randomly
+                            J_max = random_generator.choice(J_neighbors)
+                        else:
+                            # If J_max is not 0, pick the empty neighbor with the highest J value
+                            J_neigh_max = list(filter(lambda x: x[1] == J_max[1], J_neighbors))
+                            if len(J_neigh_max) > 1:
+                                # If there are more than one neighbor with the same J_max value, pick one randomly
+                                J_max = random_generator.choice(J_neigh_max)
 
-                        # TODO: Pick randomly one of the empty neighbors if there are more than one with the same J_max
-
-                        # Analize the neighbors to find which sides the component may move to
-                        outer_empty_neighbors = []
+                        # TODO: Calculate the Pm_total based on the component's Pm and the possible Pbs
 
                         # Old version
-                        for n in range(len(von_neumann_neigh)):
-                            r = i + von_neumann_neigh[n, 0]
-                            c = j + von_neumann_neigh[n, 1]
-                            if Calculations.check_constraints(surface_type, r, c):
-                                if M_new[r, c] == 0:
-                                    pm_component = parameters.Pm[i_comp - 1]
-                                    if Calculations.maybe_execute(pm_component):
-                                        M_new[r, c] = i_comp
-                                        M_new[i, j] = 0
-                                        moved_components.add((r, c))
-                                        break
+                        # for n in range(len(von_neumann_neigh)):
+                        #     r = i + von_neumann_neigh[n, 0]
+                        #     c = j + von_neumann_neigh[n, 1]
+                        #     if Calculations.check_constraints(surface_type, r, c):
+                        #         if M_new[r, c] == 0:
+                        #             pm_component = parameters.Pm[i_comp - 1]
+                        #             if Calculations.maybe_execute(pm_component):
+                        #                 M_new[r, c] = i_comp
+                        #                 M_new[i, j] = 0
+                        #                 moved_components.add((r, c))
+                        #                 break
         M = M_new.copy()
         M_new = None
 
