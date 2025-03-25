@@ -47,10 +47,6 @@ class Calculations:
 
         surface_type = SurfaceTypes.Box
 
-        print(surface_type)
-
-        print(NL, NC)
-
         NTOT = NC * NL
 
         EMPTY_FRAC = 0.31
@@ -73,21 +69,6 @@ class Calculations:
 
         print(Ci)
         Ni = Calculations.calculate_cell_counts(NCELL, Ci)
-
-        print(Ni)
-
-        # Initial matrix
-        # matrix = [
-        #     [0, 2, 0, 2, 1, 2, 1, 3, 1, 3],
-        #     [3, 0, 0, 0, 3, 0, 3, 0, 0, 1],
-        #     [0, 0, 3, 2, 1, 1, 1, 1, 1, 1],
-        #     [2, 0, 0, 3, 2, 0, 3, 0, 2, 0],
-        #     [0, 0, 1, 0, 2, 3, 3, 2, 2, 3],
-        #     [2, 2, 3, 3, 1, 0, 2, 2, 3, 0],
-        #     [2, 3, 3, 3, 1, 0, 0, 0, 1, 3],
-        #     [0, 1, 1, 3, 2, 3, 1, 3, 3, 2],
-        # ]
-        # M = np.array(matrix)
 
         M = np.zeros((NL, NC), dtype=int)
 
@@ -112,9 +93,6 @@ class Calculations:
 
         pbs = Calculations.calculate_pbs(parameters.J)
 
-        for pb in pbs:
-            print(pb.get("value"))
-
         moved_components = set()
 
         for n in range(n_iter):
@@ -126,7 +104,9 @@ class Calculations:
                     i_comp = M[i, j]
                     if i_comp > 0 and current_position not in moved_components:
                         inner_neighbors_position = von_neumann_neigh + current_position
-                        outer_neighbors_position = 2 * von_neumann_neigh + current_position
+                        outer_neighbors_position = (
+                            2 * von_neumann_neigh + current_position
+                        )
 
                         empty_neighbors = []
                         occuped_inner_neighbors = []
@@ -142,16 +122,40 @@ class Calculations:
                             ):
                                 if M[row_index, column_index] == 0:
                                     o_row, o_column = outer_neighbors_position[i]
+                                    if not Calculations.check_constraints(
+                                        surface_type, o_row, o_column
+                                    ):
+                                        J_neighbors.append((i, 0))
+                                        continue
                                     outer_component = M[o_row, o_column]
                                     print(outer_component)
                                     if outer_component != 0:
                                         # Search in the list for the probability J of the component
-                                        j_components = next((j.value for j in parameters.J if (get_component_index(j.fromIngr) == i_comp and get_component_index(j.toIngr) == outer_component) or (get_component_index(j.fromIngr) == outer_component and get_component_index(j.toIngr) == i_comp)))
+                                        j_components = next(
+                                            (
+                                                j.value
+                                                for j in parameters.J
+                                                if (
+                                                    get_component_index(j.fromIngr)
+                                                    == i_comp
+                                                    and get_component_index(j.toIngr)
+                                                    == outer_component
+                                                )
+                                                or (
+                                                    get_component_index(j.fromIngr)
+                                                    == outer_component
+                                                    and get_component_index(j.toIngr)
+                                                    == i_comp
+                                                )
+                                            )
+                                        )
                                         print(j_components)
                                     J_neighbors.append((i, j_components))
                                     print(J_neighbors)
                                 else:
-                                    occuped_inner_neighbors.append((row_index, column_index))
+                                    occuped_inner_neighbors.append(
+                                        (row_index, column_index)
+                                    )
                         if len(J_neighbors) == 0:
                             continue
 
@@ -161,6 +165,7 @@ class Calculations:
                         if J_max[1] == 0:
                             continue
 
+                        # TODO: Pick randomly one of the empty neighbors if there are more than one with the same J_max
 
                         # Analize the neighbors to find which sides the component may move to
                         outer_empty_neighbors = []
@@ -211,4 +216,3 @@ class Calculations:
             {"from": j.fromIngr, "to": j.toIngr, "value": (3 / 2) / (j.value + (3 / 2))}
             for j in js
         ]
-    
