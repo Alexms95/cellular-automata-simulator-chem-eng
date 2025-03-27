@@ -49,7 +49,7 @@ class Calculations:
 
         NTOT = NC * NL
 
-        EMPTY_FRAC = 0.31
+        EMPTY_FRAC = 0.31  # Fraction of empty cells
 
         NEMPTY = floor(EMPTY_FRAC * NTOT)
         NCELL = NTOT - NEMPTY
@@ -110,27 +110,25 @@ class Calculations:
                             2 * von_neumann_neigh + current_position
                         )
 
-                        empty_neighbors = []
                         occuped_inner_neighbors = []
 
                         J_neighbors = []
                         j_components = 0
 
                         # New version
-                        for i in range(len(inner_neighbors_position)):
-                            row_index, column_index = inner_neighbors_position[i]
+                        for i_p in range(len(inner_neighbors_position)):
+                            row_index, column_index = inner_neighbors_position[i_p]
                             if Calculations.check_constraints(
                                 surface_type, row_index, column_index
                             ):
                                 if M[row_index, column_index] == 0:
-                                    o_row, o_column = outer_neighbors_position[i]
+                                    o_row, o_column = outer_neighbors_position[i_p]
                                     if not Calculations.check_constraints(
                                         surface_type, o_row, o_column
                                     ):
-                                        J_neighbors.append((i, 0))
+                                        J_neighbors.append((i_p, 0))
                                         continue
                                     outer_component = M[o_row, o_column]
-                                    print(outer_component)
                                     if outer_component != 0:
                                         # Search in the list for the probability J of the component
                                         j_components = next(
@@ -151,42 +149,55 @@ class Calculations:
                                                 )
                                             )
                                         )
-                                        print(j_components)
-                                    J_neighbors.append((i, j_components))
-                                    print(J_neighbors)
+                                    J_neighbors.append((i_p, j_components))
                                 else:
                                     occuped_inner_neighbors.append(
                                         (row_index, column_index)
                                     )
+
                         if len(J_neighbors) == 0:
                             continue
 
                         J_max = max(J_neighbors, key=lambda x: x[1])
+
+                        if J_max[1] < 1 and J_max[1] != 0:
+                            continue
 
                         if J_max[1] == 0:
                             # If J_max is 0, all empty neighbors have J = 0 and are equal in terms of "afinity", so pick one randomly
                             J_max = random_generator.choice(J_neighbors)
                         else:
                             # If J_max is not 0, pick the empty neighbor with the highest J value
-                            J_neigh_max = list(filter(lambda x: x[1] == J_max[1], J_neighbors))
+                            J_neigh_max = list(
+                                filter(lambda x: x[1] == J_max[1], J_neighbors)
+                            )
                             if len(J_neigh_max) > 1:
                                 # If there are more than one neighbor with the same J_max value, pick one randomly
                                 J_max = random_generator.choice(J_neigh_max)
 
-                        # TODO: Calculate the Pm_total based on the component's Pm and the possible Pbs
+                        pbs_product = 1
 
-                        # Old version
-                        # for n in range(len(von_neumann_neigh)):
-                        #     r = i + von_neumann_neigh[n, 0]
-                        #     c = j + von_neumann_neigh[n, 1]
-                        #     if Calculations.check_constraints(surface_type, r, c):
-                        #         if M_new[r, c] == 0:
-                        #             pm_component = parameters.Pm[i_comp - 1]
-                        #             if Calculations.maybe_execute(pm_component):
-                        #                 M_new[r, c] = i_comp
-                        #                 M_new[i, j] = 0
-                        #                 moved_components.add((r, c))
-                        #                 break
+                        if len(occuped_inner_neighbors) > 0:
+                            pb_inner_components = []
+                            for comp_position in occuped_inner_neighbors:
+                                row, column = comp_position
+                                comp_index = M[row, column]
+                                pair_list = [comp_index, i_comp]
+                                pair_list.sort()
+                                pair = tuple(pair_list)
+                                pb = pbs[pair]
+                                pb_inner_components.append(pb)
+                            pbs_product = np.array(pb_inner_components).prod()
+
+                        pm_total_component = parameters.Pm[i_comp - 1] * pbs_product
+
+                        if Calculations.maybe_execute(pm_total_component):
+                            # Move the component to the empty neighbor with the highest J value
+                            row_move, column_move = inner_neighbors_position[int(J_max[0])]
+                            M_new[row_move, column_move] = i_comp
+                            M_new[i, j] = 0
+                            moved_components.add((row_move, column_move))
+                            break
         M = M_new.copy()
         M_new = None
 
@@ -217,7 +228,8 @@ class Calculations:
 
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
-        return [
-            {"from": j.fromIngr, "to": j.toIngr, "value": (3 / 2) / (j.value + (3 / 2))}
+        return {
+            (get_component_index(j.fromIngr), get_component_index(j.toIngr)): (3 / 2)
+            / (j.value + (3 / 2))
             for j in js
-        ]
+        }
