@@ -74,10 +74,9 @@ export const NewSimulation = () => {
       Pm: parameters.Pm.filter((_, i) => i !== index),
       J: parameters.J.filter(
         (param) =>
-          param.fromIngr !== String.fromCharCode(65 + index) &&
-          param.toIngr !== String.fromCharCode(65 + index)
+          param.relation !==
+          String.fromCharCode(65 + index) + String.fromCharCode(65 + index)
       ),
-      
     };
 
     form.setValue("parameters", newParameters);
@@ -99,17 +98,17 @@ export const NewSimulation = () => {
   const calculateComponentsCount = useCallback(
     (total: number, percentages: number[]) =>
       calculateFractions(total, percentages),
-    [],
+    []
   );
 
   useEffect(() => {
     if (ingredients && totalCells > 0) {
       const percentages = ingredients.map(
-        (i: { molarFraction: number }) => i.molarFraction,
+        (i: { molarFraction: number }) => i.molarFraction
       );
       const calculatedComponents = calculateComponentsCount(
         totalCells,
-        percentages,
+        percentages
       );
       setComponentsCount(calculatedComponents);
     }
@@ -419,7 +418,7 @@ export const NewSimulation = () => {
                       !form
                         .getValues("ingredients")
                         .flatMap((i) => i.color)
-                        .includes(c.name),
+                        .includes(c.name)
                   )[0].name,
                   molarFraction: 0,
                 })
@@ -466,22 +465,11 @@ export const NewSimulation = () => {
                     <FormField
                       control={form.control}
                       shouldUnregister
-                      name={`parameters.J.${index}.fromIngr`}
-                      defaultValue={String.fromCharCode(65 + comb[0])}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input className="hidden" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`parameters.J.${index}.toIngr`}
-                      shouldUnregister
-                      defaultValue={String.fromCharCode(65 + comb[1])}
+                      name={`parameters.J.${index}.relation`}
+                      defaultValue={
+                        String.fromCharCode(65 + comb[0]) +
+                        String.fromCharCode(65 + comb[1])
+                      }
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
@@ -505,12 +493,7 @@ export const NewSimulation = () => {
                             )
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              step={1}
-                              min={0}
-                              type="number"
-                              {...field}
-                            />
+                            <Input step={1} min={0} type="number" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

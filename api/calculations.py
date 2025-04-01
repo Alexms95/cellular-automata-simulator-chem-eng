@@ -133,18 +133,18 @@ class Calculations:
                                         # Search in the list for the probability J of the component
                                         j_components = next(
                                             (
-                                                j.value
-                                                for j in parameters.J
+                                                j_param.value
+                                                for j_param in parameters.J
                                                 if (
-                                                    get_component_index(j.fromIngr)
+                                                    get_component_index(j_param.relation[0])
                                                     == i_comp
-                                                    and get_component_index(j.toIngr)
+                                                    and get_component_index(j_param.relation[1])
                                                     == outer_component
                                                 )
                                                 or (
-                                                    get_component_index(j.fromIngr)
+                                                    get_component_index(j_param.relation[0])
                                                     == outer_component
-                                                    and get_component_index(j.toIngr)
+                                                    and get_component_index(j_param.relation[1])
                                                     == i_comp
                                                 )
                                             )
@@ -229,7 +229,7 @@ class Calculations:
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
         return {
-            (get_component_index(j.fromIngr), get_component_index(j.toIngr)): (3 / 2)
+            (get_component_index(j.relation[0]), get_component_index(j.relation[1])): (3 / 2)
             / (j.value + (3 / 2))
             for j in js
         }

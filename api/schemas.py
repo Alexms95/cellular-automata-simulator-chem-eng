@@ -11,8 +11,7 @@ class Ingredient(BaseModel):
 
 
 class PairParameter(BaseModel):
-    fromIngr: str
-    toIngr: str
+    relation: str
     value: float
 
 

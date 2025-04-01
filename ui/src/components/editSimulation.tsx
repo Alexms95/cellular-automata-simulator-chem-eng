@@ -117,8 +117,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
       Pm: parameters.Pm.filter((_, i) => i !== index),
       J: parameters.J.filter(
         (param) =>
-          param.fromIngr !== String.fromCharCode(65 + index) &&
-          param.toIngr !== String.fromCharCode(65 + index),
+          param.relation !== String.fromCharCode(65 + index) + String.fromCharCode(65 + index)
       ),
     };
 
@@ -478,21 +477,11 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   <div key={index} className="w-1/10">
                     <FormField
                       control={form.control}
-                      name={`parameters.J.${index}.fromIngr`}
-                      defaultValue={String.fromCharCode(65 + comb[0])}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input className="hidden" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`parameters.J.${index}.toIngr`}
-                      defaultValue={String.fromCharCode(65 + comb[1])}
+                      name={`parameters.J.${index}.relation`}
+                      defaultValue={
+                        String.fromCharCode(65 + comb[0]) +
+                        String.fromCharCode(65 + comb[1])
+                      }
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
@@ -515,12 +504,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
                             )
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              step={1}
-                              min={0}
-                              type="number"
-                              {...field}
-                            />
+                            <Input step={1} min={0} type="number" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
