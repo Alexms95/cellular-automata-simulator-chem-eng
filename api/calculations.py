@@ -154,19 +154,26 @@ class Calculations:
                                     occuped_inner_neighbors.append(
                                         (row_index, column_index)
                                     )
-
+                        # If there is no empty neighbor, the component cannot move
                         if len(J_neighbors) == 0:
                             continue
 
                         J_max = max(J_neighbors, key=lambda x: x[1])
 
-                        if J_max[1] < 1 and J_max[1] != 0:
-                            continue
-
-                        if J_max[1] == 0:
+                        if J_max[1] < 1 and J_max[1] > 0:
+                            # Check if there are empty neighbors with J = 0, if so, pick one randomly
+                            J_0 = list(
+                                filter(lambda x: x[1] == 0, J_neighbors)
+                            )
+                            if len(J_0) > 0:
+                                # Pick one randomly one of the empty neighbors with J = 0
+                                J_max = random_generator.choice(J_0)
+                            else:
+                                continue
+                        elif J_max[1] == 0:
                             # If J_max is 0, all empty neighbors have J = 0 and are equal in terms of "afinity", so pick one randomly
                             J_max = random_generator.choice(J_neighbors)
-                        else:
+                        elif J_max[1] > 0:
                             # If J_max is not 0, pick the empty neighbor with the highest J value
                             J_neigh_max = list(
                                 filter(lambda x: x[1] == J_max[1], J_neighbors)

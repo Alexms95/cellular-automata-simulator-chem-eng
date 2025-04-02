@@ -504,7 +504,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
                             )
                           </FormLabel>
                           <FormControl>
-                            <Input step={1} min={0} type="number" {...field} />
+                            <Input step={0.1} min={0} type="number" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
