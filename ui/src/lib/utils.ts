@@ -35,12 +35,12 @@ export const formSchema = z.object({
           .number({ message: "It must be a number." })
           .gte(0, "It must be greater or equal to 0.")
           .lte(100, "It must be less or equal to 100."),
-      }),
+      })
     )
     .superRefine((value, ctx) => {
       const sum = value.reduce(
         (acc, curr) => acc + Number(curr.molarFraction),
-        0,
+        0
       );
 
       if (sum !== 100) {
@@ -50,20 +50,33 @@ export const formSchema = z.object({
         });
       }
     }),
+  reactions: z.array(z.object({
+    reactants: z.array(z.string()),
+    products: z.array(z.string()),
+    hasIntermediate: z.boolean(),
+    Pr: z.array(
+      z.coerce.number({ message: "It must be a number." })
+        .gte(0, "It must be greater or equal to 0.")
+    ),
+    reversePr: z.array(
+      z.coerce.number({ message: "It must be a number." })
+        .gte(0, "It must be greater or equal to 0.")
+    )
+  })).optional(),
   parameters: z.object({
     Pm: z.array(
       z.coerce
         .number({ message: "It must be a number." })
         .gte(0, "It must be greater or equal to 0.")
-        .lte(1, "It must be less or equal to 1."),
+        .lte(1, "It must be less or equal to 1.")
     ),
     J: z.array(
       z.object({
         relation: z.string(),
         value: z.coerce
           .number({ message: "It must be a number." })
-          .gte(0, "It must be greater or equal to 0.")
-      }),
+          .gte(0, "It must be greater or equal to 0."),
+      })
     ),
   }),
 });
@@ -82,7 +95,7 @@ export function generatePairMatrix(arraySize: number) {
 
 export function calculateFractions(
   total: number,
-  percentages: number[],
+  percentages: number[]
 ): number[] {
   const accSum = (acc: number, curr: number) => acc + curr;
 
@@ -90,7 +103,7 @@ export function calculateFractions(
 
   const roundedFractions = fractions.map(Math.floor);
   const error = Math.abs(
-    fractions.reduce(accSum, 0) - roundedFractions.reduce(accSum, 0),
+    fractions.reduce(accSum, 0) - roundedFractions.reduce(accSum, 0)
   );
 
   if (error === 0) return roundedFractions;

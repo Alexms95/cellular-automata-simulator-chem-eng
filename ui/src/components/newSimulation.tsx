@@ -18,7 +18,7 @@ import {
 import { colors } from "@/models/colors";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Percent, PlusCircle, TrashIcon } from "lucide-react";
+import { ArrowRightIcon, Percent, PlusCircle, PlusIcon, TrashIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -43,6 +43,7 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Checkbox } from "./ui/checkbox";
 
 export const NewSimulation = () => {
   const queryClient = useQueryClient();
@@ -64,6 +65,11 @@ export const NewSimulation = () => {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "ingredients",
+  });
+
+  const reactionsFieldArray = useFieldArray({
+    control: form.control,
+    name: "reactions",
   });
 
   const handleRemove = (index: number) => {
@@ -428,7 +434,203 @@ export const NewSimulation = () => {
             </Button>
             <Separator />
             <h4 className="scroll-m-20 font-semibold tracking-tight">
-              Parameters
+              Reaction Parameters
+            </h4>
+            <div className="flex flex-col space-y-8">
+              <div className="flex flex-col space-y-2">
+                {reactionsFieldArray.fields.map((field, index) => (
+                  <div key={field.id} className="flex w-full gap-4">
+                    <div className="w-1/6">
+                      <FormField
+                        control={form.control}
+                        name={`reactions.${index}.reactants.0`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Reactant 1</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {fields.map((field) => (
+                                  <SelectItem
+                                    key={field.name}
+                                    value={field.name}
+                                  >
+                                    {field.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <PlusIcon className="self-end pb-2"></PlusIcon>
+                    <div className="w-1/6">
+                      <FormField
+                        control={form.control}
+                        name={`reactions.${index}.reactants.1`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Reactant 2</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {fields.map((field) => (
+                                  <SelectItem
+                                    key={field.name}
+                                    value={field.name}
+                                  >
+                                    {field.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <ArrowRightIcon
+                      color="green"
+                      className="self-end pb-2"
+                    ></ArrowRightIcon>
+                    <div className="w-1/6">
+                      <FormField
+                        control={form.control}
+                        name={`reactions.${index}.products.0`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Product 1</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {fields.map((field) => (
+                                  <SelectItem
+                                    key={field.name}
+                                    value={field.name}
+                                  >
+                                    {field.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <PlusIcon className="self-end pb-2"></PlusIcon>
+                    <div className="w-1/6">
+                      <FormField
+                        control={form.control}
+                        name={`reactions.${index}.products.1`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Product 2</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {fields.map((field) => (
+                                  <SelectItem
+                                    key={field.name}
+                                    value={field.name}
+                                  >
+                                    {field.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name={`reactions.${index}.hasIntermediate`}
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Has intermediate?</FormLabel>
+                          <FormControl className="mt-10 justify-self-end">
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <Tooltip>
+                      <TooltipTrigger className="ml-auto self-end" asChild>
+                        <Button
+                          onClick={() => reactionsFieldArray.remove(index)}
+                          variant="destructive"
+                          size="icon"
+                          className="mt-8"
+                        >
+                          <TrashIcon className="p-1" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        sideOffset={10}
+                        align="end"
+                        alignOffset={50}
+                        side="left"
+                      >
+                        Remove reaction
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                ))}
+              </div>
+              <Button
+                className="ml-auto py-2 px-3 text-xs"
+                type="button"
+                onClick={() =>
+                  reactionsFieldArray.append({
+                    reactants: [],
+                    products: [],
+                    hasIntermediate: false,
+                    Pr: [1],
+                    reversePr: [1],
+                  })
+                }
+              >
+                <PlusCircle className="p-1 pl-0"></PlusCircle>Add Reaction
+              </Button>
+            </div>
+            <Separator />
+            <h4 className="scroll-m-20 font-semibold tracking-tight">
+              Movement Parameters
             </h4>
             <div className="flex space-x-2">
               {fields.map((field, index) => (
@@ -493,7 +695,12 @@ export const NewSimulation = () => {
                             )
                           </FormLabel>
                           <FormControl>
-                            <Input step={0.1} min={0} type="number" {...field} />
+                            <Input
+                              step={0.1}
+                              min={0}
+                              type="number"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
