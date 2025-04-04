@@ -18,7 +18,13 @@ import {
 import { colors } from "@/models/colors";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRightIcon, Percent, PlusCircle, PlusIcon, TrashIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  Percent,
+  PlusCircle,
+  PlusIcon,
+  TrashIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -100,6 +106,14 @@ export const NewSimulation = () => {
   const totalCells =
     useWatch({ control: form.control, name: "gridLenght" }) *
     useWatch({ control: form.control, name: "gridHeight" });
+
+  const componentIndexNames = useWatch({
+    control: form.control,
+    name: "ingredients",
+  }).map((ingredient, i) => ({
+    index: String.fromCharCode(i + 65),
+    name: ingredient.name,
+  }));
 
   const calculateComponentsCount = useCallback(
     (total: number, percentages: number[]) =>
@@ -439,7 +453,7 @@ export const NewSimulation = () => {
             <div className="flex flex-col space-y-8">
               <div className="flex flex-col space-y-2">
                 {reactionsFieldArray.fields.map((field, index) => (
-                  <div key={field.id} className="flex w-full gap-4">
+                  <div key={field.id} className="flex w-full gap-2">
                     <div className="w-1/6">
                       <FormField
                         control={form.control}
@@ -457,12 +471,9 @@ export const NewSimulation = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {fields.map((field) => (
-                                  <SelectItem
-                                    key={field.name}
-                                    value={field.name}
-                                  >
-                                    {field.name}
+                                {componentIndexNames.map((c) => (
+                                  <SelectItem key={c.name} value={c.index}>
+                                    {c.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -490,12 +501,9 @@ export const NewSimulation = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {fields.map((field) => (
-                                  <SelectItem
-                                    key={field.name}
-                                    value={field.name}
-                                  >
-                                    {field.name}
+                                {componentIndexNames.map((c) => (
+                                  <SelectItem key={c.name} value={c.index}>
+                                    {c.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -526,12 +534,9 @@ export const NewSimulation = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {fields.map((field) => (
-                                  <SelectItem
-                                    key={field.name}
-                                    value={field.name}
-                                  >
-                                    {field.name}
+                                {componentIndexNames.map((c) => (
+                                  <SelectItem key={c.name} value={c.index}>
+                                    {c.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -559,12 +564,9 @@ export const NewSimulation = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {fields.map((field) => (
-                                  <SelectItem
-                                    key={field.name}
-                                    value={field.name}
-                                  >
-                                    {field.name}
+                                {componentIndexNames.map((c) => (
+                                  <SelectItem key={c.name} value={c.index}>
+                                    {c.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -574,21 +576,25 @@ export const NewSimulation = () => {
                         )}
                       />
                     </div>
-                    <FormField
-                      control={form.control}
-                      name={`reactions.${index}.hasIntermediate`}
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Has intermediate?</FormLabel>
-                          <FormControl className="mt-10 justify-self-end">
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                    <div className="w-1/6 p-2">
+                      <FormField
+                        control={form.control}
+                        name={`reactions.${index}.hasIntermediate`}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col items-center">
+                            <FormLabel className="mb-2">
+                              Has intermediate?
+                            </FormLabel>
+                            <FormControl className="p-auto">
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     <Tooltip>
                       <TooltipTrigger className="ml-auto self-end" asChild>
                         <Button
