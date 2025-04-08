@@ -452,169 +452,274 @@ export const NewSimulation = () => {
             </h4>
             <div className="flex flex-col space-y-8">
               <div className="flex flex-col space-y-2">
-                {reactionsFieldArray.fields.map((field, index) => (
-                  <div key={field.id} className="flex w-full gap-2">
-                    <div className="w-1/6">
+                {reactionsFieldArray.fields.map((reacField, index) => (
+                  <div key={reacField.id} className="flex flex-col space-y-2">
+                    <div className="flex w-full gap-2">
+                      <div className="w-1/6">
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.reactants.0`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reactant 1</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {componentIndexNames.map((c) => (
+                                    <SelectItem key={c.name} value={c.index}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <PlusIcon className="self-end pb-2"></PlusIcon>
+                      <div className="w-1/6">
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.reactants.1`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reactant 2</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {componentIndexNames.map((c) => (
+                                    <SelectItem key={c.name} value={c.index}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <ArrowRightIcon
+                        color="green"
+                        className="self-end pb-2"
+                      ></ArrowRightIcon>
+                      <div className="w-1/6">
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.products.0`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Product 1</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {componentIndexNames.map((c) => (
+                                    <SelectItem key={c.name} value={c.index}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <PlusIcon className="self-end pb-2"></PlusIcon>
+                      <div className="w-1/6">
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.products.1`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Product 2</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {componentIndexNames.map((c) => (
+                                    <SelectItem key={c.name} value={c.index}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="w-1/6 p-2">
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.hasIntermediate`}
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col items-center">
+                              <FormLabel className="mb-2">
+                                Has intermediate?
+                              </FormLabel>
+                              <FormControl className="p-auto">
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <Tooltip>
+                        <TooltipTrigger className="ml-auto self-end" asChild>
+                          <Button
+                            onClick={() => reactionsFieldArray.remove(index)}
+                            variant="destructive"
+                            size="icon"
+                            className="mt-8"
+                          >
+                            <TrashIcon className="p-1" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          sideOffset={10}
+                          align="end"
+                          alignOffset={50}
+                          side="left"
+                        >
+                          Remove reaction
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="flex space-x-4">
                       <FormField
                         control={form.control}
-                        name={`reactions.${index}.reactants.0`}
+                        name={`reactions.${index}.Pr.0`}
+                        defaultValue={0}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Reactant 1</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {componentIndexNames.map((c) => (
-                                  <SelectItem key={c.name} value={c.index}>
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <PlusIcon className="self-end pb-2"></PlusIcon>
-                    <div className="w-1/6">
-                      <FormField
-                        control={form.control}
-                        name={`reactions.${index}.reactants.1`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Reactant 2</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {componentIndexNames.map((c) => (
-                                  <SelectItem key={c.name} value={c.index}>
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <ArrowRightIcon
-                      color="green"
-                      className="self-end pb-2"
-                    ></ArrowRightIcon>
-                    <div className="w-1/6">
-                      <FormField
-                        control={form.control}
-                        name={`reactions.${index}.products.0`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Product 1</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {componentIndexNames.map((c) => (
-                                  <SelectItem key={c.name} value={c.index}>
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <PlusIcon className="self-end pb-2"></PlusIcon>
-                    <div className="w-1/6">
-                      <FormField
-                        control={form.control}
-                        name={`reactions.${index}.products.1`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Product 2</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {componentIndexNames.map((c) => (
-                                  <SelectItem key={c.name} value={c.index}>
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="w-1/6 p-2">
-                      <FormField
-                        control={form.control}
-                        name={`reactions.${index}.hasIntermediate`}
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col items-center">
-                            <FormLabel className="mb-2">
-                              Has intermediate?
+                            <FormLabel>
+                              P<sub>r</sub> (Reactants -&gt;{" "}
+                              {form.watch(`reactions.${index}.hasIntermediate`)
+                                ? "Intermediate"
+                                : "Products"}
+                              )
                             </FormLabel>
-                            <FormControl className="p-auto">
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
+                            <FormControl>
+                              <Input
+                                step={0.1}
+                                min={0}
+                                max={1}
+                                type="number"
+                                {...field}
                               />
                             </FormControl>
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
+                      {form.watch(`reactions.${index}.hasIntermediate`) && (
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.Pr.1`}
+                          defaultValue={0}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                P<sub>r</sub> (Intermediate -&gt; Products)
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  step={0.1}
+                                  min={0}
+                                  max={1}
+                                  type="number"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                      <FormField
+                        control={form.control}
+                        name={`reactions.${index}.reversePr.0`}
+                        defaultValue={0}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              Reverse P<sub>r</sub> (
+                              {form.watch(`reactions.${index}.hasIntermediate`)
+                                ? "Intermediate"
+                                : "Products"}{" "}
+                              -&gt; Reactants)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                step={0.1}
+                                min={0}
+                                max={1}
+                                type="number"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {form.watch(`reactions.${index}.hasIntermediate`) && (
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.reversePr.1`}
+                          defaultValue={0}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Reverse P<sub>r</sub> (Products -&gt;
+                                Intermediate)
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  step={0.1}
+                                  min={0}
+                                  max={1}
+                                  type="number"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                     </div>
-                    <Tooltip>
-                      <TooltipTrigger className="ml-auto self-end" asChild>
-                        <Button
-                          onClick={() => reactionsFieldArray.remove(index)}
-                          variant="destructive"
-                          size="icon"
-                          className="mt-8"
-                        >
-                          <TrashIcon className="p-1" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        sideOffset={10}
-                        align="end"
-                        alignOffset={50}
-                        side="left"
-                      >
-                        Remove reaction
-                      </TooltipContent>
-                    </Tooltip>
                   </div>
                 ))}
               </div>
@@ -626,8 +731,8 @@ export const NewSimulation = () => {
                     reactants: [],
                     products: [],
                     hasIntermediate: false,
-                    Pr: [1],
-                    reversePr: [1],
+                    Pr: [],
+                    reversePr: [],
                   })
                 }
               >
