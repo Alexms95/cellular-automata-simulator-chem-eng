@@ -20,3 +20,4 @@ class SimulationModel(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), server_onupdate=func.current_timestamp())
     iterations = Column(JSON)
     results = Column(JSON)
+    reactions = Column(JSON)

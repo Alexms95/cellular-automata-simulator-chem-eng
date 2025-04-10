@@ -19,6 +19,13 @@ class Parameters(BaseModel):
     Pm: list[float]
     J: list[PairParameter]
 
+class Reaction(BaseModel):
+    reactants: list[str]
+    products: list[str]
+    Pr: list[float]
+    reversePr: list[float]
+    hasIntermediate: bool
+
 
 class SimulationBase(BaseModel):
     name: str
@@ -27,6 +34,7 @@ class SimulationBase(BaseModel):
     gridHeight: int
     ingredients: list[Ingredient]
     parameters: Parameters
+    reactions: list[Reaction] | None
 
 
 class SimulationCreate(SimulationBase):
