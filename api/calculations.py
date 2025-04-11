@@ -97,13 +97,14 @@ class Calculations:
 
         random_generator = np.random.default_rng()
 
+        M_new = M.copy()
+        
         for n in range(n_iter):
-            M_new = M.copy()
             moved_components.clear()
             for i in range(NL):
                 for j in range(NC):
                     current_position = (i, j)
-                    i_comp = M[i, j]
+                    i_comp = M_new[i, j]
                     if i_comp > 0 and current_position not in moved_components:
                         inner_neighbors_position = von_neumann_neigh + current_position
                         outer_neighbors_position = (
@@ -121,14 +122,14 @@ class Calculations:
                             if Calculations.check_constraints(
                                 surface_type, row_index, column_index
                             ):
-                                if M[row_index, column_index] == 0:
+                                if M_new[row_index, column_index] == 0:
                                     o_row, o_column = outer_neighbors_position[i_p]
                                     if not Calculations.check_constraints(
                                         surface_type, o_row, o_column
                                     ):
                                         J_neighbors.append((i_p, 0))
                                         continue
-                                    outer_component = M[o_row, o_column]
+                                    outer_component = M_new[o_row, o_column]
                                     if outer_component != 0:
                                         # Search in the list for the probability J of the component
                                         j_components = next(
@@ -194,7 +195,7 @@ class Calculations:
                             pb_inner_components = []
                             for comp_position in occuped_inner_neighbors:
                                 row, column = comp_position
-                                comp_index = M[row, column]
+                                comp_index = M_new[row, column]
                                 pair_list = [comp_index, i_comp]
                                 pair_list.sort()
                                 pair = tuple(pair_list)
