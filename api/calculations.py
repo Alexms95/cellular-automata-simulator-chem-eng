@@ -94,29 +94,103 @@ class Calculations:
         pbs = Calculations.calculate_pbs(parameters.J)
 
         moved_components = set()
+        reacted_components = set()
 
         random_generator = np.random.default_rng()
 
         M_new = M.copy()
-        
+
         for n in range(n_iter):
             moved_components.clear()
+            reacted_components.clear()
             for i in range(NL):
                 for j in range(NC):
                     current_position = (i, j)
                     i_comp = M_new[i, j]
-                    if i_comp > 0 and current_position not in moved_components:
-                        inner_neighbors_position = von_neumann_neigh + current_position
-                        outer_neighbors_position = (
-                            2 * von_neumann_neigh + current_position
-                        )
-
+                    inner_neighbors_position = von_neumann_neigh + current_position
+                    outer_neighbors_position = 2 * von_neumann_neigh + current_position
+                    if i_comp > 0:
+                        # TODO: Adjust the condition below later
+                        if current_position not in reacted_components:
+                            # Scan all the neighbors of the component to get all reaction pairs
+                            possible_reactions = []
+                            for inner_neighbor_pos in inner_neighbors_position:
+                                row_index, column_index = inner_neighbor_pos
+                                if Calculations.check_constraints(
+                                    surface_type, row_index, column_index
+                                ):
+                                    inner_comp = M_new[row_index, column_index]
+                                    if inner_comp == 0 or inner_comp == i_comp:
+                                        continue
+                                    for reaction in simulation.reactions:
+                                        comp_pair = [i_comp, inner_comp]
+                                        reactants = [get_component_index(comp) for comp in reaction.reactants]
+                                        products = [get_component_index(comp) for comp in reaction.products]
+                                        if comp_pair == reactants:
+                                            possible_reactions.append(
+                                                {
+                                                    "reactants_position": (
+                                                        current_position,
+                                                        inner_neighbor_pos,
+                                                    ),
+                                                    "products_position": (
+                                                        current_position,
+                                                        inner_neighbor_pos,
+                                                    ),
+                                                    "reaction_probability": reaction.Pr[0],
+                                                }
+                                            )
+                                        elif comp_pair == reactants[::-1]:
+                                            possible_reactions.append(
+                                                {
+                                                    "reactants_position": (
+                                                        current_position,
+                                                        inner_neighbor_pos,
+                                                    ),
+                                                    "products_position": (
+                                                        inner_neighbor_pos,
+                                                        current_position,
+                                                    ),
+                                                    "reaction_probability": reaction.Pr[0],
+                                                }
+                                            )
+                                        elif comp_pair == products:
+                                            possible_reactions.append(
+                                                {
+                                                    "reactants_position": (
+                                                        current_position,
+                                                        inner_neighbor_pos,
+                                                    ),
+                                                    "products_position": (
+                                                        current_position,
+                                                        inner_neighbor_pos,
+                                                    ),
+                                                    "reaction_probability": reaction.reversePr[0],
+                                                }
+                                            )
+                                        elif comp_pair == products[::-1]:
+                                            possible_reactions.append(
+                                                {
+                                                    "reactants_position": (
+                                                        current_position,
+                                                        inner_neighbor_pos,
+                                                    ),
+                                                    "products_position": (
+                                                        inner_neighbor_pos,
+                                                        current_position,
+                                                    ),
+                                                    "reaction_probability": reaction.reversePr[0],
+                                                }
+                                            )
+                                        else:
+                                            continue
+                        if current_position in moved_components:
+                            continue
                         occuped_inner_neighbors = []
 
                         J_neighbors = []
                         j_components = 0
 
-                        # New version
                         for i_p in range(len(inner_neighbors_position)):
                             row_index, column_index = inner_neighbors_position[i_p]
                             if Calculations.check_constraints(
