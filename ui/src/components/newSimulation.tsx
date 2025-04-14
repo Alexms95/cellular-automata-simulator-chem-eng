@@ -85,9 +85,7 @@ export const NewSimulation = () => {
     const newParameters = {
       Pm: parameters.Pm.filter((_, i) => i !== index),
       J: parameters.J.filter(
-        (param) =>
-          param.relation !==
-          String.fromCharCode(65 + index) + String.fromCharCode(65 + index)
+        (param) => !param.relation.includes(String.fromCharCode(65 + index))
       ),
     };
 
@@ -121,24 +119,23 @@ export const NewSimulation = () => {
     []
   );
 
-    const reactions = useWatch({ control: form.control, name: "reactions" });
-  
-    useEffect(() => {
-      // Adjust Pr and reversePr if there is no intermediate
-      reactions?.forEach((reaction) => {
-        const hasIntermediate = reaction.hasIntermediate;
-        if (!hasIntermediate && reaction.Pr.length > 1) {
-          reaction.Pr = reaction.Pr.slice(0, 1);
-          reaction.reversePr = reaction.reversePr.slice(0, 1);
-          form.setValue("reactions", reactions);
-        }
-        else if (hasIntermediate && reaction.Pr.length < 2) {
-          reaction.Pr.push(0);
-          reaction.reversePr.push(0);
-          form.setValue("reactions", reactions);
-        }
-      });
-    }, [reactions, form])
+  const reactions = useWatch({ control: form.control, name: "reactions" });
+
+  useEffect(() => {
+    // Adjust Pr and reversePr if there is no intermediate
+    reactions?.forEach((reaction) => {
+      const hasIntermediate = reaction.hasIntermediate;
+      if (!hasIntermediate && reaction.Pr.length > 1) {
+        reaction.Pr = reaction.Pr.slice(0, 1);
+        reaction.reversePr = reaction.reversePr.slice(0, 1);
+        form.setValue("reactions", reactions);
+      } else if (hasIntermediate && reaction.Pr.length < 2) {
+        reaction.Pr.push(0);
+        reaction.reversePr.push(0);
+        form.setValue("reactions", reactions);
+      }
+    });
+  }, [reactions, form]);
 
   useEffect(() => {
     if (ingredients && totalCells > 0) {

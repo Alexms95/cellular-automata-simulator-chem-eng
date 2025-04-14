@@ -19,7 +19,14 @@ import { colors } from "@/models/colors";
 import { Simulation } from "@/models/simulation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRightIcon, PenIcon, Percent, PlusCircle, PlusIcon, TrashIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  PenIcon,
+  Percent,
+  PlusCircle,
+  PlusIcon,
+  TrashIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -67,7 +74,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
     control: form.control,
     name: "ingredients",
   });
-  
+
   const reactionsFieldArray = useFieldArray({
     control: form.control,
     name: "reactions",
@@ -94,7 +101,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
         }
       }
     },
-    [form, id],
+    [form, id]
   );
 
   const [componentsCount, setComponentsCount] = useState<number[]>([]);
@@ -107,7 +114,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
   const calculateComponentsCount = useCallback(
     (total: number, percentages: number[]) =>
       calculateFractions(total, percentages),
-    [],
+    []
   );
 
   const reactions = useWatch({ control: form.control, name: "reactions" });
@@ -120,23 +127,22 @@ export const EditSimulation = ({ id }: { id: string }) => {
         reaction.Pr = reaction.Pr.slice(0, 1);
         reaction.reversePr = reaction.reversePr.slice(0, 1);
         form.setValue("reactions", reactions);
-      }
-      else if (hasIntermediate && reaction.Pr.length < 2) {
+      } else if (hasIntermediate && reaction.Pr.length < 2) {
         reaction.Pr.push(0);
         reaction.reversePr.push(0);
         form.setValue("reactions", reactions);
       }
     });
-  }, [reactions, form])
+  }, [reactions, form]);
 
   useEffect(() => {
     if (ingredients && totalCells > 0) {
       const percentages = ingredients.map(
-        (i: { molarFraction: number }) => i.molarFraction,
+        (i: { molarFraction: number }) => i.molarFraction
       );
       const calculatedComponents = calculateComponentsCount(
         totalCells,
-        percentages,
+        percentages
       );
       setComponentsCount(calculatedComponents);
     }
@@ -149,8 +155,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
     const newParameters = {
       Pm: parameters.Pm.filter((_, i) => i !== index),
       J: parameters.J.filter(
-        (param) =>
-          param.relation !== String.fromCharCode(65 + index) + String.fromCharCode(65 + index)
+        (param) => !param.relation.includes(String.fromCharCode(65 + index))
       ),
     };
 

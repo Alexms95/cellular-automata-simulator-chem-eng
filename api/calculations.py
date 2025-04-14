@@ -200,21 +200,20 @@ class Calculations:
                                     prob[1] for prob in individual_probs
                                 )
                                 total_sum = true_sum + false_sum
-                                no_reaction_prob = false_sum / total_sum
 
                                 # Add the no-reaction option to the list of probabilities
                                 possible_reactions.append(
                                     {
                                         "reactants_position": None,
                                         "products_position": None,
-                                        "reaction_probability": no_reaction_prob,
+                                        "reaction_probability": false_sum,
                                     }
                                 )
                                 # Normalize the probabilities
                                 normalized_probabilities = [
                                     reaction["reaction_probability"] / total_sum
                                     for reaction in possible_reactions
-                                ].append(no_reaction_prob)
+                                ]
 
                                 # Choose a reaction based on the normalized probabilities
                                 chosen_reaction = random_generator.choice(
@@ -230,7 +229,8 @@ class Calculations:
                                     prod2_row, prod2_column = prod2_pos
                                     M_new[prod1_row, prod1_column] = products[0]
                                     M_new[prod2_row, prod2_column] = products[1]
-                                    reacted_components.add(prod1_pos, prod2_pos)
+                                    reacted_components.add((prod1_row, prod1_column))
+                                    reacted_components.add((prod2_row, prod2_column))
                         if current_position in moved_components or current_position in reacted_components:
                             continue
                         occuped_inner_neighbors = []

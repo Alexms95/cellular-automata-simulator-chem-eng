@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:8000
-@simulation_id = ca49e19f-8e53-40f3-bfa4-c1130d249e80
+@simulation_id = 1a349541-9cfe-4875-8cc9-234840a4ff4f
 
 GET {{baseUrl}}/simulations
 
