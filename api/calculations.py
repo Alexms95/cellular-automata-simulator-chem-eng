@@ -1,9 +1,11 @@
 from enum import Enum
+from io import StringIO
 from math import floor
 
 import numpy as np
-from utils import get_component_index
+from logger import logger
 from schemas import PairParameter, SimulationBase
+from utils import get_component_index
 
 SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
 
@@ -100,6 +102,21 @@ class Calculations:
 
         M_new = M.copy()
 
+        logger.info(
+            "Simulation Inputs:\n"
+            f"  Grid Dimensions: Lines={NL}, Columns={NC}\n"
+            f"  Number of Components: NCOMP={NCOMP}\n"
+            f"  Component Names: {NOME_COMP}\n"
+            f"  Molar Fractions (Ci): {Ci}\n"
+            f"  Cell Counts (Ni): {Ni}\n"
+            f"  Surface Type: {surface_type}\n"
+            f"  Empty Cells: NEMPTY={NEMPTY}\n"
+            f"  Occuped Cells: NCELL={NCELL}\n"
+            f"  Number of Iterations: n_iter={n_iter}"
+        )
+
+        iteration_log_text = StringIO()
+
         for n in range(n_iter):
             moved_components.clear()
             reacted_components.clear()
@@ -109,237 +126,342 @@ class Calculations:
                     i_comp = M_new[i, j]
                     inner_neighbors_position = von_neumann_neigh + current_position
                     outer_neighbors_position = 2 * von_neumann_neigh + current_position
+
+                    # Initialize variables used in the except block
+                    possible_reactions = []
+                    true_sum = 0
+                    false_sum = 0
+                    total_sum = 0
+                    normalized_probabilities = []
+                    chosen_reaction = None
+                    J_neighbors = []
+                    occuped_inner_neighbors = []
+                    J_max = None
+                    J_0 = []
+                    J_neigh_max = []
+                    pb_inner_components = []
+                    pm_total_component = 0
+
                     if i_comp > 0:
                         # TODO: Adjust the condition below later
                         if current_position not in reacted_components:
-                            # Scan all the neighbors of the component to get all reaction pairs
-                            possible_reactions = []
-                            for inner_neighbor_pos in inner_neighbors_position:
-                                row_index, column_index = inner_neighbor_pos
+                            try:
+                                # Scan all the neighbors of the component to get all reaction pairs
+                                possible_reactions = []
+                                for inner_neighbor_pos in inner_neighbors_position:
+                                    row_index, column_index = inner_neighbor_pos
+                                    if Calculations.check_constraints(
+                                        surface_type, row_index, column_index
+                                    ):
+                                        inner_comp = M_new[row_index, column_index]
+                                        if inner_comp == 0 or inner_comp == i_comp:
+                                            continue
+                                        for reaction in simulation.reactions:
+                                            comp_pair = [i_comp, inner_comp]
+                                            reactants = [
+                                                get_component_index(comp)
+                                                for comp in reaction.reactants
+                                            ]
+                                            products = [
+                                                get_component_index(comp)
+                                                for comp in reaction.products
+                                            ]
+                                            if comp_pair == reactants:
+                                                possible_reactions.append(
+                                                    {
+                                                        "products": products,
+                                                        "products_position": (
+                                                            current_position,
+                                                            inner_neighbor_pos,
+                                                        ),
+                                                        "reaction_probability": reaction.Pr[
+                                                            0
+                                                        ],
+                                                    }
+                                                )
+                                            elif comp_pair == reactants[::-1]:
+                                                possible_reactions.append(
+                                                    {
+                                                        "products": products,
+                                                        "products_position": (
+                                                            inner_neighbor_pos,
+                                                            current_position,
+                                                        ),
+                                                        "reaction_probability": reaction.Pr[
+                                                            0
+                                                        ],
+                                                    }
+                                                )
+                                            elif comp_pair == products:
+                                                possible_reactions.append(
+                                                    {
+                                                        "products": reactants,
+                                                        "products_position": (
+                                                            current_position,
+                                                            inner_neighbor_pos,
+                                                        ),
+                                                        "reaction_probability": reaction.reversePr[
+                                                            0
+                                                        ],
+                                                    }
+                                                )
+                                            elif comp_pair == products[::-1]:
+                                                possible_reactions.append(
+                                                    {
+                                                        "products": reactants,
+                                                        "products_position": (
+                                                            inner_neighbor_pos,
+                                                            current_position,
+                                                        ),
+                                                        "reaction_probability": reaction.reversePr[
+                                                            0
+                                                        ],
+                                                    }
+                                                )
+
+                                if len(possible_reactions) > 0:
+                                    # Choose which reaction to execute based on their probabilities
+                                    individual_probs = [
+                                        (
+                                            reaction["reaction_probability"],
+                                            1 - reaction["reaction_probability"],
+                                        )
+                                        for reaction in possible_reactions
+                                    ]
+                                    true_sum = sum(prob[0] for prob in individual_probs)
+
+                                    if true_sum == 0:
+                                        # No reaction occurs, so we can skip this step
+                                        continue
+
+                                    false_sum = sum(
+                                        prob[1] for prob in individual_probs
+                                    )
+                                    total_sum = true_sum + false_sum
+
+                                    # Add the no-reaction option to the list of probabilities
+                                    possible_reactions.append(
+                                        {
+                                            "products": None,
+                                            "products_position": None,
+                                            "reaction_probability": false_sum,
+                                        }
+                                    )
+                                    # Normalize the probabilities
+                                    normalized_probabilities = [
+                                        reaction["reaction_probability"] / total_sum
+                                        for reaction in possible_reactions
+                                    ]
+
+                                    # Choose a reaction based on the normalized probabilities
+                                    chosen_reaction = random_generator.choice(
+                                        possible_reactions, p=normalized_probabilities
+                                    )
+
+                                    chosen_products = chosen_reaction[
+                                        "products_position"
+                                    ]
+                                    if chosen_products is not None:
+                                        prod1_pos, prod2_pos = chosen_products
+                                        prod1_row, prod1_column = prod1_pos
+                                        prod2_row, prod2_column = prod2_pos
+                                        M_new[prod1_row, prod1_column] = (
+                                            chosen_reaction["products"][0]
+                                        )
+                                        M_new[prod2_row, prod2_column] = (
+                                            chosen_reaction["products"][1]
+                                        )
+                                        reacted_components.add(
+                                            (prod1_row, prod1_column)
+                                        )
+                                        reacted_components.add(
+                                            (prod2_row, prod2_column)
+                                        )
+                            except Exception as e:
+                                iteration_log_text.write(f"  Iteration: {n}\n")
+                                iteration_log_text.write(
+                                    f"  Current Position: {current_position}\n"
+                                )
+                                iteration_log_text.write(f"  Component: {i_comp}\n")
+                                iteration_log_text.write(
+                                    f"  Inner Neighbors: {inner_neighbors_position}\n"
+                                )
+                                iteration_log_text.write(
+                                    f"  Outer Neighbors: {outer_neighbors_position}\n"
+                                )
+                                iteration_log_text.write(f"  M_new:\n{M_new}\n")
+                                iteration_log_text.write(
+                                    f"  Moved Components: {moved_components}\n"
+                                )
+                                iteration_log_text.write(
+                                    f"  Reacted Components: {reacted_components}\n"
+                                )
+                                iteration_log_text.write(
+                                    f"  Possible Reactions: {possible_reactions}\n"
+                                )
+                                iteration_log_text.write(f"  True Sum: {true_sum}\n")
+                                iteration_log_text.write(f"  False Sum: {false_sum}\n")
+                                iteration_log_text.write(f"  Total Sum: {total_sum}\n")
+                                iteration_log_text.write(
+                                    f"  Normalized Probabilities: {normalized_probabilities}\n"
+                                )
+                                iteration_log_text.write(
+                                    f"  Chosen Reaction: {chosen_reaction}\n"
+                                )
+                                logger.exception(iteration_log_text.getvalue())
+                                raise e
+                        if (
+                            current_position in moved_components
+                            or current_position in reacted_components
+                        ):
+                            continue
+                        try:
+                            occuped_inner_neighbors = []
+
+                            J_neighbors = []
+                            j_components = 0
+
+                            for i_p in range(len(inner_neighbors_position)):
+                                row_index, column_index = inner_neighbors_position[i_p]
                                 if Calculations.check_constraints(
                                     surface_type, row_index, column_index
                                 ):
-                                    inner_comp = M_new[row_index, column_index]
-                                    if inner_comp == 0 or inner_comp == i_comp:
-                                        continue
-                                    for reaction in simulation.reactions:
-                                        comp_pair = [i_comp, inner_comp]
-                                        reactants = [get_component_index(comp) for comp in reaction.reactants]
-                                        products = [get_component_index(comp) for comp in reaction.products]
-                                        if comp_pair == reactants:
-                                            possible_reactions.append(
-                                                {
-                                                    "reactants_position": (
-                                                        current_position,
-                                                        inner_neighbor_pos,
-                                                    ),
-                                                    "products_position": (
-                                                        current_position,
-                                                        inner_neighbor_pos,
-                                                    ),
-                                                    "reaction_probability": reaction.Pr[0],
-                                                }
-                                            )
-                                        elif comp_pair == reactants[::-1]:
-                                            possible_reactions.append(
-                                                {
-                                                    "reactants_position": (
-                                                        current_position,
-                                                        inner_neighbor_pos,
-                                                    ),
-                                                    "products_position": (
-                                                        inner_neighbor_pos,
-                                                        current_position,
-                                                    ),
-                                                    "reaction_probability": reaction.Pr[0],
-                                                }
-                                            )
-                                        elif comp_pair == products:
-                                            possible_reactions.append(
-                                                {
-                                                    "reactants_position": (
-                                                        current_position,
-                                                        inner_neighbor_pos,
-                                                    ),
-                                                    "products_position": (
-                                                        current_position,
-                                                        inner_neighbor_pos,
-                                                    ),
-                                                    "reaction_probability": reaction.reversePr[0],
-                                                }
-                                            )
-                                        elif comp_pair == products[::-1]:
-                                            possible_reactions.append(
-                                                {
-                                                    "reactants_position": (
-                                                        current_position,
-                                                        inner_neighbor_pos,
-                                                    ),
-                                                    "products_position": (
-                                                        inner_neighbor_pos,
-                                                        current_position,
-                                                    ),
-                                                    "reaction_probability": reaction.reversePr[0],
-                                                }
-                                            )
-                            if len(possible_reactions) > 0:
-                                # Choose which reaction to execute based on their probabilities
-                                individual_probs = [
-                                    (reaction["reaction_probability"], 1 - reaction["reaction_probability"])
-                                    for reaction in possible_reactions
-                                ]
-                                true_sum = sum(
-                                    prob[0] for prob in individual_probs
-                                )
-
-                                if true_sum == 0:
-                                    # No reaction occurs, so we can skip this step
-                                    continue
-
-                                false_sum = sum(
-                                    prob[1] for prob in individual_probs
-                                )
-                                total_sum = true_sum + false_sum
-
-                                # Add the no-reaction option to the list of probabilities
-                                possible_reactions.append(
-                                    {
-                                        "reactants_position": None,
-                                        "products_position": None,
-                                        "reaction_probability": false_sum,
-                                    }
-                                )
-                                # Normalize the probabilities
-                                normalized_probabilities = [
-                                    reaction["reaction_probability"] / total_sum
-                                    for reaction in possible_reactions
-                                ]
-
-                                # Choose a reaction based on the normalized probabilities
-                                chosen_reaction = random_generator.choice(
-                                    possible_reactions, p=normalized_probabilities
-                                )
-
-                                chosen_products = chosen_reaction[
-                                    "products_position"
-                                ]
-                                if chosen_products is not None:
-                                    prod1_pos, prod2_pos = chosen_products
-                                    prod1_row, prod1_column = prod1_pos
-                                    prod2_row, prod2_column = prod2_pos
-                                    M_new[prod1_row, prod1_column] = products[0]
-                                    M_new[prod2_row, prod2_column] = products[1]
-                                    reacted_components.add((prod1_row, prod1_column))
-                                    reacted_components.add((prod2_row, prod2_column))
-                        if current_position in moved_components or current_position in reacted_components:
-                            continue
-                        occuped_inner_neighbors = []
-
-                        J_neighbors = []
-                        j_components = 0
-
-                        for i_p in range(len(inner_neighbors_position)):
-                            row_index, column_index = inner_neighbors_position[i_p]
-                            if Calculations.check_constraints(
-                                surface_type, row_index, column_index
-                            ):
-                                if M_new[row_index, column_index] == 0:
-                                    o_row, o_column = outer_neighbors_position[i_p]
-                                    if not Calculations.check_constraints(
-                                        surface_type, o_row, o_column
-                                    ):
-                                        J_neighbors.append((i_p, 0))
-                                        continue
-                                    outer_component = M_new[o_row, o_column]
-                                    if outer_component != 0:
-                                        # Search in the list for the probability J of the component
-                                        j_components = next(
-                                            (
-                                                j_param.value
-                                                for j_param in parameters.J
-                                                if (
-                                                    get_component_index(
-                                                        j_param.relation[0]
+                                    if M_new[row_index, column_index] == 0:
+                                        o_row, o_column = outer_neighbors_position[i_p]
+                                        if not Calculations.check_constraints(
+                                            surface_type, o_row, o_column
+                                        ):
+                                            J_neighbors.append((i_p, 0))
+                                            continue
+                                        outer_component = M_new[o_row, o_column]
+                                        if outer_component != 0:
+                                            # Search in the list for the probability J of the component
+                                            j_components = next(
+                                                (
+                                                    j_param.value
+                                                    for j_param in parameters.J
+                                                    if (
+                                                        get_component_index(
+                                                            j_param.relation[0]
+                                                        )
+                                                        == i_comp
+                                                        and get_component_index(
+                                                            j_param.relation[1]
+                                                        )
+                                                        == outer_component
                                                     )
-                                                    == i_comp
-                                                    and get_component_index(
-                                                        j_param.relation[1]
+                                                    or (
+                                                        get_component_index(
+                                                            j_param.relation[0]
+                                                        )
+                                                        == outer_component
+                                                        and get_component_index(
+                                                            j_param.relation[1]
+                                                        )
+                                                        == i_comp
                                                     )
-                                                    == outer_component
-                                                )
-                                                or (
-                                                    get_component_index(
-                                                        j_param.relation[0]
-                                                    )
-                                                    == outer_component
-                                                    and get_component_index(
-                                                        j_param.relation[1]
-                                                    )
-                                                    == i_comp
                                                 )
                                             )
+                                        J_neighbors.append((i_p, j_components))
+                                    else:
+                                        occuped_inner_neighbors.append(
+                                            (row_index, column_index)
                                         )
-                                    J_neighbors.append((i_p, j_components))
-                                else:
-                                    occuped_inner_neighbors.append(
-                                        (row_index, column_index)
-                                    )
-                        # If there is no empty neighbor, the component cannot move
-                        if len(J_neighbors) == 0:
-                            continue
 
-                        J_max = max(J_neighbors, key=lambda x: x[1])
-
-                        if J_max[1] < 1 and J_max[1] > 0:
-                            # Check if there are empty neighbors with J = 0, if so, pick one randomly
-                            J_0 = list(filter(lambda x: x[1] == 0, J_neighbors))
-                            if len(J_0) > 0:
-                                # Pick one randomly one of the empty neighbors with J = 0
-                                J_max = random_generator.choice(J_0)
-                            else:
+                            # If there is no empty neighbor, the component cannot move
+                            if len(J_neighbors) == 0:
                                 continue
-                        elif J_max[1] == 0:
-                            # If J_max is 0, all empty neighbors have J = 0 and are equal in terms of "afinity", so pick one randomly
-                            J_max = random_generator.choice(J_neighbors)
-                        elif J_max[1] > 0:
-                            # If J_max is not 0, pick the empty neighbor with the highest J value
-                            J_neigh_max = list(
-                                filter(lambda x: x[1] == J_max[1], J_neighbors)
+
+                            J_max = max(J_neighbors, key=lambda x: x[1])
+
+                            if J_max[1] < 1 and J_max[1] > 0:
+                                # Check if there are empty neighbors with J = 0, if so, pick one randomly
+                                J_0 = list(filter(lambda x: x[1] == 0, J_neighbors))
+                                if len(J_0) > 0:
+                                    # Pick one randomly one of the empty neighbors with J = 0
+                                    J_max = random_generator.choice(J_0)
+                                else:
+                                    continue
+                            elif J_max[1] == 0:
+                                # If J_max is 0, all empty neighbors have J = 0 and are equal in terms of "afinity", so pick one randomly
+                                J_max = random_generator.choice(J_neighbors)
+                            elif J_max[1] > 0:
+                                # If J_max is not 0, pick the empty neighbor with the highest J value
+                                J_neigh_max = list(
+                                    filter(lambda x: x[1] == J_max[1], J_neighbors)
+                                )
+                                if len(J_neigh_max) > 1:
+                                    # If there are more than one neighbor with the same J_max value, pick one randomly
+                                    J_max = random_generator.choice(J_neigh_max)
+
+                            pbs_product = 1
+
+                            if len(occuped_inner_neighbors) > 0:
+                                pb_inner_components = []
+                                for comp_position in occuped_inner_neighbors:
+                                    row, column = comp_position
+                                    comp_index = M_new[row, column]
+                                    pair_list = [comp_index, i_comp]
+                                    pair_list.sort()
+                                    pair = tuple(pair_list)
+                                    pb = pbs[pair]
+                                    pb_inner_components.append(pb)
+
+                                pbs_product = np.array(pb_inner_components).prod()
+
+                            pm_total_component = parameters.Pm[i_comp - 1] * pbs_product
+
+                            if Calculations.maybe_execute(pm_total_component):
+                                # Move the component to the empty neighbor with the highest J value
+                                row_move, column_move = inner_neighbors_position[
+                                    int(J_max[0])
+                                ]
+                                M_new[row_move, column_move] = i_comp
+                                M_new[i, j] = 0
+                                moved_components.add((row_move, column_move))
+                                break
+                        except Exception as e:
+                            iteration_log_text.write(f"  Iteration: {n}\n")
+                            iteration_log_text.write(
+                                f"  Current Position: {current_position}\n"
                             )
-                            if len(J_neigh_max) > 1:
-                                # If there are more than one neighbor with the same J_max value, pick one randomly
-                                J_max = random_generator.choice(J_neigh_max)
-
-                        pbs_product = 1
-
-                        if len(occuped_inner_neighbors) > 0:
-                            pb_inner_components = []
-                            for comp_position in occuped_inner_neighbors:
-                                row, column = comp_position
-                                comp_index = M_new[row, column]
-                                pair_list = [comp_index, i_comp]
-                                pair_list.sort()
-                                pair = tuple(pair_list)
-                                pb = pbs[pair]
-                                pb_inner_components.append(pb)
-                            pbs_product = np.array(pb_inner_components).prod()
-
-                        pm_total_component = parameters.Pm[i_comp - 1] * pbs_product
-
-                        if Calculations.maybe_execute(pm_total_component):
-                            # Move the component to the empty neighbor with the highest J value
-                            row_move, column_move = inner_neighbors_position[
-                                int(J_max[0])
-                            ]
-                            M_new[row_move, column_move] = i_comp
-                            M_new[i, j] = 0
-                            moved_components.add((row_move, column_move))
-                            break
+                            iteration_log_text.write(f"  Component: {i_comp}\n")
+                            iteration_log_text.write(
+                                f"  Inner Neighbors: {inner_neighbors_position}\n"
+                            )
+                            iteration_log_text.write(
+                                f"  Outer Neighbors: {outer_neighbors_position}\n"
+                            )
+                            iteration_log_text.write(f"  M_new:\n{M_new}\n")
+                            iteration_log_text.write(
+                                f"  Moved Components: {moved_components}\n"
+                            )
+                            iteration_log_text.write(
+                                f"  Reacted Components: {reacted_components}\n"
+                            )
+                            iteration_log_text.write(f"  J_neighbors: {J_neighbors}\n")
+                            iteration_log_text.write(
+                                f"  Occupied Inner Neighbors: {occuped_inner_neighbors}\n"
+                            )
+                            iteration_log_text.write(f"  J_max: {J_max}\n")
+                            iteration_log_text.write(f"  J_0: {J_0}\n")
+                            iteration_log_text.write(f"  J_neigh_max: {J_neigh_max}\n")
+                            iteration_log_text.write(
+                                f"  Pbs for inner components: {pb_inner_components}\n"
+                            )
+                            iteration_log_text.write(
+                                f"  pm_total_component: {pm_total_component}\n"
+                            )
+                            logger.exception(iteration_log_text.getvalue())
+                            raise e
         M = M_new.copy()
         M_new = None
 
         print("Final matrix:")
         Calculations.show_matrix(M)
+
+        logger.info("Calculations completed successfully!")
+
         return M
 
     @staticmethod
