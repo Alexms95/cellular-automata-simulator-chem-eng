@@ -155,19 +155,27 @@ class Calculations:
                                     if Calculations.check_constraints(
                                         surface_type, row_index, column_index
                                     ):
+                                        inner_pos_tuple = (row_index, column_index)
                                         inner_comp = M_new[row_index, column_index]
-                                        positions_pair = (current_position, inner_neighbor_pos)
-                                        reversed_positions_pair = (
-                                            inner_neighbor_pos, current_position
+                                        positions_pair = (
+                                            current_position,
+                                            inner_pos_tuple,
                                         )
+                                        reversed_positions_pair = (
+                                            inner_pos_tuple,
+                                            current_position,
+                                        )
+                                        # Skip empty cells, the same component, already not reacted components, already reacted components in the neighborhood, and moved components in the neighborhood
                                         if (
                                             inner_comp == 0
                                             or inner_comp == i_comp
                                             or positions_pair in not_reacted_components
                                             or reversed_positions_pair
                                             in not_reacted_components
+                                            or inner_pos_tuple in reacted_components
+                                            # TODO: maybe this condition is not needed
+                                            or inner_pos_tuple in moved_components
                                         ):
-                                            # Skip empty cells, the same component, or already not reacted components
                                             continue
 
                                         for reaction in simulation.reactions:
@@ -182,20 +190,28 @@ class Calculations:
                                             ]
                                             intermediates = []
                                             if reaction.hasIntermediate:
-                                                intermediates[0] = (reactants[0] + reactants[1]) * 100 + reactants[0] * 10
-                                                intermediates[1] = (
-                                                    reactants[0] + reactants[1]
-                                                ) * 100 + reactants[1] * 10
+                                                intermediates.append(
+                                                    (reactants[0] + reactants[1]) * 100
+                                                    + reactants[0] * 10
+                                                )
+                                                intermediates.append(
+                                                    (reactants[0] + reactants[1]) * 100
+                                                    + reactants[1] * 10
+                                                )
 
                                             if comp_pair == reactants:
                                                 poss_reac_index += 1
                                                 possible_reactions.append(
                                                     {
                                                         "index": poss_reac_index,
-                                                        "products": intermediates if reaction.hasIntermediate else products,
+                                                        "products": (
+                                                            intermediates
+                                                            if reaction.hasIntermediate
+                                                            else products
+                                                        ),
                                                         "products_position": (
                                                             current_position,
-                                                            inner_neighbor_pos,
+                                                            (row_index, column_index),
                                                         ),
                                                         "reaction_probability": reaction.Pr[
                                                             0
@@ -207,9 +223,13 @@ class Calculations:
                                                 possible_reactions.append(
                                                     {
                                                         "index": poss_reac_index,
-                                                        "products": intermediates if reaction.hasIntermediate else products,
+                                                        "products": (
+                                                            intermediates
+                                                            if reaction.hasIntermediate
+                                                            else products
+                                                        ),
                                                         "products_position": (
-                                                            inner_neighbor_pos,
+                                                            (row_index, column_index),
                                                             current_position,
                                                         ),
                                                         "reaction_probability": reaction.Pr[
@@ -229,10 +249,14 @@ class Calculations:
                                                         ),
                                                         "products_position": (
                                                             current_position,
-                                                            inner_neighbor_pos,
+                                                            (row_index, column_index),
                                                         ),
                                                         "reaction_probability": reaction.reversePr[
-                                                            0 if not reaction.hasIntermediate else 1
+                                                            (
+                                                                0
+                                                                if not reaction.hasIntermediate
+                                                                else 1
+                                                            )
                                                         ],
                                                     }
                                                 )
@@ -247,11 +271,15 @@ class Calculations:
                                                             else reactants
                                                         ),
                                                         "products_position": (
-                                                            inner_neighbor_pos,
+                                                            (row_index, column_index),
                                                             current_position,
                                                         ),
                                                         "reaction_probability": reaction.reversePr[
-                                                            0 if not reaction.hasIntermediate else 1
+                                                            (
+                                                                0
+                                                                if not reaction.hasIntermediate
+                                                                else 1
+                                                            )
                                                         ],
                                                     }
                                                 )
@@ -263,7 +291,7 @@ class Calculations:
                                                         "products": products,
                                                         "products_position": (
                                                             current_position,
-                                                            inner_neighbor_pos,
+                                                            (row_index, column_index),
                                                         ),
                                                         "reaction_probability": reaction.Pr[
                                                             1
@@ -277,7 +305,7 @@ class Calculations:
                                                         "products": reactants,
                                                         "products_position": (
                                                             current_position,
-                                                            inner_neighbor_pos,
+                                                            (row_index, column_index),
                                                         ),
                                                         "reaction_probability": reaction.reversePr[
                                                             0
@@ -291,7 +319,7 @@ class Calculations:
                                                         "index": poss_reac_index,
                                                         "products": products,
                                                         "products_position": (
-                                                            inner_neighbor_pos,
+                                                            (row_index, column_index),
                                                             current_position,
                                                         ),
                                                         "reaction_probability": reaction.Pr[
@@ -305,7 +333,7 @@ class Calculations:
                                                         "index": poss_reac_index,
                                                         "products": reactants,
                                                         "products_position": (
-                                                            inner_neighbor_pos,
+                                                            (row_index, column_index),
                                                             current_position,
                                                         ),
                                                         "reaction_probability": reaction.reversePr[
@@ -352,7 +380,8 @@ class Calculations:
                                     )
                                     # Normalize the probabilities
                                     normalized_probabilities = [
-                                        poss_reaction["reaction_probability"] / total_sum
+                                        poss_reaction["reaction_probability"]
+                                        / total_sum
                                         for poss_reaction in possible_reactions
                                     ]
 
@@ -387,7 +416,9 @@ class Calculations:
                                                 poss_reaction["products_position"][1],
                                             )
                                             for poss_reaction in possible_reactions
-                                            if poss_reaction["index"] != chosen_reaction["index"] and poss_reaction["index"] != -1
+                                            if poss_reaction["index"]
+                                            != chosen_reaction["index"]
+                                            and poss_reaction["index"] != -1
                                         )
                                     else:
                                         not_reacted_components.update(
@@ -410,7 +441,9 @@ class Calculations:
                                 iteration_log_text.write(
                                     f"  Outer Neighbors: {outer_neighbors_position}\n"
                                 )
-                                iteration_log_text.write(f"  Current matrix:\n{M_new}\n")
+                                iteration_log_text.write(
+                                    f"  Current matrix:\n{M_new}\n"
+                                )
                                 iteration_log_text.write(
                                     f"  Moved Components: {moved_components}\n"
                                 )
@@ -457,6 +490,10 @@ class Calculations:
                                             J_neighbors.append((i_p, 0))
                                             continue
                                         outer_component = M_new[o_row, o_column]
+                                        if outer_component > 100:
+                                            # If the outer component is an intermediate, the joining probability is 0
+                                            J_neighbors.append((i_p, 0))
+                                            continue
                                         if outer_component != 0:
                                             # Search in the list for the probability J of the component
                                             j_components = next(
@@ -527,7 +564,7 @@ class Calculations:
                                     pair_list = [comp_index, i_comp]
                                     pair_list.sort()
                                     pair = tuple(pair_list)
-                                    pb = pbs[pair]
+                                    pb = 1 if comp_index > 100 else pbs[pair]
                                     pb_inner_components.append(pb)
 
                                 pbs_product = np.array(pb_inner_components).prod()
@@ -592,7 +629,7 @@ class Calculations:
         NL, NC = M.shape
         for i in range(NL):
             for j in range(NC):
-                print(f"{M[i, j]:2d}", end=" ")
+                print(f"{M[i, j]:4d}", end=" ")
             print()
         print()
 

@@ -40,5 +40,3 @@ Content-Type: application/json; charset=utf-8
 
 POST {{baseUrl}}/simulations/{{simulation_id}}/run
 Content-Type: application/json; charset=utf-8
-
-{}
