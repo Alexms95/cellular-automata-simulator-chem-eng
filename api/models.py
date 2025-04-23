@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import JSON, Column, DateTime, Integer, String
+from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 from sqlalchemy.sql import func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
@@ -18,6 +18,6 @@ class SimulationModel(Base):
     parameters = Column(JSON, nullable=False)
     created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
     updated_at = Column(DateTime, nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), server_onupdate=func.current_timestamp())
-    iterations = Column(JSON)
+    iterations = Column(Text)
     results = Column(JSON)
     reactions = Column(JSON)

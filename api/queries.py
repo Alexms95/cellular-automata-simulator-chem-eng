@@ -1,11 +1,12 @@
 from sqlalchemy import select
+from utils import compress_matrix
 from calculations import Calculations
 from fastapi import HTTPException
 from models import SimulationModel
 from schemas import SimulationBase, SimulationCreate
 from sqlalchemy.orm import Session, load_only
 
-SELECT_WITHOUT_RESULTS = select(
+SELECT_WITHOUT_ITERATIONS = select(
     SimulationModel.id,
     SimulationModel.name,
     SimulationModel.iterationsNumber,
@@ -21,10 +22,10 @@ SELECT_WITHOUT_RESULTS = select(
 
 class SimulationData:
     def get_simulations(self, db: Session) -> list[SimulationModel]:
-        return db.execute(SELECT_WITHOUT_RESULTS).all()
+        return db.execute(SELECT_WITHOUT_ITERATIONS).all()
 
     def create_simulation(self, newSimulation: SimulationCreate, db: Session) -> None:
-        query = SELECT_WITHOUT_RESULTS.where(
+        query = SELECT_WITHOUT_ITERATIONS.where(
             SimulationModel.name == newSimulation.name
         )
         already_exists = db.execute(query).first()
@@ -77,7 +78,7 @@ class SimulationData:
             raise HTTPException(status_code=400, detail="Simulation not found")
 
         query = (
-            SELECT_WITHOUT_RESULTS
+            SELECT_WITHOUT_ITERATIONS
             .where(
                 SimulationModel.id != simulation_id,
                 SimulationModel.name == updatedSimulation.name,
@@ -144,7 +145,7 @@ class SimulationData:
 
         simulation = SimulationBase(**db_simulation.__dict__)
 
-        resulting_matrix = Calculations.calculate_cellular_automata(simulation)
-        db_simulation.iterations = resulting_matrix.tolist()
+        resulting_matrix = Calculations.calculate_cellular_automata(simulation).tolist()
+        db_simulation.iterations = compress_matrix(resulting_matrix)
         db.commit()
         db.refresh(db_simulation)
