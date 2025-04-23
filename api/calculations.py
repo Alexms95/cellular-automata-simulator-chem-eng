@@ -72,7 +72,7 @@ class Calculations:
         print(Ci)
         Ni = Calculations.calculate_cell_counts(NCELL, Ci)
 
-        M = np.zeros((NL, NC), dtype=int)
+        M = np.zeros((NL, NC), dtype=np.int16)
 
         # Randomly distribute the components in the matrix
         for i in range(NCOMP):
@@ -89,7 +89,7 @@ class Calculations:
         Calculations.show_matrix(M)
 
         # Define the Von Neumann neighborhood
-        von_neumann_neigh = np.array([[-1, 0], [1, 0], [0, -1], [0, 1]], dtype=int)
+        von_neumann_neigh = np.array([[-1, 0], [1, 0], [0, -1], [0, 1]], dtype=np.int16)
 
         n_iter = simulation.iterationsNumber
 
@@ -100,8 +100,6 @@ class Calculations:
         not_reacted_components = set()
 
         random_generator = np.random.default_rng()
-
-        M_new = M.copy()
 
         logger.info(
             "Simulation Inputs:\n"
@@ -120,14 +118,20 @@ class Calculations:
 
         intermediate_pairs = []
 
-        for n in range(n_iter):
+        # Create the empty array to store the matrix at each iteration
+        M_iter = np.zeros((n_iter + 1, NL, NC), dtype=np.int16)
+
+        # Store the initial matrix in the first slice of M_iter
+        M_iter[0, :, :] = M.copy()
+
+        for n in range(1, n_iter + 1):
             moved_components.clear()
             reacted_components.clear()
             not_reacted_components.clear()
             for i in range(NL):
                 for j in range(NC):
                     current_position = (i, j)
-                    i_comp = M_new[i, j]
+                    i_comp = M[i, j]
                     inner_neighbors_position = von_neumann_neigh + current_position
                     outer_neighbors_position = 2 * von_neumann_neigh + current_position
 
@@ -158,7 +162,7 @@ class Calculations:
                                         surface_type, row_index, column_index
                                     ):
                                         inner_pos_tuple = (row_index, column_index)
-                                        inner_comp = M_new[row_index, column_index]
+                                        inner_comp = M[row_index, column_index]
                                         positions_pair = (
                                             current_position,
                                             inner_pos_tuple,
@@ -409,8 +413,8 @@ class Calculations:
                                         prod2_row, prod2_column = prod2_pos
 
                                         if (
-                                            M_new[prod1_row, prod1_column] > 100
-                                            and M_new[prod2_row, prod2_column] > 100
+                                            M[prod1_row, prod1_column] > 100
+                                            and M[prod2_row, prod2_column] > 100
                                         ):
                                             # If the reactants are intermediates, remove their positions from the intermediate pairs (at this moment, there are reactants yet)
                                             intermediate_pairs.remove(
@@ -434,8 +438,8 @@ class Calculations:
                                         prod_2 = chosen_reaction["products"][1]
 
                                         # Reaction
-                                        M_new[prod1_row, prod1_column] = prod_1
-                                        M_new[prod2_row, prod2_column] = prod_2
+                                        M[prod1_row, prod1_column] = prod_1
+                                        M[prod2_row, prod2_column] = prod_2
 
                                         reacted_components.add(
                                             (prod1_row, prod1_column)
@@ -496,7 +500,7 @@ class Calculations:
                                     f"  Outer Neighbors: {outer_neighbors_position}\n"
                                 )
                                 iteration_log_text.write(
-                                    f"  Current matrix:\n{M_new}\n"
+                                    f"  Current matrix:\n{M}\n"
                                 )
                                 iteration_log_text.write(
                                     f"  Moved Components: {moved_components}\n"
@@ -536,14 +540,14 @@ class Calculations:
                                 if Calculations.check_constraints(
                                     surface_type, row_index, column_index
                                 ):
-                                    if M_new[row_index, column_index] == 0:
+                                    if M[row_index, column_index] == 0:
                                         o_row, o_column = outer_neighbors_position[i_p]
                                         if not Calculations.check_constraints(
                                             surface_type, o_row, o_column
                                         ):
                                             J_neighbors.append((i_p, 0))
                                             continue
-                                        outer_component = M_new[o_row, o_column]
+                                        outer_component = M[o_row, o_column]
                                         if outer_component > 100:
                                             # If the outer component is an intermediate, the joining probability is 0
                                             J_neighbors.append((i_p, 0))
@@ -614,7 +618,7 @@ class Calculations:
                                 pb_inner_components = []
                                 for comp_position in occupied_inner_neighbors:
                                     row, column = comp_position
-                                    comp_index = M_new[row, column]
+                                    comp_index = M[row, column]
                                     pair_list = [comp_index, i_comp]
                                     pair_list.sort()
                                     pair = tuple(pair_list)
@@ -630,8 +634,8 @@ class Calculations:
                                 row_move, column_move = inner_neighbors_position[
                                     int(J_max[0])
                                 ]
-                                M_new[row_move, column_move] = i_comp
-                                M_new[i, j] = 0
+                                M[row_move, column_move] = i_comp
+                                M[i, j] = 0
                                 moved_components.add((row_move, column_move))
                                 break
                         except Exception as e:
@@ -646,7 +650,7 @@ class Calculations:
                             iteration_log_text.write(
                                 f"  Outer Neighbors: {outer_neighbors_position}\n"
                             )
-                            iteration_log_text.write(f"  Current matrix:\n{M_new}\n")
+                            iteration_log_text.write(f"  Current matrix:\n{M}\n")
                             iteration_log_text.write(
                                 f"  Moved Components: {moved_components}\n"
                             )
@@ -668,15 +672,14 @@ class Calculations:
                             )
                             logger.exception(iteration_log_text.getvalue())
                             raise e
-        M = M_new.copy()
-        M_new = None
+            M_iter[n, :, :] = M.copy()
 
         print("Final matrix:")
         Calculations.show_matrix(M)
 
         logger.info("Calculations completed successfully!")
 
-        return M
+        return M_iter
 
     @staticmethod
     def show_matrix(M: np.ndarray):
