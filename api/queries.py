@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from calculations import Calculations
 from fastapi import HTTPException
 from models import SimulationModel
@@ -7,7 +8,19 @@ from sqlalchemy.orm import Session
 
 class SimulationData:
     def get_simulations(self, db: Session) -> list[SimulationModel]:
-        return db.query(SimulationModel).all()
+        query = select(
+            SimulationModel.id,
+            SimulationModel.name,
+            SimulationModel.iterationsNumber,
+            SimulationModel.gridLenght,
+            SimulationModel.gridHeight,
+            SimulationModel.ingredients,
+            SimulationModel.parameters,
+            SimulationModel.created_at,
+            SimulationModel.updated_at,
+            SimulationModel.reactions,
+        )
+        return db.execute(query).fetchall()
 
     def create_simulation(self, newSimulation: SimulationCreate, db: Session) -> None:
         already_exists = (
