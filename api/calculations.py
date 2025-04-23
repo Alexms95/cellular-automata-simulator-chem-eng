@@ -112,11 +112,13 @@ class Calculations:
             f"  Cell Counts (Ni): {Ni}\n"
             f"  Surface Type: {surface_type}\n"
             f"  Empty Cells: NEMPTY={NEMPTY}\n"
-            f"  Occuped Cells: NCELL={NCELL}\n"
+            f"  Occupied Cells: NCELL={NCELL}\n"
             f"  Number of Iterations: n_iter={n_iter}"
         )
 
         iteration_log_text = StringIO()
+
+        intermediate_pairs = []
 
         for n in range(n_iter):
             moved_components.clear()
@@ -137,7 +139,7 @@ class Calculations:
                     normalized_probabilities = []
                     chosen_reaction = None
                     J_neighbors = []
-                    occuped_inner_neighbors = []
+                    occupied_inner_neighbors = []
                     J_max = None
                     J_0 = []
                     J_neigh_max = []
@@ -175,6 +177,13 @@ class Calculations:
                                             or inner_pos_tuple in reacted_components
                                             # TODO: maybe this condition is not needed
                                             or inner_pos_tuple in moved_components
+                                            # Exclude the case where both components are intermediates but are not a pair (avoid single intermediates in the grid)
+                                            or (
+                                                i_comp > 100
+                                                and inner_comp > 100
+                                                and (i, j, row_index, column_index)
+                                                not in intermediate_pairs
+                                            )
                                         ):
                                             continue
 
@@ -395,21 +404,47 @@ class Calculations:
                                     ]
                                     if chosen_products is not None:
                                         prod1_pos, prod2_pos = chosen_products
+
                                         prod1_row, prod1_column = prod1_pos
                                         prod2_row, prod2_column = prod2_pos
-                                        M_new[prod1_row, prod1_column] = (
-                                            chosen_reaction["products"][0]
-                                        )
-                                        M_new[prod2_row, prod2_column] = (
-                                            chosen_reaction["products"][1]
-                                        )
+
+                                        if (
+                                            M_new[prod1_row, prod1_column] > 100
+                                            and M_new[prod2_row, prod2_column] > 100
+                                        ):
+                                            # If the reactants are intermediates, remove their positions from the intermediate pairs (at this moment, there are reactants yet)
+                                            intermediate_pairs.remove(
+                                                (
+                                                    prod1_row,
+                                                    prod1_column,
+                                                    prod2_row,
+                                                    prod2_column,
+                                                )
+                                            )
+                                            intermediate_pairs.remove(
+                                                (
+                                                    prod2_row,
+                                                    prod2_column,
+                                                    prod1_row,
+                                                    prod1_column,
+                                                )
+                                            )
+
+                                        prod_1 = chosen_reaction["products"][0]
+                                        prod_2 = chosen_reaction["products"][1]
+
+                                        # Reaction
+                                        M_new[prod1_row, prod1_column] = prod_1
+                                        M_new[prod2_row, prod2_column] = prod_2
+
                                         reacted_components.add(
                                             (prod1_row, prod1_column)
                                         )
                                         reacted_components.add(
                                             (prod2_row, prod2_column)
                                         )
-                                        # Add not reacted components to the set for each possible reactions that is not chosen
+
+                                        # Add not reacted components to the set for each possible reactions that was not chosen
                                         not_reacted_components.update(
                                             (
                                                 poss_reaction["products_position"][0],
@@ -420,6 +455,25 @@ class Calculations:
                                             != chosen_reaction["index"]
                                             and poss_reaction["index"] != -1
                                         )
+
+                                        # If the products are intermediates, store their positions to avoid reacting to other intermediates
+                                        if prod_1 > 100 and prod_2 > 100:
+                                            intermediate_pairs.append(
+                                                (
+                                                    prod1_row,
+                                                    prod1_column,
+                                                    prod2_row,
+                                                    prod2_column,
+                                                )
+                                            )
+                                            intermediate_pairs.append(
+                                                (
+                                                    prod2_row,
+                                                    prod2_column,
+                                                    prod1_row,
+                                                    prod1_column,
+                                                )
+                                            )
                                     else:
                                         not_reacted_components.update(
                                             (
@@ -472,7 +526,7 @@ class Calculations:
                         ):
                             continue
                         try:
-                            occuped_inner_neighbors = []
+                            occupied_inner_neighbors = []
 
                             J_neighbors = []
                             j_components = 0
@@ -524,7 +578,7 @@ class Calculations:
                                             )
                                         J_neighbors.append((i_p, j_components))
                                     else:
-                                        occuped_inner_neighbors.append(
+                                        occupied_inner_neighbors.append(
                                             (row_index, column_index)
                                         )
 
@@ -556,9 +610,9 @@ class Calculations:
 
                             pbs_product = 1
 
-                            if len(occuped_inner_neighbors) > 0:
+                            if len(occupied_inner_neighbors) > 0:
                                 pb_inner_components = []
-                                for comp_position in occuped_inner_neighbors:
+                                for comp_position in occupied_inner_neighbors:
                                     row, column = comp_position
                                     comp_index = M_new[row, column]
                                     pair_list = [comp_index, i_comp]
@@ -601,7 +655,7 @@ class Calculations:
                             )
                             iteration_log_text.write(f"  J_neighbors: {J_neighbors}\n")
                             iteration_log_text.write(
-                                f"  Occupied Inner Neighbors: {occuped_inner_neighbors}\n"
+                                f"  Occupied Inner Neighbors: {occupied_inner_neighbors}\n"
                             )
                             iteration_log_text.write(f"  J_max: {J_max}\n")
                             iteration_log_text.write(f"  J_0: {J_0}\n")
