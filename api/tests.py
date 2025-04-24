@@ -1,6 +1,19 @@
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.append(str(Path(__file__).resolve().parent))
+
 from calculations import Calculations
 from schemas import PairParameter
-from utils import get_component_index
+
+@pytest.fixture
+def mock_get_component_index(monkeypatch):
+    def mock_function(name):
+        return {"A": 0, "B": 1, "C": 2}.get(name, -1)
+
+    monkeypatch.setattr("utils.get_component_index", mock_function)
 
 
 def test_calculate_cell_counts():
@@ -8,37 +21,25 @@ def test_calculate_cell_counts():
     assert Calculations.calculate_cell_counts(473, [47.3, 52.7]) == [224, 249]
 
 
+@pytest.mark.usefixtures("mock_get_component_index")
 def test_calculate_pbs():
-    # Mock the get_component_index function
-    def mock_get_component_index(name):
-        return {"A": 0, "B": 1, "C": 2}.get(name, -1)
+    # Test case 1: Single pair parameter
+    pair_parameters = [PairParameter(relation="AB", value=1.0)]
+    expected_result = {(1, 2): 0.6}
+    assert Calculations.calculate_pbs(pair_parameters) == expected_result
 
-    # Replace the original function with the mock
-    original_get_component_index = get_component_index
-    Calculations.get_component_index = mock_get_component_index
+    # Test case 2: Multiple pair parameters
+    pair_parameters = [
+        PairParameter(relation="AB", value=1.0),
+        PairParameter(relation="BC", value=2.0),
+    ]
+    expected_result = {
+        (1, 2): 0.6,
+        (2, 3): 0.42857142857142855,
+    }
+    assert Calculations.calculate_pbs(pair_parameters) == expected_result
 
-    try:
-        # Test case 1: Single pair parameter
-        pair_parameters = [PairParameter(relation=("A", "B"), value=1.0)]
-        expected_result = {(0, 1): 0.6}
-        assert Calculations.calculate_pbs(pair_parameters) == expected_result
-
-        # Test case 2: Multiple pair parameters
-        pair_parameters = [
-            PairParameter(relation=("A", "B"), value=1.0),
-            PairParameter(relation=("B", "C"), value=2.0),
-        ]
-        expected_result = {
-            (0, 1): 0.6,
-            (1, 2): 0.42857142857142855,
-        }
-        assert Calculations.calculate_pbs(pair_parameters) == expected_result
-
-        # Test case 3: No pair parameters
-        pair_parameters = []
-        expected_result = {}
-        assert Calculations.calculate_pbs(pair_parameters) == expected_result
-
-    finally:
-        # Restore the original function
-        Calculations.get_component_index = original_get_component_index
+    # Test case 3: No pair parameters
+    pair_parameters = []
+    expected_result = {}
+    assert Calculations.calculate_pbs(pair_parameters) == expected_result
