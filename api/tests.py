@@ -46,7 +46,7 @@ def test_calculate_pbs():
     assert Calculations.calculate_pbs(pair_parameters) == expected_result
 
 
-def test_ensure_there_is_no_single_intermediate():
+def test_assert_iterations():
     # Arrange
     ingredients = [
         Ingredient(name="A", molarFraction=50, color="blue"),
@@ -90,6 +90,9 @@ def test_ensure_there_is_no_single_intermediate():
     assert iterations.ndim == 3
 
     for i in range(1, simulation.iterationsNumber + 1):
+        # Check if the number of empty cells keeps constant
+        grid = iterations[i]
+        assert len(grid[grid == 0]) == Calculations.NEMPTY
         for j in range(simulation.gridHeight):
             for k in range(simulation.gridLenght):
                 # If current cell is an intermediate, check if there is at least one intermediate in its inner neighborhood

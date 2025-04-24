@@ -13,6 +13,7 @@ SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
 class Calculations:
     NL = 0
     NC = 0
+    NEMPTY = 0
 
     @staticmethod
     def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
@@ -53,8 +54,8 @@ class Calculations:
 
         EMPTY_FRAC = 0.31  # Fraction of empty cells
 
-        NEMPTY = floor(EMPTY_FRAC * NTOT)
-        NCELL = NTOT - NEMPTY
+        Calculations.NEMPTY = floor(EMPTY_FRAC * NTOT)
+        NCELL = NTOT - Calculations.NEMPTY
 
         components = simulation.ingredients
         parameters = simulation.parameters
@@ -109,7 +110,7 @@ class Calculations:
             f"  Molar Fractions (Ci): {Ci}\n"
             f"  Cell Counts (Ni): {Ni}\n"
             f"  Surface Type: {surface_type}\n"
-            f"  Empty Cells: NEMPTY={NEMPTY}\n"
+            f"  Empty Cells: NEMPTY={Calculations.NEMPTY}\n"
             f"  Occupied Cells: NCELL={NCELL}\n"
             f"  Number of Iterations: n_iter={n_iter}"
         )
