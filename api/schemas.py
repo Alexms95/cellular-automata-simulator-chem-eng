@@ -11,15 +11,20 @@ class Ingredient(BaseModel):
 
 
 class PairParameter(BaseModel):
-    fromIngr: str
-    toIngr: str
+    relation: str
     value: float
 
 
 class Parameters(BaseModel):
     Pm: list[float]
-    Pb: list[PairParameter]
     J: list[PairParameter]
+
+class Reaction(BaseModel):
+    reactants: list[str]
+    products: list[str]
+    Pr: list[float]
+    reversePr: list[float]
+    hasIntermediate: bool
 
 
 class SimulationBase(BaseModel):
@@ -29,6 +34,7 @@ class SimulationBase(BaseModel):
     gridHeight: int
     ingredients: list[Ingredient]
     parameters: Parameters
+    reactions: list[Reaction] | None
 
 
 class SimulationCreate(SimulationBase):
@@ -39,6 +45,13 @@ class SimulationResponse(SimulationBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class SimulationComplete(SimulationResponse):
+    iterations: str | None
+    results: list[float] | None
 
     class Config:
         from_attributes = True

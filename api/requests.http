@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:8000
-@simulation_id = 06b07f88-7ec9-498f-95af-bc4420c89d0d
+@simulation_id = 5327ce7f-2edd-4d57-8206-404632bf5a8f
 
 GET {{baseUrl}}/simulations
 
@@ -14,7 +14,7 @@ Content-Type: application/json; charset=utf-8
   "gridSize": 50,
   "ingredients": [
     {
-      "name": "Água",
+      "name": "Water",
       "initialNumber": 10,
       "color": "blue"
     }
@@ -23,15 +23,13 @@ Content-Type: application/json; charset=utf-8
     "Pm": [1.0],
     "Pb": [
       {
-        "fromIngr": "A",
-        "toIngr": "A",
+        "relation": "AA",
         "value": 1.0
       }
     ],
     "J": [
       {
-        "fromIngr": "A",
-        "toIngr": "A",
+        "relation": "AA",
         "value": 1.0
       }
     ]
@@ -43,4 +41,12 @@ Content-Type: application/json; charset=utf-8
 POST {{baseUrl}}/simulations/{{simulation_id}}/run
 Content-Type: application/json; charset=utf-8
 
-{}
+###
+
+GET {{baseUrl}}/simulations/{{simulation_id}}
+Content-Type: application/json; charset=utf-8
+
+###
+
+GET {{baseUrl}}/simulations/{{simulation_id}}/decompressed-iterations
+Content-Type: application/json; charset=utf-8

@@ -1,10 +1,12 @@
+from fastapi.responses import JSONResponse
 from config import get_settings
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from queries import SimulationData
-from schemas import SimulationCreate, SimulationResponse
+from schemas import SimulationComplete, SimulationCreate, SimulationResponse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from logger import logger
 
 settings = get_settings()
 
@@ -34,10 +36,23 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def log_exceptions(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        logger.exception(f"Error not handled: {e}")
+        return JSONResponse(
+            status_code=500, content={"detail": "Internal Server Error"}
+        )
+
+
 @app.get("/simulations", response_model=list[SimulationResponse])
 def get_simulations(
     dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
 ):
+    logger.info("Fetching all simulations")
     return dataAccess.get_simulations(db)
 
 
@@ -47,6 +62,7 @@ def create_simulation(
     dataAccess: SimulationData = Depends(),
     db: Session = Depends(get_db),
 ):
+    logger.info(f"Creating simulation: {newSimulation}")
     return dataAccess.create_simulation(newSimulation, db)
 
 
@@ -57,6 +73,7 @@ def update_simulation(
     dataAccess: SimulationData = Depends(),
     db: Session = Depends(get_db),
 ):
+    logger.info(f"Updating simulation with id {id}: {updatedSimulation}")
     return dataAccess.update_simulation(id, updatedSimulation, db)
 
 
@@ -64,6 +81,7 @@ def update_simulation(
 def delete_simulation(
     id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
 ):
+    logger.info(f"Deleting simulation with id {id}")
     return dataAccess.delete_simulation(id, db)
 
 
@@ -71,7 +89,23 @@ def delete_simulation(
 def run_simulation(
     id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
 ):
+    logger.info(f"Running simulation with id {id}")
     return dataAccess.run_simulation(id, db)
+
+
+@app.get("/simulations/{id}", response_model=SimulationComplete)
+def get_simulation(
+    id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+):
+    logger.info(f"Fetching complete simulation with id {id}")
+    return dataAccess.get_simulation(id, db)
+
+@app.get("/simulations/{id}/decompressed-iterations", response_model=list[list[list[int]]])
+def get_decompressed_iterations(
+    id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+):
+    logger.info(f"Fetching decompressed iterations for simulation with id {id}")
+    return dataAccess.get_decompressed_iterations(id, db)
 
 
 @app.get("/")

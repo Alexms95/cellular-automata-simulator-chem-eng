@@ -18,7 +18,13 @@ import {
 import { colors } from "@/models/colors";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Percent, PlusCircle, TrashIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  Percent,
+  PlusCircle,
+  PlusIcon,
+  TrashIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -43,6 +49,7 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Checkbox } from "./ui/checkbox";
 
 export const NewSimulation = () => {
   const queryClient = useQueryClient();
@@ -66,6 +73,11 @@ export const NewSimulation = () => {
     name: "ingredients",
   });
 
+  const reactionsFieldArray = useFieldArray({
+    control: form.control,
+    name: "reactions",
+  });
+
   const handleRemove = (index: number) => {
     remove(index);
     // Remove the parameters that have the ingredient letter
@@ -73,14 +85,7 @@ export const NewSimulation = () => {
     const newParameters = {
       Pm: parameters.Pm.filter((_, i) => i !== index),
       J: parameters.J.filter(
-        (param) =>
-          param.fromIngr !== String.fromCharCode(65 + index) &&
-          param.toIngr !== String.fromCharCode(65 + index)
-      ),
-      Pb: parameters.Pb.filter(
-        (param) =>
-          param.fromIngr !== String.fromCharCode(65 + index) &&
-          param.toIngr !== String.fromCharCode(65 + index)
+        (param) => !param.relation.includes(String.fromCharCode(65 + index))
       ),
     };
 
@@ -100,11 +105,37 @@ export const NewSimulation = () => {
     useWatch({ control: form.control, name: "gridLenght" }) *
     useWatch({ control: form.control, name: "gridHeight" });
 
+  const componentIndexNames = useWatch({
+    control: form.control,
+    name: "ingredients",
+  }).map((ingredient, i) => ({
+    index: String.fromCharCode(i + 65),
+    name: ingredient.name,
+  }));
+
   const calculateComponentsCount = useCallback(
     (total: number, percentages: number[]) =>
       calculateFractions(total, percentages),
     []
   );
+
+  const reactions = useWatch({ control: form.control, name: "reactions" });
+
+  useEffect(() => {
+    // Adjust Pr and reversePr if there is no intermediate
+    reactions?.forEach((reaction) => {
+      const hasIntermediate = reaction.hasIntermediate;
+      if (!hasIntermediate && reaction.Pr.length > 1) {
+        reaction.Pr = reaction.Pr.slice(0, 1);
+        reaction.reversePr = reaction.reversePr.slice(0, 1);
+        form.setValue("reactions", reactions);
+      } else if (hasIntermediate && reaction.Pr.length < 2) {
+        reaction.Pr.push(0);
+        reaction.reversePr.push(0);
+        form.setValue("reactions", reactions);
+      }
+    });
+  }, [reactions, form]);
 
   useEffect(() => {
     if (ingredients && totalCells > 0) {
@@ -433,7 +464,300 @@ export const NewSimulation = () => {
             </Button>
             <Separator />
             <h4 className="scroll-m-20 font-semibold tracking-tight">
-              Parameters
+              Reaction Parameters
+            </h4>
+            <div className="flex flex-col space-y-8">
+              <div className="flex flex-col space-y-2">
+                {reactionsFieldArray.fields.map((reacField, index) => (
+                  <div key={reacField.id} className="flex flex-col space-y-2">
+                    <div className="flex w-full gap-2">
+                      <div className="w-1/6">
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.reactants.0`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reactant 1</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {componentIndexNames.map((c) => (
+                                    <SelectItem key={c.name} value={c.index}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <PlusIcon className="self-end pb-2"></PlusIcon>
+                      <div className="w-1/6">
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.reactants.1`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reactant 2</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {componentIndexNames.map((c) => (
+                                    <SelectItem key={c.name} value={c.index}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <ArrowRightIcon
+                        color="green"
+                        className="self-end pb-2"
+                      ></ArrowRightIcon>
+                      <div className="w-1/6">
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.products.0`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Product 1</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {componentIndexNames.map((c) => (
+                                    <SelectItem key={c.name} value={c.index}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <PlusIcon className="self-end pb-2"></PlusIcon>
+                      <div className="w-1/6">
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.products.1`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Product 2</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {componentIndexNames.map((c) => (
+                                    <SelectItem key={c.name} value={c.index}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="w-1/6 p-2">
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.hasIntermediate`}
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col items-center">
+                              <FormLabel className="mb-2">
+                                Has intermediate?
+                              </FormLabel>
+                              <FormControl className="p-auto">
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <Tooltip>
+                        <TooltipTrigger className="ml-auto self-end" asChild>
+                          <Button
+                            onClick={() => reactionsFieldArray.remove(index)}
+                            variant="destructive"
+                            size="icon"
+                            className="mt-8"
+                          >
+                            <TrashIcon className="p-1" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          sideOffset={10}
+                          align="end"
+                          alignOffset={50}
+                          side="left"
+                        >
+                          Remove reaction
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="flex space-x-4">
+                      <FormField
+                        control={form.control}
+                        name={`reactions.${index}.Pr.0`}
+                        defaultValue={0}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              P<sub>r</sub> (Reactants -&gt;{" "}
+                              {form.watch(`reactions.${index}.hasIntermediate`)
+                                ? "Intermediate"
+                                : "Products"}
+                              )
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                step={0.1}
+                                min={0}
+                                max={1}
+                                type="number"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {form.watch(`reactions.${index}.hasIntermediate`) && (
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.Pr.1`}
+                          defaultValue={0}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                P<sub>r</sub> (Intermediate -&gt; Products)
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  step={0.1}
+                                  min={0}
+                                  max={1}
+                                  type="number"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                      <FormField
+                        control={form.control}
+                        name={`reactions.${index}.reversePr.0`}
+                        defaultValue={0}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              Reverse P<sub>r</sub> (
+                              {form.watch(`reactions.${index}.hasIntermediate`)
+                                ? "Intermediate"
+                                : "Products"}{" "}
+                              -&gt; Reactants)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                step={0.1}
+                                min={0}
+                                max={1}
+                                type="number"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {form.watch(`reactions.${index}.hasIntermediate`) && (
+                        <FormField
+                          control={form.control}
+                          name={`reactions.${index}.reversePr.1`}
+                          defaultValue={0}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Reverse P<sub>r</sub> (Products -&gt;
+                                Intermediate)
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  step={0.1}
+                                  min={0}
+                                  max={1}
+                                  type="number"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button
+                className="ml-auto py-2 px-3 text-xs"
+                type="button"
+                onClick={() =>
+                  reactionsFieldArray.append({
+                    reactants: [],
+                    products: [],
+                    hasIntermediate: false,
+                    Pr: [],
+                    reversePr: [],
+                  })
+                }
+              >
+                <PlusCircle className="p-1 pl-0"></PlusCircle>Add Reaction
+              </Button>
+            </div>
+            <Separator />
+            <h4 className="scroll-m-20 font-semibold tracking-tight">
+              Movement Parameters
             </h4>
             <div className="flex space-x-2">
               {fields.map((field, index) => (
@@ -466,88 +790,15 @@ export const NewSimulation = () => {
             <div className="flex space-x-2 flex-wrap">
               {pairMatrix.map((comb, index) => {
                 return (
-                  <div key={index}>
+                  <div key={index} className="w-1/10">
                     <FormField
                       control={form.control}
                       shouldUnregister
-                      name={`parameters.Pb.${index}.fromIngr`}
-                      defaultValue={String.fromCharCode(65 + comb[0])}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input className="hidden" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`parameters.Pb.${index}.toIngr`}
-                      shouldUnregister
-                      defaultValue={String.fromCharCode(65 + comb[1])}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input className="hidden" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`parameters.Pb.${index}.value`}
-                      shouldUnregister
-                      defaultValue={1}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            P<sub>B</sub> (
-                            {String.fromCharCode(65 + comb[0]) +
-                              String.fromCharCode(65 + comb[1])}
-                            )
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              step={0.1}
-                              min={0}
-                              max={1}
-                              type="number"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex space-x-2 flex-wrap">
-              {pairMatrix.map((comb, index) => {
-                return (
-                  <div key={index}>
-                    <FormField
-                      control={form.control}
-                      shouldUnregister
-                      name={`parameters.J.${index}.fromIngr`}
-                      defaultValue={String.fromCharCode(65 + comb[0])}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input className="hidden" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`parameters.J.${index}.toIngr`}
-                      shouldUnregister
-                      defaultValue={String.fromCharCode(65 + comb[1])}
+                      name={`parameters.J.${index}.relation`}
+                      defaultValue={
+                        String.fromCharCode(65 + comb[0]) +
+                        String.fromCharCode(65 + comb[1])
+                      }
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
@@ -574,7 +825,6 @@ export const NewSimulation = () => {
                             <Input
                               step={0.1}
                               min={0}
-                              max={1}
                               type="number"
                               {...field}
                             />

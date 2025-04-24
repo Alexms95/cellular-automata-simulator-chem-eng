@@ -50,6 +50,19 @@ export const formSchema = z.object({
         });
       }
     }),
+  reactions: z.array(z.object({
+    reactants: z.array(z.string()),
+    products: z.array(z.string()),
+    hasIntermediate: z.boolean(),
+    Pr: z.array(
+      z.coerce.number({ message: "It must be a number." })
+        .gte(0, "It must be greater or equal to 0.")
+    ),
+    reversePr: z.array(
+      z.coerce.number({ message: "It must be a number." })
+        .gte(0, "It must be greater or equal to 0.")
+    )
+  })).optional(),
   parameters: z.object({
     Pm: z.array(
       z.coerce
@@ -59,22 +72,10 @@ export const formSchema = z.object({
     ),
     J: z.array(
       z.object({
-        fromIngr: z.string({ message: "It must be a string." }),
-        toIngr: z.string({ message: "It must be a string." }),
+        relation: z.string(),
         value: z.coerce
           .number({ message: "It must be a number." })
-          .gte(0, "It must be greater or equal to 0.")
-          .lte(1, "It must be less or equal to 1."),
-      })
-    ),
-    Pb: z.array(
-      z.object({
-        fromIngr: z.string({ message: "It must be a string." }),
-        toIngr: z.string({ message: "It must be a string." }),
-        value: z.coerce
-          .number({ message: "It must be a number." })
-          .gte(0, "It must be greater or equal to 0.")
-          .lte(1, "It must be less or equal to 1."),
+          .gte(0, "It must be greater or equal to 0."),
       })
     ),
   }),
@@ -97,7 +98,7 @@ export function calculateFractions(
   percentages: number[]
 ): number[] {
   const accSum = (acc: number, curr: number) => acc + curr;
-  
+
   const fractions = percentages.map((p) => (p ? (p / 100) * total : 0));
 
   const roundedFractions = fractions.map(Math.floor);

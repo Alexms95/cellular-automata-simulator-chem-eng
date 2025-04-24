@@ -1,21 +1,57 @@
+from sqlalchemy import select
+from utils import compress_matrix, decompress_matrix
 from calculations import Calculations
 from fastapi import HTTPException
 from models import SimulationModel
 from schemas import SimulationBase, SimulationCreate
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
+
+SELECT_WITHOUT_ITERATIONS = select(
+    SimulationModel.id,
+    SimulationModel.name,
+    SimulationModel.iterationsNumber,
+    SimulationModel.gridLenght,
+    SimulationModel.gridHeight,
+    SimulationModel.ingredients,
+    SimulationModel.parameters,
+    SimulationModel.created_at,
+    SimulationModel.updated_at,
+    SimulationModel.reactions,
+)
 
 
 class SimulationData:
     def get_simulations(self, db: Session) -> list[SimulationModel]:
-        return db.query(SimulationModel).all()
+        return db.execute(SELECT_WITHOUT_ITERATIONS).all()
+
+    def get_simulation(self, simulation_id: str, db: Session) -> SimulationModel:
+        query = select(SimulationModel).where(SimulationModel.id == simulation_id)
+        db_simulation = db.execute(query).scalars().first()
+
+        if db_simulation is None:
+            raise HTTPException(status_code=400, detail="Simulation not found")
+
+        return db_simulation
+
+    def get_decompressed_iterations(self, simulation_id: str, db: Session) -> list[list[list[int]]]:
+        query = select(SimulationModel.name, SimulationModel.iterations).where(SimulationModel.id == simulation_id)
+        db_simulation = db.execute(query).first()
+
+        if db_simulation is None:
+            raise HTTPException(status_code=400, detail="Simulation not found")
+        
+        _, compressed_iterations = db_simulation
+
+        if compressed_iterations is None:
+            return []
+
+        return decompress_matrix(compressed_iterations)
 
     def create_simulation(self, newSimulation: SimulationCreate, db: Session) -> None:
-        already_exists = (
-            db.query(SimulationModel)
-            .filter(SimulationModel.name == newSimulation.name)
-            .first()
+        query = SELECT_WITHOUT_ITERATIONS.where(
+            SimulationModel.name == newSimulation.name
         )
-
+        already_exists = db.execute(query).first()
         if already_exists:
             raise HTTPException(
                 status_code=409,
@@ -41,23 +77,37 @@ class SimulationData:
     def update_simulation(
         self, simulation_id: str, updatedSimulation: SimulationCreate, db: Session
     ) -> None:
-        db_simulation = (
-            db.query(SimulationModel)
-            .filter(SimulationModel.id == simulation_id)
-            .first()
+        query = (
+            select(SimulationModel)
+            .options(
+                load_only(
+                    SimulationModel.id,
+                    SimulationModel.name,
+                    SimulationModel.iterationsNumber,
+                    SimulationModel.gridLenght,
+                    SimulationModel.gridHeight,
+                    SimulationModel.ingredients,
+                    SimulationModel.parameters,
+                    SimulationModel.created_at,
+                    SimulationModel.updated_at,
+                    SimulationModel.reactions,
+                )
+            )
+            .where(SimulationModel.id == simulation_id)
         )
+        db_simulation = db.execute(query).scalars().first()
 
         if db_simulation is None:
             raise HTTPException(status_code=400, detail="Simulation not found")
 
-        already_exists = (
-            db.query(SimulationModel)
-            .filter(
+        query = (
+            SELECT_WITHOUT_ITERATIONS
+            .where(
                 SimulationModel.id != simulation_id,
                 SimulationModel.name == updatedSimulation.name,
             )
-            .first()
         )
+        already_exists = db.execute(query).first()
 
         if already_exists:
             raise HTTPException(
@@ -85,28 +135,40 @@ class SimulationData:
         db.refresh(db_simulation)
 
     def delete_simulation(self, simulation_id: str, db: Session) -> None:
-        db_simulation = (
-            db.query(SimulationModel)
-            .filter(SimulationModel.id == simulation_id)
-            .first()
+        query = select(SimulationModel).options(load_only(SimulationModel.id)).where(
+            SimulationModel.id == simulation_id,
         )
+        db_simulation = db.execute(query).scalars().first()
+
         if db_simulation is None:
             raise HTTPException(status_code=400, detail="Simulation not found")
+
         db.delete(db_simulation)
         db.commit()
 
     def run_simulation(self, simulation_id: str, db: Session) -> None:
-        db_simulation = (
-            db.query(SimulationModel)
-            .filter(SimulationModel.id == simulation_id)
-            .first()
-        )
+        query = select(SimulationModel).options(
+            load_only(
+                SimulationModel.id,
+                SimulationModel.name,
+                SimulationModel.iterationsNumber,
+                SimulationModel.gridLenght,
+                SimulationModel.gridHeight,
+                SimulationModel.ingredients,
+                SimulationModel.parameters,
+                SimulationModel.created_at,
+                SimulationModel.updated_at,
+                SimulationModel.reactions,
+            )
+        ).where(SimulationModel.id == simulation_id)
+        db_simulation = db.execute(query).scalars().first()
+
         if db_simulation is None:
             raise HTTPException(status_code=400, detail="Simulation not found")
 
         simulation = SimulationBase(**db_simulation.__dict__)
 
-        resulting_matrix = Calculations.calculate_cellular_automata(simulation)
-        db_simulation.iterations = resulting_matrix.tolist()
+        resulting_matrix = Calculations.calculate_cellular_automata(simulation).tolist()
+        db_simulation.iterations = compress_matrix(resulting_matrix)
         db.commit()
         db.refresh(db_simulation)
