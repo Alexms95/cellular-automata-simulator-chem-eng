@@ -169,7 +169,7 @@ function SimulationsList() {
                         </span>
                         <span className="block">
                           Grid Dimensions:{" "}
-                          {`${simulation.gridLenght} x ${simulation.gridHeight} (${simulation.gridLenght * simulation.gridHeight} cells)`}
+                          {`${simulation.gridHeight} x ${simulation.gridLenght} (${simulation.gridLenght * simulation.gridHeight} cells)`}
                         </span>
                         <span className="block">
                           Components:{" "}
