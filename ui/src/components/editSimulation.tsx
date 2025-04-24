@@ -305,10 +305,10 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   <div className="w-1/2">
                     <FormField
                       control={form.control}
-                      name="gridLenght"
+                      name="gridHeight"
                       render={({ field }) => (
                         <FormItem className="flex flex-col items-start">
-                          <FormLabel>Grid Lenght</FormLabel>
+                          <FormLabel>Number of Lines</FormLabel>
                           <FormControl>
                             <Input min={1} type="number" {...field} />
                           </FormControl>
@@ -320,10 +320,10 @@ export const EditSimulation = ({ id }: { id: string }) => {
                   <div className="w-1/2">
                     <FormField
                       control={form.control}
-                      name="gridHeight"
+                      name="gridLenght"
                       render={({ field }) => (
                         <FormItem className="flex flex-col items-start">
-                          <FormLabel>Grid Height</FormLabel>
+                          <FormLabel>Number of Columns</FormLabel>
                           <FormControl>
                             <Input min={1} type="number" {...field} />
                           </FormControl>
@@ -336,8 +336,8 @@ export const EditSimulation = ({ id }: { id: string }) => {
                 {!form.formState.errors.gridHeight &&
                   !form.formState.errors.gridLenght && (
                     <FormDescription className="mt-2">
-                      A grid of {form.watch("gridLenght")} x{" "}
-                      {form.watch("gridHeight")} will be created (
+                      A grid of {form.watch("gridHeight")} x{" "}
+                      {form.watch("gridLenght")} will be created (
                       {form.watch("gridLenght") * form.watch("gridHeight")}{" "}
                       cells).
                     </FormDescription>
