@@ -48,3 +48,10 @@ class SimulationResponse(SimulationBase):
 
     class Config:
         from_attributes = True
+
+class SimulationComplete(SimulationResponse):
+    iterations: str | None
+    results: list[float] | None
+
+    class Config:
+        from_attributes = True

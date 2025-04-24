@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from utils import compress_matrix
+from utils import compress_matrix, decompress_matrix
 from calculations import Calculations
 from fastapi import HTTPException
 from models import SimulationModel
@@ -23,6 +23,29 @@ SELECT_WITHOUT_ITERATIONS = select(
 class SimulationData:
     def get_simulations(self, db: Session) -> list[SimulationModel]:
         return db.execute(SELECT_WITHOUT_ITERATIONS).all()
+
+    def get_simulation(self, simulation_id: str, db: Session) -> SimulationModel:
+        query = select(SimulationModel).where(SimulationModel.id == simulation_id)
+        db_simulation = db.execute(query).scalars().first()
+
+        if db_simulation is None:
+            raise HTTPException(status_code=400, detail="Simulation not found")
+
+        return db_simulation
+
+    def get_decompressed_iterations(self, simulation_id: str, db: Session) -> list[list[list[int]]]:
+        query = select(SimulationModel.name, SimulationModel.iterations).where(SimulationModel.id == simulation_id)
+        db_simulation = db.execute(query).first()
+
+        if db_simulation is None:
+            raise HTTPException(status_code=400, detail="Simulation not found")
+        
+        _, compressed_iterations = db_simulation
+
+        if compressed_iterations is None:
+            return []
+
+        return decompress_matrix(compressed_iterations)
 
     def create_simulation(self, newSimulation: SimulationCreate, db: Session) -> None:
         query = SELECT_WITHOUT_ITERATIONS.where(
@@ -119,7 +142,7 @@ class SimulationData:
 
         if db_simulation is None:
             raise HTTPException(status_code=400, detail="Simulation not found")
-        
+
         db.delete(db_simulation)
         db.commit()
 

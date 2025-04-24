@@ -3,7 +3,7 @@ from config import get_settings
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from queries import SimulationData
-from schemas import SimulationCreate, SimulationResponse
+from schemas import SimulationComplete, SimulationCreate, SimulationResponse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from logger import logger
@@ -91,6 +91,21 @@ def run_simulation(
 ):
     logger.info(f"Running simulation with id {id}")
     return dataAccess.run_simulation(id, db)
+
+
+@app.get("/simulations/{id}", response_model=SimulationComplete)
+def get_simulation(
+    id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+):
+    logger.info(f"Fetching complete simulation with id {id}")
+    return dataAccess.get_simulation(id, db)
+
+@app.get("/simulations/{id}/decompressed-iterations", response_model=list[list[list[int]]])
+def get_decompressed_iterations(
+    id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+):
+    logger.info(f"Fetching decompressed iterations for simulation with id {id}")
+    return dataAccess.get_decompressed_iterations(id, db)
 
 
 @app.get("/")
