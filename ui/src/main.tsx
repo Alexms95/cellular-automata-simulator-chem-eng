@@ -36,7 +36,11 @@ declare module "@tanstack/react-router" {
 }
 
 const defaultQueryFn = async ({ queryKey }: { queryKey: QueryKey }) => {
-  const { data } = await httpClient.get(`http://localhost:8000/${queryKey[0]}`);
+  const path = queryKey.reduce((acc, cur) => 
+    `${acc}/${cur}`
+  );
+
+  const { data } = await httpClient.get(`http://localhost:8000/${path}`);
   return data;
 };
 const queryClient = new QueryClient({
