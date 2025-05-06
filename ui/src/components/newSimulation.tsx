@@ -92,7 +92,12 @@ export const NewSimulation = () => {
     form.setValue("parameters", newParameters);
   };
 
-  const pairMatrix = generatePairMatrix(fields.length);
+    const rotationComponent = useWatch({
+      control: form.control,
+      name: "rotation.component",
+    });
+
+  const pairMatrix = generatePairMatrix(fields.length, rotationComponent);
 
   const molarFractionsSum = fields
     .map((_, index) => form.watch(`ingredients.${index}.molarFraction`))
@@ -791,7 +796,7 @@ export const NewSimulation = () => {
                   )}
                 />
               </div>
-              <div className="w-1/4">
+              <div className="w-1/10">
                 <FormField
                   control={form.control}
                   name="rotation.Prot"

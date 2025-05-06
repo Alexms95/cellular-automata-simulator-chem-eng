@@ -90,7 +90,7 @@ export const formSchema = z.object({
   }),
 });
 
-export function generatePairMatrix(arraySize: number) {
+export function generatePairMatrix(arraySize: number, rotateComponent: string = "None") {
   const result: number[][] = [];
 
   for (let i = 0; i < arraySize; i++) {
