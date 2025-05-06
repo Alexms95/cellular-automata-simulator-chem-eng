@@ -180,12 +180,12 @@ function SimulationDetail() {
           )}
         </Button>
         {/* Print the 3d Array */}
-        <div>{decompressedIterations && decompressedIterations.map((iteration, index) => (
-          <div key={index} className="flex flex-col gap-2">
+        <div className="space-y-4">{decompressedIterations && decompressedIterations.map((iteration, index) => (
+          <div key={index} className="flex flex-col gap-2 items-center">
             <h2 className="text-lg font-bold">Iteration {index}</h2>
-            <div className="grid grid-cols-10 gap-2">
+            <div className={`grid grid-cols-${iteration[0].length} gap-2`}>
               {iteration.map((row, rowIndex) => (
-                <div key={rowIndex} className="flex flex-col gap-2">
+                <div key={rowIndex} className="flex gap-2">
                   {row.map((cell, cellIndex) => (
                   <div
                     key={cellIndex}
@@ -194,8 +194,10 @@ function SimulationDetail() {
                     cell === 1 && "bg-blue-500",
                     cell === 2 && "bg-green-500",
                     cell === 3 && "bg-red-500",
+                    cell === 4 && "bg-purple-500",
+                    cell === 5 && "bg-pink-500",
                     cell === 0 && "bg-gray-200",
-                    cell === 320 || cell === 310 && "bg-yellow-500",
+                    cell > 200 && "bg-yellow-500",
                     )}
                   />
                   ))}

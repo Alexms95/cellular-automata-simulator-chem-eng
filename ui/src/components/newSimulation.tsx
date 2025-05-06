@@ -757,6 +757,13 @@ export const NewSimulation = () => {
             </div>
             <Separator />
             <h4 className="scroll-m-20 font-semibold tracking-tight">
+              Rotation Parameters
+            </h4>
+            <div>
+                Add rotation parameters here
+            </div>
+            <Separator />
+            <h4 className="scroll-m-20 font-semibold tracking-tight">
               Movement Parameters
             </h4>
             <div className="flex space-x-2">

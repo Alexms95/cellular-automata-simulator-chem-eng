@@ -57,12 +57,21 @@ export const formSchema = z.object({
     Pr: z.array(
       z.coerce.number({ message: "It must be a number." })
         .gte(0, "It must be greater or equal to 0.")
+        .lte(1, "It must be less or equal to 1.")
     ),
     reversePr: z.array(
       z.coerce.number({ message: "It must be a number." })
         .gte(0, "It must be greater or equal to 0.")
+        .lte(1, "It must be less or equal to 1.")
     )
   })).optional(),
+  rotation: z.object({
+    component: z.string().optional(),
+    Prot: z.coerce
+      .number({ message: "It must be a number." })
+      .gte(0, "It must be greater or equal to 0.")
+      .lte(1, "It must be less or equal to 1."),
+  }).optional(),
   parameters: z.object({
     Pm: z.array(
       z.coerce
