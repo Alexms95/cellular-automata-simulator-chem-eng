@@ -29,6 +29,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -49,7 +50,6 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { Checkbox } from "./ui/checkbox";
 
 export const NewSimulation = () => {
   const queryClient = useQueryClient();
@@ -759,8 +759,62 @@ export const NewSimulation = () => {
             <h4 className="scroll-m-20 font-semibold tracking-tight">
               Rotation Parameters
             </h4>
-            <div>
-                Add rotation parameters here
+            <div className="flex space-x-4">
+              <div className="w-1/4">
+                <FormField
+                  control={form.control}
+                  name="rotation.component"
+                  defaultValue="None"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Component</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="None">None</SelectItem>
+                          {componentIndexNames.map((c) => (
+                            <SelectItem key={c.name} value={c.index}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="w-1/4">
+                <FormField
+                  control={form.control}
+                  name="rotation.Prot"
+                  defaultValue={0}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        P<sub>rot</sub>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          step={0.1}
+                          min={0}
+                          max={1}
+                          type="number"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
             <Separator />
             <h4 className="scroll-m-20 font-semibold tracking-tight">
