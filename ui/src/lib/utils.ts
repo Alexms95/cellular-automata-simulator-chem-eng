@@ -91,11 +91,32 @@ export const formSchema = z.object({
 });
 
 export function generatePairMatrix(arraySize: number, rotateComponent: string = "None") {
-  const result: number[][] = [];
+  const result: string[][] = [];
 
   for (let i = 0; i < arraySize; i++) {
     for (let j = 0; j <= i; j++) {
-      result.push([j, i]);
+      const comp1 = String.fromCharCode(65 + j);
+      const comp2 = String.fromCharCode(65 + i);
+
+      if (comp1 === rotateComponent) {
+        if (comp2 === rotateComponent) {
+          // Both components are rotating: [A1,A1], [A1,A2], [A2,A2]
+          result.push([comp1 + "1", comp1 + "1"]);
+          result.push([comp1 + "1", comp1 + "2"]);
+          result.push([comp1 + "2", comp1 + "2"]);
+        } else {
+          // Only first component is rotating: [A1,B], [A2,B]
+          result.push([comp1 + "1", comp2]);
+          result.push([comp1 + "2", comp2]);
+        }
+      } else if (comp2 === rotateComponent) {
+        // Only second component is rotating: [B,A1], [B,A2]
+        result.push([comp1, comp2 + "1"]);
+        result.push([comp1, comp2 + "2"]);
+      } else {
+        // No rotating components
+        result.push([comp1, comp2]);
+      }
     }
   }
 
