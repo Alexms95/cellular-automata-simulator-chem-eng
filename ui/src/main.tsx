@@ -17,7 +17,7 @@ import { routeTree } from "./routeTree.gen";
 
 if (typeof window !== "undefined") {
   scan({
-    enabled: false,
+    enabled: true,
     log: true,// logs render info to console (default: false)
   });
   const a = getReport();
@@ -27,6 +27,14 @@ if (typeof window !== "undefined") {
 const router = createRouter({
   routeTree,
   defaultPendingComponent: () => <Spinner />,
+  defaultErrorComponent: ({ error }) => {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold">Error</h1>
+        <p className="text-red-500">{error.message}</p>
+      </div>
+    );
+  },
 });
 
 declare module "@tanstack/react-router" {

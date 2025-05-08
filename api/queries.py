@@ -17,6 +17,7 @@ SELECT_WITHOUT_ITERATIONS = select(
     SimulationModel.created_at,
     SimulationModel.updated_at,
     SimulationModel.reactions,
+    SimulationModel.rotation,
 )
 
 
@@ -91,6 +92,7 @@ class SimulationData:
                     SimulationModel.created_at,
                     SimulationModel.updated_at,
                     SimulationModel.reactions,
+                    SimulationModel.rotation,
                 )
             )
             .where(SimulationModel.id == simulation_id)
@@ -159,6 +161,7 @@ class SimulationData:
                 SimulationModel.created_at,
                 SimulationModel.updated_at,
                 SimulationModel.reactions,
+                SimulationModel.rotation,
             )
         ).where(SimulationModel.id == simulation_id)
         db_simulation = db.execute(query).scalars().first()

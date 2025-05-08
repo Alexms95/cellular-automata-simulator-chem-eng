@@ -175,7 +175,10 @@ export const EditSimulation = ({ id }: { id: string }) => {
 
   useEffect(() => {
     setPairMatrix(generatePairMatrix(fields.length, rotationComponent));
-  }, [rotationComponent, fields.length]);
+    if (rotationComponent === "None") {
+      form.setValue("rotation.Prot", 0);
+    }
+  }, [rotationComponent, fields.length, form]);
 
   useEffect(() => {
     const parameterJ = pairMatrix.map((pair, index) => ({
@@ -229,7 +232,7 @@ export const EditSimulation = ({ id }: { id: string }) => {
         const result = e.target?.result;
         if (typeof result === "string") {
           const values = JSON.parse(result) as SimulationForm;
-          form.reset(values);
+          form.reset({ ...values, name: values.name + "_new" });
         }
       };
       reader.readAsText(files[0]);

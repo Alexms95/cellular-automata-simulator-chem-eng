@@ -26,6 +26,9 @@ class Reaction(BaseModel):
     reversePr: list[float]
     hasIntermediate: bool
 
+class Rotation(BaseModel):
+    component: str
+    Prot: float
 
 class SimulationBase(BaseModel):
     name: str
@@ -35,6 +38,7 @@ class SimulationBase(BaseModel):
     ingredients: list[Ingredient]
     parameters: Parameters
     reactions: list[Reaction] | None
+    rotation: Rotation
 
 
 class SimulationCreate(SimulationBase):

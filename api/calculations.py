@@ -561,21 +561,29 @@ class Calculations:
                                                     for j_param in parameters.J
                                                     if (
                                                         get_component_index(
-                                                            j_param.relation[0]
+                                                            j_param.relation.split("|")[
+                                                                0
+                                                            ]
                                                         )
                                                         == i_comp
                                                         and get_component_index(
-                                                            j_param.relation[1]
+                                                            j_param.relation.split("|")[
+                                                                1
+                                                            ]
                                                         )
                                                         == outer_component
                                                     )
                                                     or (
                                                         get_component_index(
-                                                            j_param.relation[0]
+                                                            j_param.relation.split("|")[
+                                                                0
+                                                            ]
                                                         )
                                                         == outer_component
                                                         and get_component_index(
-                                                            j_param.relation[1]
+                                                            j_param.relation.split("|")[
+                                                                1
+                                                            ]
                                                         )
                                                         == i_comp
                                                     )
@@ -706,7 +714,7 @@ class Calculations:
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
         return {
-            (get_component_index(j.relation[0]), get_component_index(j.relation[1])): (
+            (get_component_index(j.relation.split('|')[0]), get_component_index(j.relation.split('|')[1])): (
                 3 / 2
             )
             / (j.value + (3 / 2))

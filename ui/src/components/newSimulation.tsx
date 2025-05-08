@@ -212,7 +212,7 @@ export const NewSimulation = () => {
         const result = e.target?.result;
         if (typeof result === "string") {
           const values = JSON.parse(result) as SimulationForm;
-          form.reset(values);
+          form.reset({...values, name: values.name + "_new"});
         }
       };
       reader.readAsText(files[0]);

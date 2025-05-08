@@ -30,3 +30,4 @@ class SimulationModel(Base):
     iterations = Column(Text)
     results = Column(JSON)
     reactions = Column(JSON)
+    rotation = Column(JSON)
