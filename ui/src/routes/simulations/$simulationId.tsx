@@ -23,30 +23,33 @@ function SimulationDetail() {
     queryKey: ["simulations", simulationId],
   });
 
-
-  const compressedIterations = data?.iterations
+  const compressedIterations = data?.iterations;
 
   //compressedIterations is a string of bytes zipped with gzip, it must be firstly base64 decoded, then decompressed with pako
   const decompressedIterations = useMemo(() => {
     if (!compressedIterations) return null;
     const binaryString = atob(compressedIterations);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const decompressed = pako.inflate(bytes, { to: "string" });
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const decompressed = pako.inflate(bytes, { to: "string" });
 
-        return JSON.parse(decompressed) as number[][][];
+    return JSON.parse(decompressed) as number[][][];
   }, [compressedIterations]);
 
   console.log(decompressedIterations);
 
   const runSimulation = useMutation({
-    mutationFn: () =>
-      httpClient.post(`/simulations/${simulationId}/run`),
+    mutationFn: () => httpClient.post(`/simulations/${simulationId}/run`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["simulations", simulationId] });
+      queryClient.invalidateQueries({
+        queryKey: ["simulations", simulationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["simulations"],
+      });
     },
   });
 
@@ -156,20 +159,17 @@ function SimulationDetail() {
   }
 
   return (
-    <div className="flex items-center justify-center gap-2">
-      {/* {memoizedReactP5Wrapper} */}
-      <div className="w-1/3 space-y-4">
+    <div className="flex items-start justify-center gap-8 relative mb-10">
+      <div className="w-2/3 space-y-4">
         <p>{data?.name}</p>
         <Button
           className="w-1/2"
           onClick={() => onRunSimulation()}
           disabled={runSimulation.isPending}
-          >Run simulation</Button>
-        <Button
-          className="w-1/2"
-          disabled={true}
-          onClick={generateVideo}
         >
+          Run simulation
+        </Button>
+        <Button className="w-1/2" disabled={true} onClick={generateVideo}>
           {isRecording ? (
             <Spinner size="small">
               <span className="ml-2">Running simulation...</span>
@@ -179,7 +179,9 @@ function SimulationDetail() {
           )}
         </Button>
         {/* Print the 3d Array */}
-        <div className="space-y-4">{decompressedIterations && decompressedIterations.map((iteration, index) => (
+        <div className="space-y-4">
+          {decompressedIterations &&
+            decompressedIterations.map((iteration, index) => (
               <div key={index} className="flex flex-col gap-2 items-center">
                 <h2 className="text-lg font-bold">Iteration {index}</h2>
                 <div className={`grid grid-cols-${iteration[0].length} gap-2`}>
@@ -190,13 +192,9 @@ function SimulationDetail() {
                           key={cellIndex}
                           className={clsx(
                             "w-4 h-4",
-                            cell === 1 && "bg-blue-500",
-                            cell === 2 && "bg-green-500",
-                            cell === 3 && "bg-red-500",
-                            cell === 4 && "bg-purple-500",
-                            cell === 5 && "bg-pink-500",
                             cell === 0 && "bg-gray-200",
-                            cell > 200 && "bg-yellow-500"
+                            cell > 200 && "bg-yellow-500",
+                            `bg-${data?.ingredients[cell - 1]?.color}-500`
                           )}
                         />
                       ))}
@@ -204,7 +202,28 @@ function SimulationDetail() {
                   ))}
                 </div>
               </div>
-        ))}
+            ))}
+        </div>
+      </div>
+
+      {/* Legend Section */}
+      <div className="w-1/6 fixed bottom-20 right-8 bg-white p-4 rounded-lg border shadow-sm">
+        <h3 className="font-semibold mb-4">Legend</h3>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-gray-200" />
+            <span>Empty</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-yellow-500" />
+            <span>Intermediate</span>
+          </div>
+          {data?.ingredients.map((ingredient, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <div className={`w-4 h-4 bg-${ingredient.color}-500`} />
+              <span>{ingredient.name}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
