@@ -192,6 +192,7 @@ function SimulationDetail() {
                             "w-4 h-4",
                             cell === 0 && "bg-gray-200",
                             cell > 200 && "bg-yellow-500",
+                            cell > 10 && cell < 200 && "bg-green-500",
                             `bg-${data?.ingredients[cell - 1]?.color}-500`
                           )}
                         />

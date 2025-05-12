@@ -63,8 +63,8 @@ class Calculations:
         rotation_info: RotationInfo = {"component": -1, "p_rot": 0, "states": [0]}
 
         if (
-            simulation.rotation.component is not ""
-            and simulation.rotation.component is not "None"
+            simulation.rotation.component != ""
+            and simulation.rotation.component != "None"
         ):
             rot_comp_index = get_component_index(simulation.rotation.component) * 10
             rotation_info = {
@@ -725,7 +725,7 @@ class Calculations:
                                         J_neighbors.append((i_p, j_components))
                                     else:
                                         occupied_inner_neighbors.append(
-                                            (row_index, column_index)
+                                            (i_p, row_index, column_index)
                                         )
 
                             # If there is no empty neighbor, the component cannot move
@@ -734,18 +734,19 @@ class Calculations:
 
                             J_max = max(J_neighbors, key=lambda x: x[1])
 
-                            if J_max[1] < 1 and J_max[1] > 0:
+                            if J_max[1] < 1 and J_max[1] >= 0:
                                 # Check if there are empty neighbors with J = 0, if so, pick one randomly
                                 J_0 = list(filter(lambda x: x[1] == 0, J_neighbors))
                                 if len(J_0) > 0:
                                     # Pick one randomly one of the empty neighbors with J = 0
                                     J_max = random_generator.choice(J_0)
                                 else:
+                                    # All components repulse each other, so the component cannot move
                                     continue
                             elif J_max[1] == 0:
                                 # If J_max is 0, all empty neighbors have J = 0 and are equal in terms of "afinity", so pick one randomly
                                 J_max = random_generator.choice(J_neighbors)
-                            elif J_max[1] > 0:
+                            elif J_max[1] >= 1:
                                 # If J_max is not 0, pick the empty neighbor with the highest J value
                                 J_neigh_max = list(
                                     filter(lambda x: x[1] == J_max[1], J_neighbors)
@@ -758,24 +759,107 @@ class Calculations:
 
                             if len(occupied_inner_neighbors) > 0:
                                 pb_inner_components = []
-                                for comp_position in occupied_inner_neighbors:
-                                    row, column = comp_position
+                                for ind_occ, row, column in occupied_inner_neighbors:
                                     comp_index = M[row, column]
-                                    pair_list = [comp_index, i_comp]
-                                    pair_list.sort()
-                                    pair = tuple(pair_list)
+                                    comp1 = ""
+                                    comp2 = ""
+                                    if Calculations.is_rotation_component(i_comp):
+                                        # If the component is a rotation component, get the state of the component
+                                        state_side = rotation_info["states"].index(
+                                            i_comp
+                                        )
+                                        # Check if the component is oriented in the same direction as the inner component
+                                        if state_side == ind_occ:
+                                            comp1 = simulation.rotation.component + "1"
+                                            if Calculations.is_rotation_component(
+                                                comp_index
+                                            ):
+                                                inner_state_side = rotation_info[
+                                                    "states"
+                                                ].index(comp_index)
+                                                # Check if the inner component is oriented in the opposite direction
+                                                if abs(inner_state_side - ind_occ == 2):
+                                                    comp2 = (
+                                                        simulation.rotation.component
+                                                        + "1"
+                                                    )
+                                                else:
+                                                    comp2 = (
+                                                        simulation.rotation.component
+                                                        + "2"
+                                                    )
+                                            else:
+                                                comp2 = get_component_letter(comp_index)
+                                        else:
+                                            comp1 = simulation.rotation.component + "2"
+                                            if Calculations.is_rotation_component(
+                                                comp_index
+                                            ):
+                                                inner_state_side = rotation_info[
+                                                    "states"
+                                                ].index(comp_index)
+                                                # Check if the inner component is oriented in the opposite direction
+                                                if abs(inner_state_side - ind_occ == 2):
+                                                    comp2 = (
+                                                        simulation.rotation.component
+                                                        + "1"
+                                                    )
+                                                else:
+                                                    comp2 = (
+                                                        simulation.rotation.component
+                                                        + "2"
+                                                    )
+                                            else:
+                                                comp2 = get_component_letter(comp_index)
+                                    else:
+                                        comp1 = get_component_letter(i_comp)
+                                        if Calculations.is_rotation_component(
+                                            comp_index
+                                        ):
+                                            inner_state_side = rotation_info[
+                                                "states"
+                                            ].index(comp_index)
+                                            # Check if the inner component is oriented in the opposite direction
+                                            if abs(inner_state_side - ind_occ == 2):
+                                                comp2 = (
+                                                    simulation.rotation.component + "1"
+                                                )
+                                            else:
+                                                comp2 = (
+                                                    simulation.rotation.component + "2"
+                                                )
+                                        else:
+                                            comp2 = get_component_letter(comp_index)
+
+                                    pair_relation = f"{comp1}|{comp2}"
+                                    reversed_pair_relation = f"{comp2}|{comp1}"
+
                                     pb = (
                                         1
                                         if Calculations.is_intermediate_component(
                                             comp_index
                                         )
-                                        else pbs[pair]
+                                        else (
+                                            pbs[pair_relation]
+                                            if pair_relation in pbs
+                                            else pbs[reversed_pair_relation]
+                                        )
                                     )
                                     pb_inner_components.append(pb)
 
                                 pbs_product = np.array(pb_inner_components).prod()
 
-                            pm_total_component = parameters.Pm[i_comp - 1] * pbs_product
+                            pm_total_component = (
+                                parameters.Pm[
+                                    (
+                                        rotation_info["component"]
+                                        if Calculations.is_rotation_component(i_comp)
+                                        else i_comp
+                                    )
+                                    - 1
+                                ]
+                                * pbs_product
+                            )
 
                             if Calculations.maybe_execute(pm_total_component):
                                 # Move the component to the empty neighbor with the highest J value
