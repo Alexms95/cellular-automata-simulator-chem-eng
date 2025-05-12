@@ -39,8 +39,6 @@ function SimulationDetail() {
     return JSON.parse(decompressed) as number[][][];
   }, [compressedIterations]);
 
-  console.log(decompressedIterations);
-
   const runSimulation = useMutation({
     mutationFn: () => httpClient.post(`/simulations/${simulationId}/run`),
     onSuccess: () => {

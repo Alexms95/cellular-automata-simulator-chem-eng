@@ -60,6 +60,19 @@ class Calculations:
         components = simulation.ingredients
         parameters = simulation.parameters
 
+        rotation_info = {"component": -1, "p_rot": 0, "states": []}
+
+        if (
+            simulation.rotation.component is not ""
+            and simulation.rotation.component is not "None"
+        ):
+            rot_comp_index = get_component_index(simulation.rotation.component) * 10
+            rotation_info = {
+                "component": get_component_index(simulation.rotation.component),
+                "p_rot": simulation.rotation.Prot,
+                "states": [rot_comp_index + i for i in range(1, 5)],
+            }
+
         NCOMP = len(components)
 
         print(NCOMP)
@@ -75,6 +88,8 @@ class Calculations:
 
         M = np.zeros((NL, NC), dtype=np.int16)
 
+        random_generator = np.random.default_rng()
+
         # Randomly distribute the components in the matrix
         for i in range(NCOMP):
             for j in range(Ni[i]):
@@ -82,7 +97,13 @@ class Calculations:
                     r = np.random.randint(0, NL)
                     c = np.random.randint(0, NC)
                     if M[r, c] == 0:
-                        M[r, c] = i + 1
+                        comp_index = i + 1
+                        if rotation_info["component"] == comp_index:
+                            # Assign the component to one of its states randomly
+                            comp_index = random_generator.choice(
+                                rotation_info["states"]
+                            )
+                        M[r, c] = comp_index
                         break
 
         # Show the matrix formatting the output as a table
@@ -99,8 +120,6 @@ class Calculations:
         moved_components = set()
         reacted_components = set()
         not_reacted_components = set()
-
-        random_generator = np.random.default_rng()
 
         logger.info(
             "Simulation Inputs:\n"
@@ -151,7 +170,31 @@ class Calculations:
                     pb_inner_components = []
                     pm_total_component = 0
 
-                    if i_comp > 0:
+                    if Calculations.is_component(i_comp):
+                        # Component rotation
+                        if Calculations.is_rotation_component(i_comp):
+                            # Check the inner neighbors. If there is at least one occupied neighbor, the component cannot rotate
+                            can_rotate = True
+                            for inner_neighbor_pos in inner_neighbors_position:
+                                row_index, column_index = inner_neighbor_pos
+                                if Calculations.check_constraints(
+                                    surface_type, row_index, column_index
+                                ):
+                                    inner_pos_tuple = (row_index, column_index)
+                                    inner_comp = M[row_index, column_index]
+                                    if Calculations.is_component(inner_comp):
+                                        # The component cannot rotate
+                                        can_rotate = False
+                                        break
+                            if can_rotate and Calculations.maybe_execute(
+                                simulation.rotation.Prot
+                            ):
+                                # Rotate the component
+                                states = rotation_info["states"]
+                                M[i, j] = random_generator.choice(
+                                    states[states != i_comp]
+                                )
+                            continue
                         if current_position not in reacted_components:
                             try:
                                 # Scan all the neighbors of the component to get all reaction pairs
@@ -174,7 +217,7 @@ class Calculations:
                                         )
                                         # Skip empty cells, the same component, already not reacted components, already reacted components in the neighborhood, and moved components in the neighborhood
                                         if (
-                                            inner_comp == 0
+                                            Calculations.is_empty(inner_comp)
                                             or inner_comp == i_comp
                                             or positions_pair in not_reacted_components
                                             or reversed_positions_pair
@@ -184,8 +227,12 @@ class Calculations:
                                             or inner_pos_tuple in moved_components
                                             # Exclude the case where both components are intermediates but are not a pair (avoid single intermediates in the grid)
                                             or (
-                                                i_comp > 100
-                                                and inner_comp > 100
+                                                Calculations.is_intermediate_component(
+                                                    i_comp
+                                                )
+                                                and Calculations.is_intermediate_component(
+                                                    inner_comp
+                                                )
                                                 and (i, j, row_index, column_index)
                                                 not in intermediate_pairs
                                             )
@@ -413,9 +460,10 @@ class Calculations:
                                         prod1_row, prod1_column = prod1_pos
                                         prod2_row, prod2_column = prod2_pos
 
-                                        if (
-                                            M[prod1_row, prod1_column] > 100
-                                            and M[prod2_row, prod2_column] > 100
+                                        if Calculations.is_intermediate_component(
+                                            M[prod1_row, prod1_column]
+                                        ) and Calculations.is_intermediate_component(
+                                            M[prod2_row, prod2_column]
                                         ):
                                             # If the reactants are intermediates, remove their positions from the intermediate pairs (at this moment, there are reactants yet)
                                             intermediate_pairs.remove(
@@ -462,7 +510,11 @@ class Calculations:
                                         )
 
                                         # If the products are intermediates, store their positions to avoid reacting to other intermediates
-                                        if prod_1 > 100 and prod_2 > 100:
+                                        if Calculations.is_intermediate_component(
+                                            prod_1
+                                        ) and Calculations.is_intermediate_component(
+                                            prod_2
+                                        ):
                                             intermediate_pairs.append(
                                                 (
                                                     prod1_row,
@@ -500,9 +552,7 @@ class Calculations:
                                 iteration_log_text.write(
                                     f"  Outer Neighbors: {outer_neighbors_position}\n"
                                 )
-                                iteration_log_text.write(
-                                    f"  Current matrix:\n{M}\n"
-                                )
+                                iteration_log_text.write(f"  Current matrix:\n{M}\n")
                                 iteration_log_text.write(
                                     f"  Moved Components: {moved_components}\n"
                                 )
@@ -526,8 +576,8 @@ class Calculations:
                         if (
                             current_position in moved_components
                             or current_position in reacted_components
-                            # i_comp >= 100 means that it is an intermediate component and it cannot move
-                            or i_comp > 100
+                            # i_comp >= 200 means that it is an intermediate component and it cannot move
+                            or Calculations.is_intermediate_component(i_comp)
                         ):
                             continue
                         try:
@@ -541,7 +591,9 @@ class Calculations:
                                 if Calculations.check_constraints(
                                     surface_type, row_index, column_index
                                 ):
-                                    if M[row_index, column_index] == 0:
+                                    if Calculations.is_empty(
+                                        M[row_index, column_index]
+                                        ):
                                         o_row, o_column = outer_neighbors_position[i_p]
                                         if not Calculations.check_constraints(
                                             surface_type, o_row, o_column
@@ -549,11 +601,11 @@ class Calculations:
                                             J_neighbors.append((i_p, 0))
                                             continue
                                         outer_component = M[o_row, o_column]
-                                        if outer_component > 100:
+                                        if Calculations.is_intermediate_component(outer_component):
                                             # If the outer component is an intermediate, the joining probability is 0
                                             J_neighbors.append((i_p, 0))
                                             continue
-                                        if outer_component != 0:
+                                        if Calculations.is_component(outer_component):
                                             # Search in the list for the probability J of the component
                                             j_components = next(
                                                 (
@@ -631,7 +683,7 @@ class Calculations:
                                     pair_list = [comp_index, i_comp]
                                     pair_list.sort()
                                     pair = tuple(pair_list)
-                                    pb = 1 if comp_index > 100 else pbs[pair]
+                                    pb = 1 if Calculations.is_intermediate_component(comp_index) else pbs[pair]
                                     pb_inner_components.append(pb)
 
                                 pbs_product = np.array(pb_inner_components).prod()
@@ -691,6 +743,22 @@ class Calculations:
         return M_iter
 
     @staticmethod
+    def is_intermediate_component(i_comp):
+        return i_comp > 200
+
+    @staticmethod
+    def is_empty(inner_comp):
+        return inner_comp == 0
+
+    @staticmethod
+    def is_rotation_component(i_comp):
+        return i_comp > 10 and i_comp < 200
+
+    @staticmethod
+    def is_component(i_comp):
+        return i_comp > 0
+
+    @staticmethod
     def show_matrix(M: np.ndarray):
         NL, NC = M.shape
         for i in range(NL):
@@ -714,9 +782,10 @@ class Calculations:
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
         return {
-            (get_component_index(j.relation.split('|')[0]), get_component_index(j.relation.split('|')[1])): (
-                3 / 2
-            )
+            (
+                get_component_index(j.relation.split("|")[0]),
+                get_component_index(j.relation.split("|")[1]),
+            ): (3 / 2)
             / (j.value + (3 / 2))
             for j in js
         }
