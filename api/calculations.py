@@ -72,6 +72,7 @@ class Calculations:
                 "p_rot": simulation.rotation.Prot,
                 "states": [rot_comp_index + i for i in range(1, 5)],
             }
+            print(rotation_info)
 
         NCOMP = len(components)
 
@@ -193,7 +194,7 @@ class Calculations:
                                 # Rotate the component
                                 states = rotation_info["states"]
                                 M[i, j] = random_generator.choice(
-                                    states[states != i_comp]
+                                    list(filter(lambda x: x != int(i_comp), states))
                                 )
                                 continue
                         if (

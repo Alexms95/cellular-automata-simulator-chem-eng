@@ -185,18 +185,40 @@ function SimulationDetail() {
                 <div className={`grid grid-cols-${iteration[0].length} gap-2`}>
                   {iteration.map((row, rowIndex) => (
                     <div key={rowIndex} className="flex gap-2">
-                      {row.map((cell, cellIndex) => (
-                        <div
-                          key={cellIndex}
-                          className={clsx(
-                            "w-4 h-4",
-                            cell === 0 && "bg-gray-200",
-                            cell > 200 && "bg-yellow-500",
-                            cell > 10 && cell < 200 && "bg-green-500",
-                            `bg-${data?.ingredients[cell - 1]?.color}-500`
-                          )}
-                        />
-                      ))}
+                      {row.map((cell, cellIndex) => {
+                        const getDirectionalStyle = (value: number) => {
+                          const direction = value % 4;
+                          // Create half-filled div with blue on specified side
+                          switch (direction) {
+                            case 1: // North
+                              return "bg-gradient-to-b from-blue-500 from-50% to-pink-200 to-50%";
+                            case 2: // West
+                              return "bg-gradient-to-r from-blue-500 from-50% to-pink-200 to-50%";
+                            case 3: // South
+                              return "bg-gradient-to-t from-blue-500 from-50% to-pink-200 to-50%";
+                            case 0: // East
+                              return "bg-gradient-to-l from-blue-500 from-50% to-pink-200 to-50%";
+                            default:
+                              return "bg-gray-200";
+                          }
+                        };
+
+                        return (
+                          <div
+                            key={cellIndex}
+                            className={clsx(
+                              "w-4 h-4",
+                              cell === 0 && "bg-gray-200",
+                              cell > 200 && "bg-yellow-500",
+                              cell > 10 &&
+                                cell < 200 &&
+                                getDirectionalStyle(cell),
+                              cell <= 10 &&
+                                `bg-${data?.ingredients[cell - 1]?.color}-500`
+                            )}
+                          />
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
