@@ -4,8 +4,8 @@ from math import floor
 
 import numpy as np
 from logger import logger
-from schemas import PairParameter, SimulationBase
-from utils import get_component_index
+from schemas import PairParameter, RotationInfo, SimulationBase
+from utils import get_component_index, get_component_letter
 
 SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
 
@@ -60,7 +60,7 @@ class Calculations:
         components = simulation.ingredients
         parameters = simulation.parameters
 
-        rotation_info = {"component": -1, "p_rot": 0, "states": []}
+        rotation_info: RotationInfo = {"component": -1, "p_rot": 0, "states": [0]}
 
         if (
             simulation.rotation.component is not ""
@@ -111,7 +111,8 @@ class Calculations:
         Calculations.show_matrix(M)
 
         # Define the Von Neumann neighborhood
-        von_neumann_neigh = np.array([[-1, 0], [1, 0], [0, -1], [0, 1]], dtype=np.int16)
+        # North, West, South, East
+        von_neumann_neigh = np.array([[-1, 0], [0, -1], [1, 0], [0, 1]], dtype=np.int16)
 
         n_iter = simulation.iterationsNumber
 
@@ -194,8 +195,11 @@ class Calculations:
                                 M[i, j] = random_generator.choice(
                                     states[states != i_comp]
                                 )
-                            continue
-                        if current_position not in reacted_components:
+                                continue
+                        if (
+                            current_position not in reacted_components
+                            and not Calculations.is_rotation_component(i_comp)
+                        ):
                             try:
                                 # Scan all the neighbors of the component to get all reaction pairs
                                 possible_reactions = []
@@ -593,7 +597,7 @@ class Calculations:
                                 ):
                                     if Calculations.is_empty(
                                         M[row_index, column_index]
-                                        ):
+                                    ):
                                         o_row, o_column = outer_neighbors_position[i_p]
                                         if not Calculations.check_constraints(
                                             surface_type, o_row, o_column
@@ -601,43 +605,120 @@ class Calculations:
                                             J_neighbors.append((i_p, 0))
                                             continue
                                         outer_component = M[o_row, o_column]
-                                        if Calculations.is_intermediate_component(outer_component):
+                                        if Calculations.is_intermediate_component(
+                                            outer_component
+                                        ):
                                             # If the outer component is an intermediate, the joining probability is 0
                                             J_neighbors.append((i_p, 0))
                                             continue
                                         if Calculations.is_component(outer_component):
+                                            # Analyze the direction of rotation components to find the correct J of the interaction
+                                            comp1 = ""
+                                            comp2 = ""
+                                            if Calculations.is_rotation_component(
+                                                i_comp
+                                            ):
+                                                state_side = rotation_info[
+                                                    "states"
+                                                ].index(i_comp)
+                                                # It means that the current component is oriented in the same direction as the outer component
+                                                if state_side == i_p:
+                                                    comp1 = (
+                                                        simulation.rotation.component
+                                                        + "1"
+                                                    )
+                                                    if Calculations.is_rotation_component(
+                                                        outer_component
+                                                    ):
+                                                        outer_state_side = (
+                                                            rotation_info[
+                                                                "states"
+                                                            ].index(outer_component)
+                                                        )
+                                                        # Check if the outer component is oriented in the opposite direction
+                                                        if abs(
+                                                            outer_state_side - i_p == 2
+                                                        ):
+                                                            comp2 = (
+                                                                simulation.rotation.component
+                                                                + "1"
+                                                            )
+                                                        else:
+                                                            comp2 = (
+                                                                simulation.rotation.component
+                                                                + "2"
+                                                            )
+                                                    else:
+                                                        comp2 = get_component_letter(
+                                                            outer_component
+                                                        )
+                                                else:
+                                                    comp1 = (
+                                                        simulation.rotation.component
+                                                        + "2"
+                                                    )
+                                                    if Calculations.is_rotation_component(
+                                                        outer_component
+                                                    ):
+                                                        outer_state_side = (
+                                                            rotation_info[
+                                                                "states"
+                                                            ].index(outer_component)
+                                                        )
+                                                        # Check if the outer component is oriented in the opposite direction
+                                                        if abs(
+                                                            outer_state_side - i_p == 2
+                                                        ):
+                                                            comp2 = (
+                                                                simulation.rotation.component
+                                                                + "1"
+                                                            )
+                                                        else:
+                                                            comp2 = (
+                                                                simulation.rotation.component
+                                                                + "2"
+                                                            )
+                                                    else:
+                                                        comp2 = get_component_letter(
+                                                            outer_component
+                                                        )
+                                            else:
+                                                comp1 = get_component_letter(i_comp)
+                                                if Calculations.is_rotation_component(
+                                                    outer_component
+                                                ):
+                                                    outer_state_side = rotation_info[
+                                                        "states"
+                                                    ].index(outer_component)
+                                                    # Check if the outer component is oriented in the opposite direction
+                                                    if abs(outer_state_side - i_p == 2):
+                                                        comp2 = (
+                                                            simulation.rotation.component
+                                                            + "1"
+                                                        )
+                                                    else:
+                                                        comp2 = (
+                                                            simulation.rotation.component
+                                                            + "2"
+                                                        )
+                                                else:
+                                                    comp2 = get_component_letter(
+                                                        outer_component
+                                                    )
+
+                                            pair_relation = f"{comp1}|{comp2}"
+                                            reversed_pair_relation = f"{comp2}|{comp1}"
+
                                             # Search in the list for the probability J of the component
                                             j_components = next(
                                                 (
                                                     j_param.value
                                                     for j_param in parameters.J
                                                     if (
-                                                        get_component_index(
-                                                            j_param.relation.split("|")[
-                                                                0
-                                                            ]
-                                                        )
-                                                        == i_comp
-                                                        and get_component_index(
-                                                            j_param.relation.split("|")[
-                                                                1
-                                                            ]
-                                                        )
-                                                        == outer_component
-                                                    )
-                                                    or (
-                                                        get_component_index(
-                                                            j_param.relation.split("|")[
-                                                                0
-                                                            ]
-                                                        )
-                                                        == outer_component
-                                                        and get_component_index(
-                                                            j_param.relation.split("|")[
-                                                                1
-                                                            ]
-                                                        )
-                                                        == i_comp
+                                                        j_param.relation
+                                                        == pair_relation
+                                                        or j_param.relation
+                                                        == reversed_pair_relation
                                                     )
                                                 )
                                             )
@@ -683,7 +764,13 @@ class Calculations:
                                     pair_list = [comp_index, i_comp]
                                     pair_list.sort()
                                     pair = tuple(pair_list)
-                                    pb = 1 if Calculations.is_intermediate_component(comp_index) else pbs[pair]
+                                    pb = (
+                                        1
+                                        if Calculations.is_intermediate_component(
+                                            comp_index
+                                        )
+                                        else pbs[pair]
+                                    )
                                     pb_inner_components.append(pb)
 
                                 pbs_product = np.array(pb_inner_components).prod()
@@ -781,11 +868,4 @@ class Calculations:
 
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
-        return {
-            (
-                get_component_index(j.relation.split("|")[0]),
-                get_component_index(j.relation.split("|")[1]),
-            ): (3 / 2)
-            / (j.value + (3 / 2))
-            for j in js
-        }
+        return {j.relation: (3 / 2) / (j.value + (3 / 2)) for j in js}

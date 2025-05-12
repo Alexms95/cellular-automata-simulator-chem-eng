@@ -1,5 +1,6 @@
 from datetime import datetime
 from uuid import UUID
+from typing import TypedDict
 
 from pydantic import BaseModel
 
@@ -59,3 +60,9 @@ class SimulationComplete(SimulationResponse):
 
     class Config:
         from_attributes = True
+
+
+class RotationInfo(TypedDict):
+    component: int
+    p_rot: float
+    states: list[int]

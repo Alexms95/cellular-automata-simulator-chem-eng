@@ -6,6 +6,8 @@ import json
 def get_component_index(char: str) -> int:
     return ord(char) - 64
 
+def get_component_letter(index: int) -> str:
+    return chr(index + 64)
 
 def compress_matrix(matrix: list) -> str:
     json_bytes = json.dumps(matrix).encode("utf-8")
