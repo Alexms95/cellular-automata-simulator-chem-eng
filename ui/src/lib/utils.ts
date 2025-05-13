@@ -153,3 +153,19 @@ export function calculateFractions(
 
   return roundedFractions;
 }
+
+export const getDirectionalStyle = (value: number) => {
+  const direction = value % 4;
+  switch (direction) {
+    case 1: // North
+      return "bg-gradient-to-b from-blue-500 from-50% to-pink-200 to-50%";
+    case 2: // West
+      return "bg-gradient-to-r from-blue-500 from-50% to-pink-200 to-50%";
+    case 3: // South
+      return "bg-gradient-to-t from-blue-500 from-50% to-pink-200 to-50%";
+    case 0: // East
+      return "bg-gradient-to-l from-blue-500 from-50% to-pink-200 to-50%";
+    default:
+      return "bg-gray-200";
+  }
+};
