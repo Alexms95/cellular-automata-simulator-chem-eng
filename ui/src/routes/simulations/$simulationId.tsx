@@ -18,7 +18,6 @@ export const Route = createFileRoute("/simulations/$simulationId")({
 
 function SimulationDetail() {
   const { simulationId } = Route.useParams();
-
   const queryClient = useQueryClient();
 
   const { data, isLoading, isFetching } = useQuery<Simulation>({
@@ -29,29 +28,34 @@ function SimulationDetail() {
     queryKey: ["simulations"],
   });
 
-  const compressedIterations = data?.iterations;
-
   const rotation = data?.rotation;
 
-  //compressedIterations is a string of bytes zipped with gzip, it must be firstly base64 decoded, then decompressed with pako
-  const decompressedIterations = useMemo(() => {
-    if (!compressedIterations) return null;
-    const binaryString = atob(compressedIterations);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+  const { data: decompressedIterations, isLoading: isDecompressing } = useQuery(
+    {
+      queryKey: ["decompressedIterations", simulationId],
+      enabled: !!data?.iterations,
+      queryFn: () => {
+        console.log("Decompressing iterations...");
+        const binaryString = atob(data!.iterations);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const decompressed = pako.inflate(bytes, { to: "string" });
+        return JSON.parse(decompressed) as number[][][];
+      },
     }
-    const decompressed = pako.inflate(bytes, { to: "string" });
-
-    return JSON.parse(decompressed) as number[][][];
-  }, [compressedIterations]);
+  );
 
   const runSimulation = useMutation({
     mutationFn: () => httpClient.post(`/simulations/${simulationId}/run`),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["simulations"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["decompressedIterations", simulationId],
       });
     },
   });
@@ -168,6 +172,15 @@ function SimulationDetail() {
     return (
       <div className="flex items-center justify-center h-screen">
         <Spinner size="large" />
+      </div>
+    );
+  }
+
+  if (isDecompressing) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <Spinner size="large" />
+        <span className="text-lg">Loading iterations...</span>
       </div>
     );
   }
