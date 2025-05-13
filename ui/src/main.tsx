@@ -1,7 +1,7 @@
-import { scan, getReport } from "react-scan";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { getReport, scan } from "react-scan";
 import { Toaster } from "sonner";
 import "./index.css";
 
@@ -18,7 +18,7 @@ import { routeTree } from "./routeTree.gen";
 if (typeof window !== "undefined") {
   scan({
     enabled: false,
-    log: true,// logs render info to console (default: false)
+    log: true, // logs render info to console (default: false)
   });
   const a = getReport();
   console.log(a);
@@ -44,9 +44,7 @@ declare module "@tanstack/react-router" {
 }
 
 const defaultQueryFn = async ({ queryKey }: { queryKey: QueryKey }) => {
-  const path = queryKey.reduce((acc, cur) => 
-    `${acc}/${cur}`
-  );
+  const path = queryKey.reduce((acc, cur) => `${acc}/${cur}`);
 
   const { data } = await httpClient.get(`http://localhost:8000/${path}`);
   return data;

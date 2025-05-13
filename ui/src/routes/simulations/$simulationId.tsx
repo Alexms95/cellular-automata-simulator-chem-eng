@@ -25,6 +25,10 @@ function SimulationDetail() {
     queryKey: ["simulations", simulationId],
   });
 
+  useQuery({
+    queryKey: ["simulations"],
+  });
+
   const compressedIterations = data?.iterations;
 
   const rotation = data?.rotation;
@@ -46,9 +50,6 @@ function SimulationDetail() {
   const runSimulation = useMutation({
     mutationFn: () => httpClient.post(`/simulations/${simulationId}/run`),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["simulations", simulationId],
-      });
       queryClient.invalidateQueries({
         queryKey: ["simulations"],
       });
@@ -264,10 +265,12 @@ function SimulationDetail() {
             <div className="w-4 h-4 bg-gray-200" />
             <span>Empty</span>
           </div>
-          {data?.reactions?.some(r => r.hasIntermediate) && (<div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-500" />
-            <span>Intermediate</span>
-          </div>)}
+          {data?.reactions?.some((r) => r.hasIntermediate) && (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-yellow-500" />
+              <span>Intermediate</span>
+            </div>
+          )}
           {data?.ingredients.map((ingredient, index) => {
             if (String.fromCharCode(65 + index) === rotation?.component) {
               return (
