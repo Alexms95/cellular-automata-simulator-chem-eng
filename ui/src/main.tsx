@@ -5,14 +5,10 @@ import { getReport, scan } from "react-scan";
 import { Toaster } from "sonner";
 import "./index.css";
 
-import {
-  QueryClient,
-  QueryClientProvider,
-  QueryKey,
-} from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Spinner } from "./components/ui/spinner";
 import { TooltipProvider } from "./components/ui/tooltip";
-import httpClient from "./lib/httpClient";
+import { queryClient } from "./queryClient";
 import { routeTree } from "./routeTree.gen";
 
 if (typeof window !== "undefined") {
@@ -42,22 +38,6 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
-
-const defaultQueryFn = async ({ queryKey }: { queryKey: QueryKey }) => {
-  const path = queryKey.reduce((acc, cur) => `${acc}/${cur}`);
-
-  const { data } = await httpClient.get(`http://localhost:8000/${path}`);
-  return data;
-};
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: Infinity,
-      queryFn: defaultQueryFn,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
