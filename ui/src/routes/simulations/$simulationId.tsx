@@ -26,6 +26,8 @@ function SimulationDetail() {
 
   const compressedIterations = data?.iterations;
 
+  const rotation = data?.rotation;
+
   //compressedIterations is a string of bytes zipped with gzip, it must be firstly base64 decoded, then decompressed with pako
   const decompressedIterations = useMemo(() => {
     if (!compressedIterations) return null;
@@ -221,12 +223,22 @@ function SimulationDetail() {
             <div className="w-4 h-4 bg-yellow-500" />
             <span>Intermediate</span>
           </div>
-          {data?.ingredients.map((ingredient, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <div className={`w-4 h-4 bg-${ingredient.color}-500`} />
-              <span>{ingredient.name}</span>
-            </div>
-          ))}
+          {data?.ingredients.map((ingredient, index) => {
+            if (String.fromCharCode(65 + index) === rotation?.component) {
+              return (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-gradient-to-b from-amber-800 from-50% to-pink-200 to-50%" />
+                  <span>{ingredient.name}</span>
+                </div>
+              );
+            }
+            return (
+              <div key={index} className="flex items-center gap-2">
+                <div className={`w-4 h-4 bg-${ingredient.color}-500`} />
+                <span>{ingredient.name}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
