@@ -5,8 +5,9 @@ import { getDirectionalStyle } from "@/lib/utils";
 import { Simulation } from "@/models/simulation";
 import { ReactP5Wrapper, Sketch } from "@p5-wrapper/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import clsx from "clsx";
+import { ChevronDown, ChevronLeft, ChevronUp, Play } from "lucide-react";
 import pako from "pako";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -63,6 +64,17 @@ function SimulationDetail() {
         const message = error.response?.data?.detail;
         return message ?? `Error running simulation ${data!.name}`;
       },
+    });
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const scrollToBottom = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: "smooth",
     });
   };
 
@@ -161,15 +173,26 @@ function SimulationDetail() {
 
   return (
     <div className="flex items-start justify-center gap-8 relative mb-10">
-      <div className="w-2/3 space-y-4">
-        <p>{data?.name}</p>
-        <Button
-          className="w-1/2"
-          onClick={() => onRunSimulation()}
-          disabled={runSimulation.isPending}
-        >
-          Run simulation
+      <Link to="/simulations" className="absolute left-4 top-4">
+        <Button variant="outline" className="flex items-center gap-2">
+          <ChevronLeft className="h-4 w-4" />
+          Back to Simulations
         </Button>
+      </Link>
+      <div className="w-2/3 space-y-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">{data?.name}</h1>
+          <Button
+            className="w-48 flex items-center justify-center gap-2 mx-auto"
+            onClick={() => onRunSimulation()}
+            disabled={runSimulation.isPending}
+          >
+            <Play className="h-4 w-4" />
+            Run simulation
+          </Button>
+        </div>
+
+        {/* Disabled for now
         <Button className="w-1/2" disabled={true} onClick={generateVideo}>
           {isRecording ? (
             <Spinner size="small">
@@ -179,6 +202,28 @@ function SimulationDetail() {
             "Generate mp4 video"
           )}
         </Button>
+        */}
+
+        {/* Navigation Controls */}
+        <div className="fixed bottom-10 right-20 space-x-8">
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={scrollToTop}
+            className="rounded-full shadow-md"
+          >
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={scrollToBottom}
+            className="rounded-full shadow-md"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </div>
+
         {/* Print the 3d Array */}
         <div className="space-y-4">
           {decompressedIterations &&
@@ -212,17 +257,17 @@ function SimulationDetail() {
       </div>
 
       {/* Legend Section */}
-      <div className="w-1/6 fixed bottom-20 right-8 bg-white p-4 rounded-lg border shadow-sm">
+      <div className="w-1/6 fixed bottom-28 right-8 bg-white p-4 rounded-lg border shadow-sm">
         <h3 className="font-semibold mb-4">Legend</h3>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-gray-200" />
             <span>Empty</span>
           </div>
-          <div className="flex items-center gap-2">
+          {data?.reactions?.some(r => r.hasIntermediate) && (<div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-yellow-500" />
             <span>Intermediate</span>
-          </div>
+          </div>)}
           {data?.ingredients.map((ingredient, index) => {
             if (String.fromCharCode(65 + index) === rotation?.component) {
               return (
