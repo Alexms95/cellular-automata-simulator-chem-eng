@@ -36,10 +36,12 @@ function SimulationDetail() {
 
   const { data: decompressedIterations, isLoading: isDecompressing, isFetching: isdecom, isRefetching: isredecom } = useQuery(
     {
-      queryKey: ["decompressedIterations", simulationId],
-      enabled: !!data?.iterations,
+      queryKey: ["decompressedIterations", simulationId, data?.iterations, data],
       queryFn: () => {
         console.log("Decompressing iterations...");
+        if (!data?.iterations) {
+          return [];
+        }
         const binaryString = atob(data!.iterations);
         const len = binaryString.length;
         const bytes = new Uint8Array(len);
@@ -263,7 +265,7 @@ function SimulationDetail() {
       </div>
 
       {/* Legend Section */}
-      <div className="w-1/6 fixed bottom-28 right-8 bg-white p-4 rounded-lg border shadow-sm">
+      <div className="w-1/6 fixed bottom-28 right-4 bg-white p-4 rounded-lg border shadow-sm">
         <h3 className="font-semibold mb-4">Legend</h3>
         <div className="space-y-2">
           <div className="flex items-center gap-2">

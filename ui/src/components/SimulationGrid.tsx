@@ -56,9 +56,7 @@ const GridRow = ({ data, index, style }) => {
 
 export default function SimulationGrid({
   iterations,
-  ingredients,
-  rotationComponent,
-  reactions,
+  ingredients
 }: Props) {
   return (
     <div className="space-y-4">
