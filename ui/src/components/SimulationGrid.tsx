@@ -19,10 +19,10 @@ const IterationRow = ({ data, index, style }) => {
     <div style={style} className="flex flex-col gap-2 items-center py-2">
       <h2 className="text-lg font-bold">Iteration {index}</h2>
       <FixedSizeList
-        height={750}
-        width={gridSize * 24} // 24px per cell (16px + 8px gap)
+        height={550}
+        width={gridSize * 16}
         itemCount={iteration.length}
-        itemSize={24}
+        itemSize={16}
         itemData={{ row: iteration, ingredients }}
         className="overflow-x-hidden"
       >
@@ -36,12 +36,12 @@ const GridRow = ({ data, index, style }) => {
   const { row, ingredients } = data;
 
   return (
-    <div style={style} className="flex gap-2">
+    <div style={style} className="flex gap-1">
       {row[index].map((cell: number, cellIndex: number) => (
         <div
           key={cellIndex}
           className={clsx(
-            "w-4 h-4",
+            "w-3 h-3",
             cell === 0 && "bg-gray-200",
             cell > 200 && "bg-yellow-500",
             cell > 10 && cell < 200 && getDirectionalStyle(cell),
@@ -63,7 +63,7 @@ export default function SimulationGrid({
         height={600}
         width="100%"
         itemCount={iterations.length}
-        itemSize={800}
+        itemSize={550}
         itemData={{ iterations, ingredients }}
       >
         {IterationRow}

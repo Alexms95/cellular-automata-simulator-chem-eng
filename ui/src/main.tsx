@@ -42,7 +42,7 @@ declare module "@tanstack/react-router" {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <Toaster duration={3000} expand={true} position="top-right" richColors />
+      <Toaster duration={2000} expand={true} position="top-right" richColors />
       <TooltipProvider delayDuration={300}>
         <RouterProvider router={router} />
       </TooltipProvider>
