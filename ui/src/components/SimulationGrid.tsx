@@ -1,4 +1,3 @@
-// components/SimulationGrid.tsx
 import { getDirectionalStyle } from "@/lib/utils";
 import { Simulation } from "@/models/simulation";
 import clsx from "clsx";

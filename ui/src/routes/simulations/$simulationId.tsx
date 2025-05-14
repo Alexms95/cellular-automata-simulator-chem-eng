@@ -1,20 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import httpClient from "@/lib/httpClient";
-import { getDirectionalStyle } from "@/lib/utils";
 import { Simulation } from "@/models/simulation";
 import { ReactP5Wrapper, Sketch } from "@p5-wrapper/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import clsx from "clsx";
 import { ChevronDown, ChevronLeft, ChevronUp, Play } from "lucide-react";
 import pako from "pako";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { Suspense, lazy } from "react";
+import { lazy, Suspense } from "react";
 const SimulationGrid = lazy(() => import("@/components/SimulationGrid"));
-
 
 export const Route = createFileRoute("/simulations/$simulationId")({
   component: () => <SimulationDetail />,
@@ -34,25 +31,28 @@ function SimulationDetail() {
 
   const rotation = data?.rotation;
 
-  const { data: decompressedIterations, isLoading: isDecompressing, isFetching: isdecom, isRefetching: isredecom } = useQuery(
-    {
-      queryKey: ["decompressedIterations", simulationId, data?.iterations, data],
-      queryFn: () => {
-        console.log("Decompressing iterations...");
-        if (!data?.iterations) {
-          return [];
-        }
-        const binaryString = atob(data!.iterations);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const decompressed = pako.inflate(bytes, { to: "string" });
-        return JSON.parse(decompressed) as number[][][];
-      },
-    }
-  );
+  const {
+    data: decompressedIterations,
+    isLoading: isDecompressing,
+    isFetching: isdecom,
+    isRefetching: isredecom,
+  } = useQuery({
+    queryKey: ["decompressedIterations", simulationId, data?.iterations, data],
+    queryFn: () => {
+      console.log("Decompressing iterations...");
+      if (!data?.iterations) {
+        return [];
+      }
+      const binaryString = atob(data!.iterations);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const decompressed = pako.inflate(bytes, { to: "string" });
+      return JSON.parse(decompressed) as number[][][];
+    },
+  });
 
   const runSimulation = useMutation({
     mutationFn: () => httpClient.post(`/simulations/${simulationId}/run`),
