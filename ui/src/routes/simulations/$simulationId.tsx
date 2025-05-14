@@ -12,6 +12,10 @@ import pako from "pako";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { Suspense, lazy } from "react";
+const SimulationGrid = lazy(() => import("@/components/SimulationGrid"));
+
+
 export const Route = createFileRoute("/simulations/$simulationId")({
   component: () => <SimulationDetail />,
 });
@@ -30,7 +34,7 @@ function SimulationDetail() {
 
   const rotation = data?.rotation;
 
-  const { data: decompressedIterations, isLoading: isDecompressing } = useQuery(
+  const { data: decompressedIterations, isLoading: isDecompressing, isFetching: isdecom, isRefetching: isredecom } = useQuery(
     {
       queryKey: ["decompressedIterations", simulationId],
       enabled: !!data?.iterations,
@@ -176,7 +180,7 @@ function SimulationDetail() {
     );
   }
 
-  if (isDecompressing) {
+  if (isDecompressing || isdecom || isredecom) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
         <Spinner size="large" />
@@ -239,35 +243,23 @@ function SimulationDetail() {
         </div>
 
         {/* Print the 3d Array */}
-        <div className="space-y-4">
-          {decompressedIterations &&
-            decompressedIterations.map((iteration, index) => (
-              <div key={index} className="flex flex-col gap-2 items-center">
-                <h2 className="text-lg font-bold">Iteration {index}</h2>
-                <div className={`grid grid-cols-${iteration[0].length} gap-2`}>
-                  {iteration.map((row, rowIndex) => (
-                    <div key={rowIndex} className="flex gap-2">
-                      {row.map((cell, cellIndex) => (
-                        <div
-                          key={cellIndex}
-                          className={clsx(
-                            "w-4 h-4",
-                            cell === 0 && "bg-gray-200",
-                            cell > 200 && "bg-yellow-500",
-                            cell > 10 &&
-                              cell < 200 &&
-                              getDirectionalStyle(cell),
-                            cell <= 10 &&
-                              `bg-${data?.ingredients[cell - 1]?.color}-500`
-                          )}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-        </div>
+        <Suspense
+          fallback={
+            <div className="flex flex-col items-center justify-center h-screen gap-4">
+              <Spinner size="large" />
+              <span className="text-lg">Rendering simulation...</span>
+            </div>
+          }
+        >
+          {decompressedIterations && (
+            <SimulationGrid
+              iterations={decompressedIterations}
+              ingredients={data?.ingredients ?? []}
+              rotationComponent={data?.rotation?.component}
+              reactions={data?.reactions}
+            />
+          )}
+        </Suspense>
       </div>
 
       {/* Legend Section */}
