@@ -192,26 +192,58 @@ function SimulationDetail() {
   }
 
   return (
-    <div className="flex items-start justify-center gap-8 relative mb-10">
-      <Link to="/simulations" className="absolute left-4 top-4">
-        <Button variant="outline" className="flex items-center gap-2">
-          <ChevronLeft className="h-4 w-4" />
-          Back to Simulations
-        </Button>
-      </Link>
-      <div className="w-2/3 space-y-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">{data?.name}</h1>
+    <div className="flex-flex-col">
+      <div className="flex justify-between">
+        <Link to="/simulations" className="">
+          <Button variant="outline" className="flex items-center gap-2">
+            <ChevronLeft className="h-4 w-4" />
+            Back to Simulations
+          </Button>
+        </Link>
+          <h1 className="text-xl text-center font-bold mb-4">{data?.name}</h1>
           <Button
-            className="w-48 flex items-center justify-center gap-2 mx-auto"
+            className="flex items-center justify-center gap-2"
             onClick={() => onRunSimulation()}
             disabled={runSimulation.isPending}
           >
             <Play className="h-4 w-4" />
             Run simulation
           </Button>
-        </div>
 
+        {/* Legend Section */}
+        <div className="w-1/6 fixed bottom-28 right-4 bg-white p-4 rounded-lg border shadow-sm">
+          <h3 className="font-semibold mb-4">Legend</h3>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-gray-200" />
+              <span>Empty</span>
+            </div>
+            {data?.reactions?.some((r) => r.hasIntermediate) && (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-yellow-500" />
+                <span>Intermediate</span>
+              </div>
+            )}
+            {data?.ingredients.map((ingredient, index) => {
+              if (String.fromCharCode(65 + index) === rotation?.component) {
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gradient-to-b from-amber-800 from-50% to-pink-200 to-50%" />
+                    <span>{ingredient.name}</span>
+                  </div>
+                );
+              }
+              return (
+                <div key={index} className="flex items-center gap-2">
+                  <div className={`w-4 h-4 bg-${ingredient.color}-500`} />
+                  <span>{ingredient.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <div className="w-2/3 space-y-4">
         {/* Disabled for now
         <Button className="w-1/2" disabled={true} onClick={generateVideo}>
           {isRecording ? (
@@ -262,39 +294,6 @@ function SimulationDetail() {
             />
           )}
         </Suspense>
-      </div>
-
-      {/* Legend Section */}
-      <div className="w-1/6 fixed bottom-28 right-4 bg-white p-4 rounded-lg border shadow-sm">
-        <h3 className="font-semibold mb-4">Legend</h3>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-200" />
-            <span>Empty</span>
-          </div>
-          {data?.reactions?.some((r) => r.hasIntermediate) && (
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-500" />
-              <span>Intermediate</span>
-            </div>
-          )}
-          {data?.ingredients.map((ingredient, index) => {
-            if (String.fromCharCode(65 + index) === rotation?.component) {
-              return (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-gradient-to-b from-amber-800 from-50% to-pink-200 to-50%" />
-                  <span>{ingredient.name}</span>
-                </div>
-              );
-            }
-            return (
-              <div key={index} className="flex items-center gap-2">
-                <div className={`w-4 h-4 bg-${ingredient.color}-500`} />
-                <span>{ingredient.name}</span>
-              </div>
-            );
-          })}
-        </div>
       </div>
     </div>
   );
