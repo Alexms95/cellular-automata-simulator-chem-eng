@@ -139,6 +139,8 @@ class Calculations:
         iteration_log_text = StringIO()
 
         intermediate_pairs = []
+        a = intermediate_pairs.copy()
+        debug = True
 
         # Create the empty array to store the matrix at each iteration
         M_iter = np.zeros((n_iter + 1, NL, NC), dtype=np.int16)
@@ -242,6 +244,7 @@ class Calculations:
                                                 not in intermediate_pairs
                                             )
                                         ):
+
                                             continue
 
                                         for reaction in simulation.reactions:
@@ -456,19 +459,8 @@ class Calculations:
                                     ]
 
                                     # Choose a reaction based on the normalized probabilities
-                                    print(n)
-                                    print(normalized_probabilities) if Calculations.is_intermediate_component(
-                                        i_comp
-                                    ) else None
                                     chosen_reaction = random_generator.choice(
                                         possible_reactions, p=normalized_probabilities
-                                    )
-                                    (
-                                        print(chosen_reaction)
-                                        if Calculations.is_intermediate_component(
-                                            i_comp
-                                        )
-                                        else None
                                     )
 
                                     chosen_products = chosen_reaction[
@@ -921,6 +913,21 @@ class Calculations:
                             logger.exception(iteration_log_text.getvalue())
                             raise e
             M_iter[n, :, :] = M.copy()
+            for a_n in a:
+                if debug and n > 1 and intermediate_pairs.count(a_n) == 1:
+                    print(
+                        f"Intermediate pair {a_n} already exists in the list\n"
+                        f"Iteration: {n}\n"
+                        f"reacted_components: {reacted_components}\n"
+                        f"Moved Components: {moved_components}\n"
+                        f"Not reacted Components: {not_reacted_components}\n"
+                        f"Possible Reactions: {possible_reactions}\n"
+                        f"a_n is in reacted_components: {a_n[0] in reacted_components or a_n[1] in reacted_components}\n"
+                        f"a_n is in moved_components: {a_n in moved_components}\n"
+                        f"a_n is in not_reacted_components: {a_n in not_reacted_components}\n"
+                    )
+                    debug = False
+            a = intermediate_pairs.copy()
 
         print("Final matrix:")
         Calculations.show_matrix(M)

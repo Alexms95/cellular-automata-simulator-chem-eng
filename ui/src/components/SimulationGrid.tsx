@@ -63,7 +63,7 @@ export default function SimulationGrid({
         height={600}
         width="100%"
         itemCount={iterations.length}
-        itemSize={550}
+        itemSize={iterations[0][0].length * 25}
         itemData={{ iterations, ingredients }}
       >
         {IterationRow}
