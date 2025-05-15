@@ -430,20 +430,24 @@ class Calculations:
                                             )
                                         continue
 
-                                    false_sum = sum(
-                                        prob[1] for prob in individual_probs
-                                    )
+                                    false_sum = 0
+
+                                    # Add the no-reaction option to the list of probabilities if it is not an intermediate
+                                    if not Calculations.is_intermediate_component(i_comp):
+                                        false_sum = sum(
+                                            prob[1] for prob in individual_probs
+                                        )
+                                        possible_reactions.append(
+                                            {
+                                                "index": -1,
+                                                "products": None,
+                                                "products_position": None,
+                                                "reaction_probability": false_sum,
+                                            }
+                                        )
+
                                     total_sum = true_sum + false_sum
 
-                                    # Add the no-reaction option to the list of probabilities
-                                    possible_reactions.append(
-                                        {
-                                            "index": -1,
-                                            "products": None,
-                                            "products_position": None,
-                                            "reaction_probability": false_sum,
-                                        }
-                                    )
                                     # Normalize the probabilities
                                     normalized_probabilities = [
                                         poss_reaction["reaction_probability"]
@@ -452,8 +456,19 @@ class Calculations:
                                     ]
 
                                     # Choose a reaction based on the normalized probabilities
+                                    print(n)
+                                    print(normalized_probabilities) if Calculations.is_intermediate_component(
+                                        i_comp
+                                    ) else None
                                     chosen_reaction = random_generator.choice(
                                         possible_reactions, p=normalized_probabilities
+                                    )
+                                    (
+                                        print(chosen_reaction)
+                                        if Calculations.is_intermediate_component(
+                                            i_comp
+                                        )
+                                        else None
                                     )
 
                                     chosen_products = chosen_reaction[
