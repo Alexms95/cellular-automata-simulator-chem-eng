@@ -877,7 +877,7 @@ class Calculations:
                                 M[row_move, column_move] = i_comp
                                 M[i, j] = 0
                                 moved_components.add((row_move, column_move))
-                                break
+                                
                         except Exception as e:
                             iteration_log_text.write(f"  Iteration: {n}\n")
                             iteration_log_text.write(
