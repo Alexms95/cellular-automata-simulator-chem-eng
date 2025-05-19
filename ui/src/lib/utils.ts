@@ -129,7 +129,11 @@ export function calculateFractions(
 ): number[] {
   const accSum = (acc: number, curr: number) => acc + curr;
 
-  const fractions = percentages.map((p) => (p ? (p / 100) * total : 0));
+  const emptyCellsFraction = 0.31;
+
+  const occupiedCells = total - Math.floor(total * emptyCellsFraction);
+
+  const fractions = percentages.map((p) => (p ? (p / 100) * occupiedCells : 0));
 
   const roundedFractions = fractions.map(Math.floor);
   const error = Math.abs(

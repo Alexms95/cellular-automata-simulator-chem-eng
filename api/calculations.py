@@ -72,7 +72,6 @@ class Calculations:
                 "p_rot": simulation.rotation.Prot,
                 "states": [rot_comp_index + i for i in range(1, 5)],
             }
-            print(rotation_info)
 
         NCOMP = len(components)
 
@@ -140,7 +139,7 @@ class Calculations:
 
         intermediate_pairs = []
         a = intermediate_pairs.copy()
-        debug = True
+        debug = False
 
         # Create the empty array to store the matrix at each iteration
         M_iter = np.zeros((n_iter + 1, NL, NC), dtype=np.int16)

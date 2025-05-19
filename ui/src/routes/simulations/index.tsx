@@ -122,7 +122,7 @@ function SimulationsList() {
                         </TooltipTrigger>
                         <TooltipContent>Edit</TooltipContent>
                       </Tooltip>
-                      <CardTitle className="text-sm">
+                      <CardTitle>
                         {simulation.name}
                       </CardTitle>
                       <AlertDialog>
