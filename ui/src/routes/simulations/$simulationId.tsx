@@ -210,7 +210,7 @@ function SimulationDetail() {
 
         {/* Legend Section */}
         {(decompressedIterations?.length ?? 0) > 0 && (
-          <div className="w-1/6 fixed bottom-28 left-8 bg-white p-4 rounded-lg border shadow-sm">
+          <div className="w-1/6 fixed bottom-28 left-8 bg-white p-4 rounded-lg border shadow-sm z-10">
             <h3 className="font-semibold mb-4">Legend</h3>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -257,7 +257,7 @@ function SimulationDetail() {
         */}
 
         {/* Navigation Controls */}
-        <div className="fixed bottom-10 right-20 space-x-8 z-50">
+        <div className="fixed bottom-10 right-20 space-x-8 z-10">
           <Button
             variant="secondary"
             size="icon"

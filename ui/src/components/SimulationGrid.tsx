@@ -1,7 +1,7 @@
 import { getDirectionalStyle } from "@/lib/utils";
 import { Simulation } from "@/models/simulation";
 import clsx from "clsx";
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { FixedSizeList } from "react-window";
 
 interface Props {
@@ -48,10 +48,18 @@ const SimulationGrid = forwardRef<
   }> | null,
   Props
 >(function SimulationGrid({ iterations, ingredients }: Props, ref) {
+  const [height, setHeight] = useState(window.innerHeight * 0.8);
+
+  useEffect(() => {
+    const handleResize = () => setHeight(window.innerHeight * 0.8);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
-    <div className="space-y-4">
+    <div className="pb-4">
       <FixedSizeList
-        height={600}
+        height={height}
         width="100%"
         itemCount={iterations.length}
         itemSize={iterations[0][0].length * 25}

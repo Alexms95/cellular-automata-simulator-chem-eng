@@ -587,7 +587,6 @@ class Calculations:
                         if (
                             current_position in moved_components
                             or current_position in reacted_components
-                            # i_comp >= 200 means that it is an intermediate component and it cannot move
                             or Calculations.is_intermediate_component(i_comp)
                         ):
                             continue
