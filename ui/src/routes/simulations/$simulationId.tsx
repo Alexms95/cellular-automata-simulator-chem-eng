@@ -68,8 +68,8 @@ function SimulationDetail() {
   const onRunSimulation = async () => {
     const mutation = runSimulation.mutateAsync();
     toast.promise(mutation, {
-      loading: "Running simulation...",
-      success: `Simulation ${data!.name} has run successfully!`,
+      loading: `Running simulation ${data?.name}...`,
+      success: `Simulation ${data!.name} has just run successfully!`,
       error: (error) => {
         const message = error.response?.data?.detail;
         return message ?? `Error running simulation ${data!.name}`;

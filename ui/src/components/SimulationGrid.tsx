@@ -11,7 +11,15 @@ interface Props {
   reactions?: Simulation["reactions"];
 }
 
-const IterationRow = ({ data, index, style }) => {
+const IterationRow = ({
+  data,
+  index,
+  style,
+}: {
+  data: { iterations: number[][][]; ingredients: Simulation["ingredients"] };
+  index: number;
+  style: React.CSSProperties;
+}) => {
   const { iterations, ingredients } = data;
   const iteration = iterations[index];
 
@@ -62,7 +70,7 @@ const SimulationGrid = forwardRef<
         height={height}
         width="100%"
         itemCount={iterations.length}
-        itemSize={iterations[0][0].length * 25}
+        itemSize={iterations[0].length * 20}
         itemData={{ iterations, ingredients }}
         ref={ref}
       >
