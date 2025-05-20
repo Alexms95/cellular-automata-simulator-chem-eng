@@ -107,8 +107,8 @@ class Calculations:
                         break
 
         # Show the matrix formatting the output as a table
-        print("Initial matrix:")
-        Calculations.show_matrix(M)
+        #print("Initial matrix:")
+        #Calculations.show_matrix(M)
 
         # Define the Von Neumann neighborhood
         # North, West, South, East
@@ -148,6 +148,7 @@ class Calculations:
         M_iter[0, :, :] = M.copy()
 
         for n in range(1, n_iter + 1):
+            print(f"Running Iteration: {n}")
             moved_components.clear()
             reacted_components.clear()
             not_reacted_components.clear()
@@ -927,8 +928,8 @@ class Calculations:
                     debug = False
             a = intermediate_pairs.copy()
 
-        print("Final matrix:")
-        Calculations.show_matrix(M)
+        #print("Final matrix:")
+        #Calculations.show_matrix(M)
 
         logger.info("Calculations completed successfully!")
 
