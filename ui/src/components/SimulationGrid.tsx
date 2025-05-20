@@ -1,6 +1,7 @@
 import { getDirectionalStyle } from "@/lib/utils";
 import { Simulation } from "@/models/simulation";
 import clsx from "clsx";
+import { forwardRef } from "react";
 import { FixedSizeList } from "react-window";
 
 interface Props {
@@ -53,10 +54,10 @@ const GridRow = ({ data, index, style }) => {
   );
 };
 
-export default function SimulationGrid({
-  iterations,
-  ingredients
-}: Props) {
+const SimulationGrid = forwardRef<FixedSizeList<{ iterations: number[][][]; ingredients: Simulation["ingredients"] }> | null, Props>(function SimulationGrid(
+  { iterations, ingredients }: Props,
+  ref
+) {
   return (
     <div className="space-y-4">
       <FixedSizeList
@@ -65,9 +66,12 @@ export default function SimulationGrid({
         itemCount={iterations.length}
         itemSize={iterations[0][0].length * 25}
         itemData={{ iterations, ingredients }}
+        ref={ref}
       >
         {IterationRow}
       </FixedSizeList>
     </div>
   );
-}
+});
+
+export default SimulationGrid;

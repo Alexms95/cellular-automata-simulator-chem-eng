@@ -39,7 +39,6 @@ function SimulationDetail() {
   } = useQuery({
     queryKey: ["decompressedIterations", simulationId, data?.iterations, data],
     queryFn: () => {
-      console.log("Decompressing iterations...");
       if (!data?.iterations) {
         return [];
       }
@@ -78,15 +77,14 @@ function SimulationDetail() {
     });
   };
 
+  const gridRef = useRef<any>(null);
+
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    gridRef.current?.scrollToItem(0, "start");
   };
 
   const scrollToBottom = () => {
-    window.scrollTo({
-      top: document.documentElement.scrollHeight,
-      behavior: "smooth",
-    });
+    gridRef.current?.scrollToItem((decompressedIterations?.length ?? 0) - 1 || 0, "start");
   };
 
   const chunks = useRef<Blob[]>([]);
@@ -259,7 +257,7 @@ function SimulationDetail() {
         */}
 
         {/* Navigation Controls */}
-        <div className="fixed bottom-10 right-20 space-x-8">
+        <div className="fixed bottom-10 right-20 space-x-8 z-50">
           <Button
             variant="secondary"
             size="icon"
@@ -289,6 +287,7 @@ function SimulationDetail() {
         >
           {(decompressedIterations?.length ?? 0) > 0 ? (
             <SimulationGrid
+              ref={gridRef}
               iterations={decompressedIterations ?? []}
               ingredients={data?.ingredients ?? []}
               rotationComponent={data?.rotation?.component}
