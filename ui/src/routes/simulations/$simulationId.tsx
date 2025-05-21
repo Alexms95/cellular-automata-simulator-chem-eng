@@ -5,7 +5,7 @@ import { Simulation } from "@/models/simulation";
 import { ReactP5Wrapper, Sketch } from "@p5-wrapper/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronLeft, ChevronUp, Play } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronUp, Download, Play } from "lucide-react";
 import pako from "pako";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -74,6 +74,39 @@ function SimulationDetail() {
         const message = error.response?.data?.detail;
         return message ?? `Error running simulation ${data!.name}`;
       },
+    });
+  };
+
+  const downloadCSV = async () => {
+    const promise = (async () => {
+        const response = await httpClient.get(`http://localhost:8000/simulations/${simulationId}/results`, {
+          responseType: "blob",
+        });
+
+        const contentDisposition = response.headers["content-disposition"];
+        let filename = "file.csv";
+
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename="?(.+)"?/);
+          if (match && match[1]) {
+            filename = match[1];
+          }
+        }
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })();
+
+    toast.promise(promise, {
+      loading: "Downloading CSV file...",
+      success: "CSV results file downloaded successfully!",
+      error: "Failed to download CSV file",
     });
   };
 
@@ -210,7 +243,7 @@ function SimulationDetail() {
 
         {/* Legend Section */}
         {(decompressedIterations?.length ?? 0) > 0 && (
-          <div className="w-1/6 fixed bottom-28 left-8 bg-white p-4 rounded-lg border shadow-sm z-10">
+          <div className="w-1/6 fixed bottom-12 left-8 bg-white p-4 rounded-lg border shadow-sm z-10">
             <h3 className="font-semibold mb-4">Legend</h3>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -286,13 +319,26 @@ function SimulationDetail() {
           }
         >
           {(decompressedIterations?.length ?? 0) > 0 ? (
-            <SimulationGrid
-              ref={gridRef}
-              iterations={decompressedIterations ?? []}
-              ingredients={data?.ingredients ?? []}
-              rotationComponent={data?.rotation?.component}
-              reactions={data?.reactions}
-            />
+            <>
+              <div className="fixed top-40 left-8 z-10">
+                <Button
+                  className="flex items-center justify-center gap-2"
+                  variant="secondary"
+                  onClick={() => downloadCSV()}
+                  disabled={runSimulation.isPending}
+                >
+                  <Download className="h-4 w-4" />
+                  Download Results File
+                </Button>
+              </div>
+              <SimulationGrid
+                ref={gridRef}
+                iterations={decompressedIterations ?? []}
+                ingredients={data?.ingredients ?? []}
+                rotationComponent={data?.rotation?.component}
+                reactions={data?.reactions}
+              />
+            </>
           ) : (
             <div className="flex flex-col justify-center h-[70vh]">
               <h1 className="text-2xl font-bold text-gray-500">
