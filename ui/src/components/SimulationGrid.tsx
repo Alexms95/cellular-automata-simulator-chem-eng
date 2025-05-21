@@ -70,7 +70,7 @@ const SimulationGrid = forwardRef<
         height={height}
         width="100%"
         itemCount={iterations.length}
-        itemSize={iterations[0].length * 20}
+        itemSize={20 * (iterations[0].length + 1)}
         itemData={{ iterations, ingredients }}
         ref={ref}
       >

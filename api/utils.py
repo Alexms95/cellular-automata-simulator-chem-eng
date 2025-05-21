@@ -1,5 +1,7 @@
 import base64
+import csv
 import gzip
+import io
 import json
 
 
@@ -16,3 +18,9 @@ def compress_matrix(matrix: list) -> str:
 
 def decompress_matrix(data_str: str) -> list:
     return json.loads(gzip.decompress(base64.b64decode(data_str.encode())))
+
+def convert_to_csv(data: list[list]) -> str:
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerows(data)
+    return output.getvalue()

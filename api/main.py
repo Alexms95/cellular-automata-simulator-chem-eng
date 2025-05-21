@@ -1,4 +1,5 @@
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
+from utils import convert_to_csv
 from config import get_settings
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -100,12 +101,32 @@ def get_simulation(
     logger.info(f"Fetching complete simulation with id {id}")
     return dataAccess.get_simulation(id, db)
 
-@app.get("/simulations/{id}/decompressed-iterations", response_model=list[list[list[int]]])
+
+@app.get(
+    "/simulations/{id}/decompressed-iterations", response_model=list[list[list[int]]]
+)
 def get_decompressed_iterations(
     id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
 ):
     logger.info(f"Fetching decompressed iterations for simulation with id {id}")
     return dataAccess.get_decompressed_iterations(id, db)
+
+
+@app.get("/simulations/{id}/results")
+def get_results(
+    id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+) -> StreamingResponse:
+    logger.info(f"Downloading results for simulation with id {id}")
+
+    name, results = dataAccess.get_results(id, db)
+
+    csv_buffer = convert_to_csv(results)
+
+    return StreamingResponse(
+        iter([csv_buffer]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={name}.csv"},
+    )
 
 
 @app.get("/")

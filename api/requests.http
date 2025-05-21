@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:8000
-@simulation_id = 9fd2bcb3-cdeb-4ea4-8c6e-3fbe27baa8ef
+@simulation_id = e3746600-4945-4e49-b527-04272d625d5c
 
 GET {{baseUrl}}/simulations
 
@@ -49,4 +49,9 @@ Content-Type: application/json; charset=utf-8
 ###
 
 GET {{baseUrl}}/simulations/{{simulation_id}}/decompressed-iterations
+Content-Type: application/json; charset=utf-8
+
+###
+
+GET {{baseUrl}}/simulations/{{simulation_id}}/results
 Content-Type: application/json; charset=utf-8

@@ -56,7 +56,7 @@ class SimulationResponse(SimulationBase):
 
 class SimulationComplete(SimulationResponse):
     iterations: str | None
-    results: list[float] | None
+    results: list[list] | None
 
     class Config:
         from_attributes = True

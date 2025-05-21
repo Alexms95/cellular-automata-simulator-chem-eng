@@ -41,7 +41,7 @@ class Calculations:
         return rounded_counts
 
     @staticmethod
-    def calculate_cellular_automata(simulation: SimulationBase) -> np.ndarray:
+    def calculate_cellular_automata(simulation: SimulationBase) -> tuple[np.ndarray, list]:
         Calculations.NL = simulation.gridHeight
         Calculations.NC = simulation.gridLenght
 
@@ -107,8 +107,8 @@ class Calculations:
                         break
 
         # Show the matrix formatting the output as a table
-        #print("Initial matrix:")
-        #Calculations.show_matrix(M)
+        # print("Initial matrix:")
+        # Calculations.show_matrix(M)
 
         # Define the Von Neumann neighborhood
         # North, West, South, East
@@ -138,14 +138,22 @@ class Calculations:
         iteration_log_text = StringIO()
 
         intermediate_pairs = []
-        a = intermediate_pairs.copy()
-        debug = False
 
         # Create the empty array to store the matrix at each iteration
         M_iter = np.zeros((n_iter + 1, NL, NC), dtype=np.int16)
 
         # Store the initial matrix in the first slice of M_iter
         M_iter[0, :, :] = M.copy()
+
+        # Prepare the table of molar fractions
+        rot_comp_index = rotation_info["component"]
+
+        molar_fractions_header = ["Iteration"] + [comp.name for comp in simulation.ingredients] + ["Intermediate"]
+
+        molar_fractions_data = np.zeros((n_iter + 1, len(simulation.ingredients) + 2), dtype=np.float16).tolist()
+        molar_fractions_data[0] = Calculations.get_molar_fractions(
+            M, 0, NCOMP, NCELL, rot_comp_index
+        )
 
         for n in range(1, n_iter + 1):
             print(f"Running Iteration: {n}")
@@ -876,7 +884,7 @@ class Calculations:
                                 M[row_move, column_move] = i_comp
                                 M[i, j] = 0
                                 moved_components.add((row_move, column_move))
-                                
+
                         except Exception as e:
                             iteration_log_text.write(f"  Iteration: {n}\n")
                             iteration_log_text.write(
@@ -912,28 +920,17 @@ class Calculations:
                             logger.exception(iteration_log_text.getvalue())
                             raise e
             M_iter[n, :, :] = M.copy()
-            for a_n in a:
-                if debug and n > 1 and intermediate_pairs.count(a_n) == 1:
-                    print(
-                        f"Intermediate pair {a_n} already exists in the list\n"
-                        f"Iteration: {n}\n"
-                        f"reacted_components: {reacted_components}\n"
-                        f"Moved Components: {moved_components}\n"
-                        f"Not reacted Components: {not_reacted_components}\n"
-                        f"Possible Reactions: {possible_reactions}\n"
-                        f"a_n is in reacted_components: {a_n[0] in reacted_components or a_n[1] in reacted_components}\n"
-                        f"a_n is in moved_components: {a_n in moved_components}\n"
-                        f"a_n is in not_reacted_components: {a_n in not_reacted_components}\n"
-                    )
-                    debug = False
-            a = intermediate_pairs.copy()
+            molar_fractions_data[n] = Calculations.get_molar_fractions(
+                M, n, NCOMP, NCELL, rot_comp_index
+            )
 
-        #print("Final matrix:")
-        #Calculations.show_matrix(M)
+        molar_fractions_table = [molar_fractions_header, *molar_fractions_data]
+
+        # Calculations.show_matrix(M)
 
         logger.info("Calculations completed successfully!")
 
-        return M_iter
+        return M_iter, molar_fractions_table
 
     @staticmethod
     def is_intermediate_component(i_comp):
@@ -975,3 +972,38 @@ class Calculations:
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
         return {j.relation: (3 / 2) / (j.value + (3 / 2)) for j in js}
+
+    @staticmethod
+    def get_molar_fractions(
+        M: np.ndarray,
+        current_iteration: int,
+        n_comp: int,
+        n_cell: int,
+        rot_comp_index=-1
+    ) -> list[float]:
+        """
+        Calculate the molar fractions of each component in the matrix M.
+        """
+        count_line = np.zeros(n_comp + 2, dtype=np.int8)
+
+        nl, nc = M.shape
+
+        # Count the number of each component in the matrix
+        for i in range(nl):
+            for j in range(nc):
+                comp = M[i, j]
+                if not Calculations.is_empty(comp):
+                    if Calculations.is_intermediate_component(comp):
+                        count_line[-1] += 1
+                    elif Calculations.is_rotation_component(comp):
+                        count_line[rot_comp_index] += 1
+                    else:
+                        count_line[comp] += 1
+
+        molar_fractions_line = count_line / n_cell
+        molar_fractions_line[0] = current_iteration
+        molar_fractions_line = molar_fractions_line.tolist()
+        molar_fractions_line = [
+            round(molar_fraction, 2) for molar_fraction in molar_fractions_line
+        ]
+        return molar_fractions_line
