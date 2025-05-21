@@ -2,12 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import httpClient from "@/lib/httpClient";
 import { Simulation } from "@/models/simulation";
-import { ReactP5Wrapper, Sketch } from "@p5-wrapper/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronLeft, ChevronUp, Download, Play } from "lucide-react";
 import pako from "pako";
-import { useMemo, useRef, useState } from "react";
+import { useRef } from "react";
 import { toast } from "sonner";
 
 import { lazy, Suspense } from "react";
@@ -120,90 +119,90 @@ function SimulationDetail() {
     gridRef.current?.scrollToItem((decompressedIterations?.length ?? 0) - 1 || 0, "start");
   };
 
-  const chunks = useRef<Blob[]>([]);
+  // const chunks = useRef<Blob[]>([]);
 
-  const [isRecording, setIsRecording] = useState(false);
+  // const [isRecording, setIsRecording] = useState(false);
 
-  const generateVideo = () => {
-    const blob = new Blob(chunks.current, { type: "video/mp4" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    document.body.appendChild(a);
-    a.href = url;
-    a.download = "cellular_automata.mp4";
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
+  // const generateVideo = () => {
+  //   const blob = new Blob(chunks.current, { type: "video/mp4" });
+  //   const url = URL.createObjectURL(blob);
+  //   const a = document.createElement("a");
+  //   document.body.appendChild(a);
+  //   a.href = url;
+  //   a.download = "cellular_automata.mp4";
+  //   a.click();
+  //   window.URL.revokeObjectURL(url);
+  // };
 
-  const memoizedReactP5Wrapper = useMemo(() => {
-    const sketch: Sketch = (p5) => {
-      let grid: number[][];
-      const cols = 100;
-      const rows = cols;
-      const resolution = 10;
-      const frameRate = 5;
-      let recorder: MediaRecorder;
+  // const memoizedReactP5Wrapper = useMemo(() => {
+  //   const sketch: Sketch = (p5) => {
+  //     let grid: number[][];
+  //     const cols = 100;
+  //     const rows = cols;
+  //     const resolution = 10;
+  //     const frameRate = 5;
+  //     let recorder: MediaRecorder;
 
-      p5.setup = () => {
-        p5.createCanvas(500, 500);
-        p5.frameRate(frameRate);
-        grid = createGrid();
-      };
+  //     p5.setup = () => {
+  //       p5.createCanvas(500, 500);
+  //       p5.frameRate(frameRate);
+  //       grid = createGrid();
+  //     };
 
-      p5.draw = () => {
-        if (p5.frameCount === 1) {
-          recorder = new MediaRecorder(
-            p5.drawingContext.canvas.captureStream(frameRate)
-          );
+  //     p5.draw = () => {
+  //       if (p5.frameCount === 1) {
+  //         recorder = new MediaRecorder(
+  //           p5.drawingContext.canvas.captureStream(frameRate)
+  //         );
 
-          recorder.ondataavailable = (e) => {
-            if (e.data.size > 0) {
-              chunks.current.push(e.data);
-            }
-          };
+  //         recorder.ondataavailable = (e) => {
+  //           if (e.data.size > 0) {
+  //             chunks.current.push(e.data);
+  //           }
+  //         };
 
-          recorder.onstop = () => {
-            setIsRecording(false);
-          };
+  //         recorder.onstop = () => {
+  //           setIsRecording(false);
+  //         };
 
-          recorder.start();
-          return;
-        }
+  //         recorder.start();
+  //         return;
+  //       }
 
-        if (p5.frameCount >= 32) {
-          if (isRecording) recorder.stop();
-          p5.noLoop();
-          return;
-        }
+  //       if (p5.frameCount >= 32) {
+  //         if (isRecording) recorder.stop();
+  //         p5.noLoop();
+  //         return;
+  //       }
 
-        p5.background(220);
+  //       p5.background(220);
 
-        for (let i = 0; i < cols; i++) {
-          for (let j = 0; j < rows; j++) {
-            const x = i * resolution;
-            const y = j * resolution;
-            if (grid[j][i] === 1) {
-              p5.fill("orange");
-              p5.stroke(220);
-              p5.rect(x, y, resolution - 1, resolution - 1);
-            } else {
-              p5.fill("blue");
-              p5.stroke(220);
-              p5.rect(x, y, resolution - 1, resolution - 1);
-            }
-          }
-        }
-        grid = createGrid();
-      };
+  //       for (let i = 0; i < cols; i++) {
+  //         for (let j = 0; j < rows; j++) {
+  //           const x = i * resolution;
+  //           const y = j * resolution;
+  //           if (grid[j][i] === 1) {
+  //             p5.fill("orange");
+  //             p5.stroke(220);
+  //             p5.rect(x, y, resolution - 1, resolution - 1);
+  //           } else {
+  //             p5.fill("blue");
+  //             p5.stroke(220);
+  //             p5.rect(x, y, resolution - 1, resolution - 1);
+  //           }
+  //         }
+  //       }
+  //       grid = createGrid();
+  //     };
 
-      function createGrid() {
-        return Array.from({ length: rows }).map(() =>
-          Array.from({ length: cols }).map(() => p5.random([0, 1]))
-        );
-      }
-    };
-    return <ReactP5Wrapper sketch={sketch} />;
-  }, []);
+  //     function createGrid() {
+  //       return Array.from({ length: rows }).map(() =>
+  //         Array.from({ length: cols }).map(() => p5.random([0, 1]))
+  //       );
+  //     }
+  //   };
+  //   return <ReactP5Wrapper sketch={sketch} />;
+  // }, []);
 
   if (isLoading || isFetching) {
     return (
