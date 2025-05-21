@@ -29,6 +29,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -49,7 +50,6 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { Checkbox } from "./ui/checkbox";
 
 export const NewSimulation = () => {
   const queryClient = useQueryClient();
@@ -89,10 +89,31 @@ export const NewSimulation = () => {
       ),
     };
 
+    const rotationComponent = form.getValues("rotation.component");
+    if (rotationComponent === String.fromCharCode(65 + index))
+      form.setValue("rotation.component", "None");
+
     form.setValue("parameters", newParameters);
   };
 
-  const pairMatrix = generatePairMatrix(fields.length);
+  const rotationComponent = useWatch({
+    control: form.control,
+    name: "rotation.component",
+  });
+
+  const [pairMatrix, setPairMatrix] = useState<string[][]>([]);
+
+  useEffect(() => {
+    setPairMatrix(generatePairMatrix(fields.length, rotationComponent));
+  }, [rotationComponent, fields.length]);
+
+  useEffect(() => {
+    const parameterJ = pairMatrix.map((pair, index) => ({
+      relation: pair.join("|"),
+      value: form.getValues(`parameters.J.${index}.value`) || 1
+    }));
+    form.setValue('parameters.J', parameterJ, { shouldDirty: true });
+  }, [pairMatrix, form]);
 
   const molarFractionsSum = fields
     .map((_, index) => form.watch(`ingredients.${index}.molarFraction`))
@@ -191,7 +212,7 @@ export const NewSimulation = () => {
         const result = e.target?.result;
         if (typeof result === "string") {
           const values = JSON.parse(result) as SimulationForm;
-          form.reset(values);
+          form.reset({...values, name: values.name + "_new"});
         }
       };
       reader.readAsText(files[0]);
@@ -288,10 +309,10 @@ export const NewSimulation = () => {
                   <div className="w-1/2">
                     <FormField
                       control={form.control}
-                      name="gridLenght"
+                      name="gridHeight"
                       render={({ field }) => (
                         <FormItem className="flex flex-col items-start">
-                          <FormLabel>Grid Lenght</FormLabel>
+                          <FormLabel>Number of Lines</FormLabel>
                           <FormControl>
                             <Input min={1} type="number" {...field} />
                           </FormControl>
@@ -303,10 +324,10 @@ export const NewSimulation = () => {
                   <div className="w-1/2">
                     <FormField
                       control={form.control}
-                      name="gridHeight"
+                      name="gridLenght"
                       render={({ field }) => (
                         <FormItem className="flex flex-col items-start">
-                          <FormLabel>Grid Height</FormLabel>
+                          <FormLabel>Number of Columns</FormLabel>
                           <FormControl>
                             <Input min={1} type="number" {...field} />
                           </FormControl>
@@ -319,8 +340,8 @@ export const NewSimulation = () => {
                 {!form.formState.errors.gridHeight &&
                   !form.formState.errors.gridLenght && (
                     <FormDescription className="mt-2">
-                      A grid of {form.watch("gridLenght")} x{" "}
-                      {form.watch("gridHeight")} will be created (
+                      A grid of {form.watch("gridHeight")} x{" "}
+                      {form.watch("gridLenght")} will be created (
                       {form.watch("gridLenght") * form.watch("gridHeight")}{" "}
                       cells).
                     </FormDescription>
@@ -757,6 +778,67 @@ export const NewSimulation = () => {
             </div>
             <Separator />
             <h4 className="scroll-m-20 font-semibold tracking-tight">
+              Rotation Parameters
+            </h4>
+            <div className="flex space-x-4">
+              <div className="w-1/4">
+                <FormField
+                  control={form.control}
+                  name="rotation.component"
+                  defaultValue="None"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Component</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem key="None" value="None">None</SelectItem>
+                          {componentIndexNames.map((c) => (
+                            <SelectItem key={c.name} value={c.index}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="w-1/10">
+                <FormField
+                  control={form.control}
+                  name="rotation.Prot"
+                  defaultValue={0}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        P<sub>rot</sub>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          step={0.1}
+                          min={0}
+                          max={1}
+                          type="number"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            <Separator />
+            <h4 className="scroll-m-20 font-semibold tracking-tight">
               Movement Parameters
             </h4>
             <div className="flex space-x-2">
@@ -790,37 +872,20 @@ export const NewSimulation = () => {
             <div className="flex space-x-2 flex-wrap">
               {pairMatrix.map((comb, index) => {
                 return (
-                  <div key={index} className="w-1/10">
-                    <FormField
-                      control={form.control}
-                      shouldUnregister
-                      name={`parameters.J.${index}.relation`}
-                      defaultValue={
-                        String.fromCharCode(65 + comb[0]) +
-                        String.fromCharCode(65 + comb[1])
-                      }
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input className="hidden" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                  <div key={comb.join("|") + index} className="w-1/10">
+                    <input
+                      key={index}
+                      type="hidden"
+                      {...form.register(`parameters.J.${index}.relation`)}
                     />
                     <FormField
                       control={form.control}
                       name={`parameters.J.${index}.value`}
-                      shouldUnregister
                       defaultValue={1}
+                      shouldUnregister
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>
-                            J (
-                            {String.fromCharCode(65 + comb[0]) +
-                              String.fromCharCode(65 + comb[1])}
-                            )
-                          </FormLabel>
+                          <FormLabel>J ({comb.join("|")})</FormLabel>
                           <FormControl>
                             <Input
                               step={0.1}

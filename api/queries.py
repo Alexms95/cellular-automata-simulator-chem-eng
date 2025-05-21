@@ -17,6 +17,7 @@ SELECT_WITHOUT_ITERATIONS = select(
     SimulationModel.created_at,
     SimulationModel.updated_at,
     SimulationModel.reactions,
+    SimulationModel.rotation,
 )
 
 
@@ -91,6 +92,7 @@ class SimulationData:
                     SimulationModel.created_at,
                     SimulationModel.updated_at,
                     SimulationModel.reactions,
+                    SimulationModel.rotation,
                 )
             )
             .where(SimulationModel.id == simulation_id)
@@ -159,6 +161,7 @@ class SimulationData:
                 SimulationModel.created_at,
                 SimulationModel.updated_at,
                 SimulationModel.reactions,
+                SimulationModel.rotation,
             )
         ).where(SimulationModel.id == simulation_id)
         db_simulation = db.execute(query).scalars().first()
@@ -168,7 +171,24 @@ class SimulationData:
 
         simulation = SimulationBase(**db_simulation.__dict__)
 
-        resulting_matrix = Calculations.calculate_cellular_automata(simulation).tolist()
-        db_simulation.iterations = compress_matrix(resulting_matrix)
+        resulting_matrix, molar_fractions_table = Calculations.calculate_cellular_automata(simulation)
+        
+        db_simulation.iterations = compress_matrix(resulting_matrix.tolist())
+        db_simulation.results = molar_fractions_table
+
         db.commit()
         db.refresh(db_simulation)
+    
+    def get_results(self, simulation_id: str, db: Session) -> tuple[str, list[list]]:
+        query = select(SimulationModel.name, SimulationModel.results).where(SimulationModel.id == simulation_id)
+        db_simulation = db.execute(query).first()
+
+        if db_simulation is None:
+            raise HTTPException(status_code=400, detail="Simulation not found")
+        
+        name, results = db_simulation
+
+        if results is None:
+            raise HTTPException(status_code=400, detail=f"Run the simulation {name} to generate results")
+        
+        return name, results

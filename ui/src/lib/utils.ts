@@ -57,12 +57,21 @@ export const formSchema = z.object({
     Pr: z.array(
       z.coerce.number({ message: "It must be a number." })
         .gte(0, "It must be greater or equal to 0.")
+        .lte(1, "It must be less or equal to 1.")
     ),
     reversePr: z.array(
       z.coerce.number({ message: "It must be a number." })
         .gte(0, "It must be greater or equal to 0.")
+        .lte(1, "It must be less or equal to 1.")
     )
   })).optional(),
+  rotation: z.object({
+    component: z.string().optional(),
+    Prot: z.coerce
+      .number({ message: "It must be a number." })
+      .gte(0, "It must be greater or equal to 0.")
+      .lte(1, "It must be less or equal to 1."),
+  }).optional(),
   parameters: z.object({
     Pm: z.array(
       z.coerce
@@ -81,12 +90,33 @@ export const formSchema = z.object({
   }),
 });
 
-export function generatePairMatrix(arraySize: number) {
-  const result: number[][] = [];
+export function generatePairMatrix(arraySize: number, rotateComponent: string = "None") {
+  const result: string[][] = [];
 
   for (let i = 0; i < arraySize; i++) {
     for (let j = 0; j <= i; j++) {
-      result.push([j, i]);
+      const comp1 = String.fromCharCode(65 + j);
+      const comp2 = String.fromCharCode(65 + i);
+
+      if (comp1 === rotateComponent) {
+        if (comp2 === rotateComponent) {
+          // Both components are rotating: [A1,A1], [A1,A2], [A2,A2]
+          result.push([comp1 + "1", comp1 + "1"]);
+          result.push([comp1 + "1", comp1 + "2"]);
+          result.push([comp1 + "2", comp1 + "2"]);
+        } else {
+          // Only first component is rotating: [A1,B], [A2,B]
+          result.push([comp1 + "1", comp2]);
+          result.push([comp1 + "2", comp2]);
+        }
+      } else if (comp2 === rotateComponent) {
+        // Only second component is rotating: [B,A1], [B,A2]
+        result.push([comp1, comp2 + "1"]);
+        result.push([comp1, comp2 + "2"]);
+      } else {
+        // No rotating components
+        result.push([comp1, comp2]);
+      }
     }
   }
 
@@ -99,7 +129,11 @@ export function calculateFractions(
 ): number[] {
   const accSum = (acc: number, curr: number) => acc + curr;
 
-  const fractions = percentages.map((p) => (p ? (p / 100) * total : 0));
+  const emptyCellsFraction = 0.31;
+
+  const occupiedCells = total - Math.floor(total * emptyCellsFraction);
+
+  const fractions = percentages.map((p) => (p ? (p / 100) * occupiedCells : 0));
 
   const roundedFractions = fractions.map(Math.floor);
   const error = Math.abs(
@@ -123,3 +157,19 @@ export function calculateFractions(
 
   return roundedFractions;
 }
+
+export const getDirectionalStyle = (value: number) => {
+  const direction = value % 4;
+  switch (direction) {
+    case 1: // North
+      return "bg-gradient-to-b from-amber-800 from-50% to-pink-200 to-50%";
+    case 2: // West
+      return "bg-gradient-to-r from-amber-800 from-50% to-pink-200 to-50%";
+    case 3: // South
+      return "bg-gradient-to-t from-amber-800 from-50% to-pink-200 to-50%";
+    case 0: // East
+      return "bg-gradient-to-l from-amber-800 from-50% to-pink-200 to-50%";
+    default:
+      return "bg-gray-200";
+  }
+};

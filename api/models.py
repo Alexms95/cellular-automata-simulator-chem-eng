@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 Base = declarative_base()
 
+
 class SimulationModel(Base):
     __tablename__ = "TB_SIMULATIONS"
 
@@ -16,8 +17,17 @@ class SimulationModel(Base):
     gridHeight = Column(Integer, nullable=False)
     ingredients = Column(JSON, nullable=False)
     parameters = Column(JSON, nullable=False)
-    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
-    updated_at = Column(DateTime, nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), server_onupdate=func.current_timestamp())
+    created_at = Column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+        server_onupdate=func.current_timestamp(),
+    )
     iterations = Column(Text)
     results = Column(JSON)
     reactions = Column(JSON)
+    rotation = Column(JSON)

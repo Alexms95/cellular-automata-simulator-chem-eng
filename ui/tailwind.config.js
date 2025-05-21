@@ -5,6 +5,11 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  safelist: [
+    {
+      pattern: /bg-(red|green|blue|yellow|purple|orange|pink|cyan|teal|indigo)-(500|600|700)/,
+    }
+  ],
   theme: {
   	extend: {
   		borderRadius: {

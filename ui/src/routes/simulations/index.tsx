@@ -31,7 +31,7 @@ import { SimulationForm } from "@/lib/utils";
 import { Simulation } from "@/models/simulation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Trash2Icon } from "lucide-react";
+import { ArrowRightIcon, CopyIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/simulations/")({
@@ -122,9 +122,7 @@ function SimulationsList() {
                         </TooltipTrigger>
                         <TooltipContent>Edit</TooltipContent>
                       </Tooltip>
-                      <CardTitle className="text-sm">
-                        {simulation.name}
-                      </CardTitle>
+                      <CardTitle>{simulation.name}</CardTitle>
                       <AlertDialog>
                         <Tooltip>
                           <AlertDialogTrigger asChild>
@@ -169,7 +167,7 @@ function SimulationsList() {
                         </span>
                         <span className="block">
                           Grid Dimensions:{" "}
-                          {`${simulation.gridLenght} x ${simulation.gridHeight} (${simulation.gridLenght * simulation.gridHeight} cells)`}
+                          {`${simulation.gridHeight} x ${simulation.gridLenght} (${simulation.gridLenght * simulation.gridHeight} cells)`}
                         </span>
                         <span className="block">
                           Components:{" "}
@@ -180,13 +178,13 @@ function SimulationsList() {
                         <span className="block">
                           Created at:{" "}
                           {new Date(
-                            simulation.created_at + "Z",
+                            simulation.created_at + "Z"
                           ).toLocaleString()}
                         </span>
                         <span className="block">
                           Last updated at:{" "}
                           {new Date(
-                            simulation.updated_at + "Z",
+                            simulation.updated_at + "Z"
                           ).toLocaleString()}
                         </span>
                       </span>
@@ -197,9 +195,10 @@ function SimulationsList() {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
-                            className="w-full h-8 text-xs"
+                            className="w-full h-8 text-xs flex items-center justify-center gap-2"
                             variant="outline"
                           >
+                            <CopyIcon className="w-4 h-4" />
                             Create a copy
                           </Button>
                         </AlertDialogTrigger>
@@ -228,7 +227,10 @@ function SimulationsList() {
                       to={`/simulations/${simulation.id}`}
                       className="w-1/2"
                     >
-                      <Button className="w-full h-8 text-xs">Open</Button>
+                      <Button className="w-full h-8 text-xs flex items-center justify-center gap-2">
+                        <ArrowRightIcon className="w-4 h-4" />
+                        Open
+                      </Button>
                     </Link>
                   </CardFooter>
                 </Card>

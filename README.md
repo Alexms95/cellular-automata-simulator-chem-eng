@@ -1,63 +1,117 @@
-# tcc-eng-quimica
+# Cellular Automata Simulator
 
-## Instructions to Run the Code
+This project is a simulator for cellular automata, allowing users to create, configure, and run simulations with custom parameters.
 
-1. **Clone the Repository:**
+## Prerequisites
 
-    ```sh
-    git clone https://github.com/yourusername/tcc-eng-quimica.git
-    cd tcc-eng-quimica
-    ```
+- **Python**: Version 3.12.6 or higher.
+- **Node.js**: Version 20 or higher.
+- **npm**: Comes with Node.js.
 
-2. **Install API Dependencies:**
+## Instructions to Run the Application
 
-    Ensure you have [Python](https://www.python.org/downloads/) installed (version 3.12.6).
+### 1. Clone the Repository
 
-    2.1. **Create a python virtual environment and activate it**
+```sh
+git clone https://github.com/Alexms95/tcc-eng-quimica.git
+cd tcc-eng-quimica
+```
+
+---
+
+### 2. Set Up the API
+
+1. **Navigate to the API directory**:
 
     ```sh
     cd api
-
-    python -m venv .venv
     ```
 
-    On Windows, execute:
+2. **Create and activate a Python virtual environment**:
 
-    ```sh
-    .venv\Scripts\activate
-    ```
+    - On Windows:
 
-    On Linux/MacOS, execute:
+      ```sh
+      python -m venv .venv
+      .venv\Scripts\activate
+      ```
 
-    ```sh
-    source .venv/bin/activate
-    ```
+    - On Linux/MacOS:
 
-    2.2. **Install the dependencies**
+      ```sh
+      python -m venv .venv
+      source .venv/bin/activate
+      ```
+
+3. **Install dependencies**:
 
     ```sh
     pip install -r requirements.txt
     ```
 
-3. **Run the Code:**
-    Execute the main script:
+4. **Run the API**:
 
     ```sh
-    uvicorn main:app --host: 0.0.0.0 --port 8000
+    uvicorn main:app --host 0.0.0.0 --port 8000
     ```
 
-4. **Configuration:**
-    If there are any configuration files, ensure they are properly set up before running the code.
+---
 
-5. **Testing:**
-    To run tests, use:
+### 3. Set Up the Frontend
+
+1. **Navigate to the UI directory**:
 
     ```sh
-    pytest
+    cd ../ui
     ```
 
-6. **Additional Notes:**
-    - Ensure your environment variables are set up as required.
-    - Refer to the `config` directory for any additional configuration files.
+2. **Install dependencies**:
 
-For any issues, please refer to the [Issues](https://github.com/Alexms95/tcc-eng-quimica/issues) section on GitHub
+    ```sh
+    npm install
+    ```
+
+3. **Run the development server**:
+
+    ```sh
+    npm run dev
+    ```
+
+4. **Access the application**:
+
+    Open your browser and navigate to `http://localhost:5173`.
+
+---
+
+### 4. Testing
+
+- **API Tests**:
+  Run the tests in the `api` directory:
+
+  ```sh
+  pytest tests.py
+  ```
+
+- **Frontend Linting**:
+  Run ESLint in the `ui` directory:
+
+  ```sh
+  npm run lint
+  ```
+
+---
+
+### 5. Additional Notes
+
+- Ensure your environment variables are properly configured if required.
+- For issues, visit the [Issues](https://github.com/Alexms95/tcc-eng-quimica/issues) section on GitHub.
+
+---
+
+## Project Structure
+
+- **API**: Backend service built with FastAPI.
+- **UI**: Frontend application built with React, TypeScript, and Vite.
+- **Database**: Uses Alembic for migrations.
+
+Enjoy exploring and simulating cellular automata!

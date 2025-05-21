@@ -1,11 +1,12 @@
+from datetime import datetime
 from enum import Enum
 from io import StringIO
 from math import floor
 
 import numpy as np
 from logger import logger
-from schemas import PairParameter, SimulationBase
-from utils import get_component_index
+from schemas import PairParameter, RotationInfo, SimulationBase
+from utils import get_component_index, get_component_letter
 
 SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
 
@@ -13,9 +14,20 @@ SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
 class Calculations:
     NL = 0
     NC = 0
+    NEMPTY = 0
 
     @staticmethod
     def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
+        """
+        Calculate the number of cells for each component based on their molar fractions.
+        The function takes the total number of cells and a list of percentages, and returns a list of cell counts for each component.
+        The function ensures that the total number of cells is preserved by rounding the fractional counts and adjusting them if necessary.
+        Args:
+            total (int): The total number of cells.
+            percentages (list[float]): A list of percentages representing the molar fractions of each component.
+        Returns:
+            list[int]: A list of cell counts for each component.
+        """
         fractional_counts = [percentage * total / 100 for percentage in percentages]
 
         rounded_counts = [floor(fraction) for fraction in fractional_counts]
@@ -40,7 +52,14 @@ class Calculations:
         return rounded_counts
 
     @staticmethod
-    def calculate_cellular_automata(simulation: SimulationBase) -> np.ndarray:
+    def calculate_cellular_automata(simulation: SimulationBase) -> tuple[np.ndarray, list]:
+        """
+        Calculate the cellular automata for the given simulation.
+        Args:
+            simulation (SimulationBase): The simulation object containing the parameters and components.
+        Returns:
+            tuple[np.ndarray, list]: A tuple containing the matrix of components and a list that represents a table of molar fractions throughout the iterations.
+        """
         Calculations.NL = simulation.gridHeight
         Calculations.NC = simulation.gridLenght
 
@@ -53,11 +72,24 @@ class Calculations:
 
         EMPTY_FRAC = 0.31  # Fraction of empty cells
 
-        NEMPTY = floor(EMPTY_FRAC * NTOT)
-        NCELL = NTOT - NEMPTY
+        Calculations.NEMPTY = floor(EMPTY_FRAC * NTOT)
+        NCELL = NTOT - Calculations.NEMPTY
 
         components = simulation.ingredients
         parameters = simulation.parameters
+
+        rotation_info: RotationInfo = {"component": -1, "p_rot": 0, "states": [0]}
+
+        if (
+            simulation.rotation.component != ""
+            and simulation.rotation.component != "None"
+        ):
+            rot_comp_index = get_component_index(simulation.rotation.component) * 10
+            rotation_info = {
+                "component": get_component_index(simulation.rotation.component),
+                "p_rot": simulation.rotation.Prot,
+                "states": [rot_comp_index + i for i in range(1, 5)],
+            }
 
         NCOMP = len(components)
 
@@ -74,6 +106,8 @@ class Calculations:
 
         M = np.zeros((NL, NC), dtype=np.int16)
 
+        random_generator = np.random.default_rng()
+
         # Randomly distribute the components in the matrix
         for i in range(NCOMP):
             for j in range(Ni[i]):
@@ -81,15 +115,22 @@ class Calculations:
                     r = np.random.randint(0, NL)
                     c = np.random.randint(0, NC)
                     if M[r, c] == 0:
-                        M[r, c] = i + 1
+                        comp_index = i + 1
+                        if rotation_info["component"] == comp_index:
+                            # Assign the component to one of its states randomly
+                            comp_index = random_generator.choice(
+                                rotation_info["states"]
+                            )
+                        M[r, c] = comp_index
                         break
 
         # Show the matrix formatting the output as a table
-        print("Initial matrix:")
-        Calculations.show_matrix(M)
+        # print("Initial matrix:")
+        # Calculations.show_matrix(M)
 
         # Define the Von Neumann neighborhood
-        von_neumann_neigh = np.array([[-1, 0], [1, 0], [0, -1], [0, 1]], dtype=np.int16)
+        # North, West, South, East
+        von_neumann_neigh = np.array([[-1, 0], [0, -1], [1, 0], [0, 1]], dtype=np.int16)
 
         n_iter = simulation.iterationsNumber
 
@@ -99,8 +140,6 @@ class Calculations:
         reacted_components = set()
         not_reacted_components = set()
 
-        random_generator = np.random.default_rng()
-
         logger.info(
             "Simulation Inputs:\n"
             f"  Grid Dimensions: Lines={NL}, Columns={NC}\n"
@@ -109,7 +148,7 @@ class Calculations:
             f"  Molar Fractions (Ci): {Ci}\n"
             f"  Cell Counts (Ni): {Ni}\n"
             f"  Surface Type: {surface_type}\n"
-            f"  Empty Cells: NEMPTY={NEMPTY}\n"
+            f"  Empty Cells: NEMPTY={Calculations.NEMPTY}\n"
             f"  Occupied Cells: NCELL={NCELL}\n"
             f"  Number of Iterations: n_iter={n_iter}"
         )
@@ -124,7 +163,21 @@ class Calculations:
         # Store the initial matrix in the first slice of M_iter
         M_iter[0, :, :] = M.copy()
 
+        # Prepare the table of molar fractions
+        rot_comp_index = rotation_info["component"]
+
+        molar_fractions_header = ["Iteration"] + [comp.name for comp in simulation.ingredients] + ["Intermediate"]
+
+        molar_fractions_data = np.zeros((n_iter + 1, len(simulation.ingredients) + 2), dtype=np.float16).tolist()
+        molar_fractions_data[0] = Calculations.get_molar_fractions(
+            M, 0, NCOMP, NCELL, rot_comp_index
+        )
+
+        # Start the cronometer
+        start_time = datetime.now()
+
         for n in range(1, n_iter + 1):
+            print(f"Running Iteration: {n}")
             moved_components.clear()
             reacted_components.clear()
             not_reacted_components.clear()
@@ -150,8 +203,35 @@ class Calculations:
                     pb_inner_components = []
                     pm_total_component = 0
 
-                    if i_comp > 0:
-                        if current_position not in reacted_components:
+                    if Calculations.is_component(i_comp):
+                        # Component rotation
+                        if Calculations.is_rotation_component(i_comp):
+                            # Check the inner neighbors. If there is at least one occupied neighbor, the component cannot rotate
+                            can_rotate = True
+                            for inner_neighbor_pos in inner_neighbors_position:
+                                row_index, column_index = inner_neighbor_pos
+                                if Calculations.check_constraints(
+                                    surface_type, row_index, column_index
+                                ):
+                                    inner_pos_tuple = (row_index, column_index)
+                                    inner_comp = M[row_index, column_index]
+                                    if Calculations.is_component(inner_comp):
+                                        # The component cannot rotate
+                                        can_rotate = False
+                                        break
+                            if can_rotate and Calculations.should_execute(
+                                simulation.rotation.Prot
+                            ):
+                                # Rotate the component
+                                states = rotation_info["states"]
+                                M[i, j] = random_generator.choice(
+                                    list(filter(lambda x: x != int(i_comp), states))
+                                )
+                                continue
+                        if (
+                            current_position not in reacted_components
+                            and not Calculations.is_rotation_component(i_comp)
+                        ):
                             try:
                                 # Scan all the neighbors of the component to get all reaction pairs
                                 possible_reactions = []
@@ -173,7 +253,7 @@ class Calculations:
                                         )
                                         # Skip empty cells, the same component, already not reacted components, already reacted components in the neighborhood, and moved components in the neighborhood
                                         if (
-                                            inner_comp == 0
+                                            Calculations.is_empty(inner_comp)
                                             or inner_comp == i_comp
                                             or positions_pair in not_reacted_components
                                             or reversed_positions_pair
@@ -183,12 +263,17 @@ class Calculations:
                                             or inner_pos_tuple in moved_components
                                             # Exclude the case where both components are intermediates but are not a pair (avoid single intermediates in the grid)
                                             or (
-                                                i_comp > 100
-                                                and inner_comp > 100
+                                                Calculations.is_intermediate_component(
+                                                    i_comp
+                                                )
+                                                and Calculations.is_intermediate_component(
+                                                    inner_comp
+                                                )
                                                 and (i, j, row_index, column_index)
                                                 not in intermediate_pairs
                                             )
                                         ):
+
                                             continue
 
                                         for reaction in simulation.reactions:
@@ -377,20 +462,24 @@ class Calculations:
                                             )
                                         continue
 
-                                    false_sum = sum(
-                                        prob[1] for prob in individual_probs
-                                    )
+                                    false_sum = 0
+
+                                    # Add the no-reaction option to the list of probabilities if it is not an intermediate
+                                    if not Calculations.is_intermediate_component(i_comp):
+                                        false_sum = sum(
+                                            prob[1] for prob in individual_probs
+                                        )
+                                        possible_reactions.append(
+                                            {
+                                                "index": -1,
+                                                "products": None,
+                                                "products_position": None,
+                                                "reaction_probability": false_sum,
+                                            }
+                                        )
+
                                     total_sum = true_sum + false_sum
 
-                                    # Add the no-reaction option to the list of probabilities
-                                    possible_reactions.append(
-                                        {
-                                            "index": -1,
-                                            "products": None,
-                                            "products_position": None,
-                                            "reaction_probability": false_sum,
-                                        }
-                                    )
                                     # Normalize the probabilities
                                     normalized_probabilities = [
                                         poss_reaction["reaction_probability"]
@@ -412,9 +501,10 @@ class Calculations:
                                         prod1_row, prod1_column = prod1_pos
                                         prod2_row, prod2_column = prod2_pos
 
-                                        if (
-                                            M[prod1_row, prod1_column] > 100
-                                            and M[prod2_row, prod2_column] > 100
+                                        if Calculations.is_intermediate_component(
+                                            M[prod1_row, prod1_column]
+                                        ) and Calculations.is_intermediate_component(
+                                            M[prod2_row, prod2_column]
                                         ):
                                             # If the reactants are intermediates, remove their positions from the intermediate pairs (at this moment, there are reactants yet)
                                             intermediate_pairs.remove(
@@ -461,7 +551,11 @@ class Calculations:
                                         )
 
                                         # If the products are intermediates, store their positions to avoid reacting to other intermediates
-                                        if prod_1 > 100 and prod_2 > 100:
+                                        if Calculations.is_intermediate_component(
+                                            prod_1
+                                        ) and Calculations.is_intermediate_component(
+                                            prod_2
+                                        ):
                                             intermediate_pairs.append(
                                                 (
                                                     prod1_row,
@@ -499,9 +593,7 @@ class Calculations:
                                 iteration_log_text.write(
                                     f"  Outer Neighbors: {outer_neighbors_position}\n"
                                 )
-                                iteration_log_text.write(
-                                    f"  Current matrix:\n{M}\n"
-                                )
+                                iteration_log_text.write(f"  Current matrix:\n{M}\n")
                                 iteration_log_text.write(
                                     f"  Moved Components: {moved_components}\n"
                                 )
@@ -525,8 +617,7 @@ class Calculations:
                         if (
                             current_position in moved_components
                             or current_position in reacted_components
-                            # i_comp >= 100 means that it is an intermediate component and it cannot move
-                            or i_comp > 100
+                            or Calculations.is_intermediate_component(i_comp)
                         ):
                             continue
                         try:
@@ -540,7 +631,9 @@ class Calculations:
                                 if Calculations.check_constraints(
                                     surface_type, row_index, column_index
                                 ):
-                                    if M[row_index, column_index] == 0:
+                                    if Calculations.is_empty(
+                                        M[row_index, column_index]
+                                    ):
                                         o_row, o_column = outer_neighbors_position[i_p]
                                         if not Calculations.check_constraints(
                                             surface_type, o_row, o_column
@@ -548,42 +641,127 @@ class Calculations:
                                             J_neighbors.append((i_p, 0))
                                             continue
                                         outer_component = M[o_row, o_column]
-                                        if outer_component > 100:
+                                        if Calculations.is_intermediate_component(
+                                            outer_component
+                                        ):
                                             # If the outer component is an intermediate, the joining probability is 0
                                             J_neighbors.append((i_p, 0))
                                             continue
-                                        if outer_component != 0:
+                                        if Calculations.is_component(outer_component):
+                                            # Analyze the direction of rotation components to find the correct J of the interaction
+                                            comp1 = ""
+                                            comp2 = ""
+                                            if Calculations.is_rotation_component(
+                                                i_comp
+                                            ):
+                                                state_side = rotation_info[
+                                                    "states"
+                                                ].index(i_comp)
+                                                # It means that the current component is oriented in the same direction as the outer component
+                                                if state_side == i_p:
+                                                    comp1 = (
+                                                        simulation.rotation.component
+                                                        + "1"
+                                                    )
+                                                    if Calculations.is_rotation_component(
+                                                        outer_component
+                                                    ):
+                                                        outer_state_side = (
+                                                            rotation_info[
+                                                                "states"
+                                                            ].index(outer_component)
+                                                        )
+                                                        # Check if the outer component is oriented in the opposite direction
+                                                        if abs(
+                                                            outer_state_side - i_p == 2
+                                                        ):
+                                                            comp2 = (
+                                                                simulation.rotation.component
+                                                                + "1"
+                                                            )
+                                                        else:
+                                                            comp2 = (
+                                                                simulation.rotation.component
+                                                                + "2"
+                                                            )
+                                                    else:
+                                                        comp2 = get_component_letter(
+                                                            outer_component
+                                                        )
+                                                else:
+                                                    comp1 = (
+                                                        simulation.rotation.component
+                                                        + "2"
+                                                    )
+                                                    if Calculations.is_rotation_component(
+                                                        outer_component
+                                                    ):
+                                                        outer_state_side = (
+                                                            rotation_info[
+                                                                "states"
+                                                            ].index(outer_component)
+                                                        )
+                                                        # Check if the outer component is oriented in the opposite direction
+                                                        if abs(
+                                                            outer_state_side - i_p == 2
+                                                        ):
+                                                            comp2 = (
+                                                                simulation.rotation.component
+                                                                + "1"
+                                                            )
+                                                        else:
+                                                            comp2 = (
+                                                                simulation.rotation.component
+                                                                + "2"
+                                                            )
+                                                    else:
+                                                        comp2 = get_component_letter(
+                                                            outer_component
+                                                        )
+                                            else:
+                                                comp1 = get_component_letter(i_comp)
+                                                if Calculations.is_rotation_component(
+                                                    outer_component
+                                                ):
+                                                    outer_state_side = rotation_info[
+                                                        "states"
+                                                    ].index(outer_component)
+                                                    # Check if the outer component is oriented in the opposite direction
+                                                    if abs(outer_state_side - i_p == 2):
+                                                        comp2 = (
+                                                            simulation.rotation.component
+                                                            + "1"
+                                                        )
+                                                    else:
+                                                        comp2 = (
+                                                            simulation.rotation.component
+                                                            + "2"
+                                                        )
+                                                else:
+                                                    comp2 = get_component_letter(
+                                                        outer_component
+                                                    )
+
+                                            pair_relation = f"{comp1}|{comp2}"
+                                            reversed_pair_relation = f"{comp2}|{comp1}"
+
                                             # Search in the list for the probability J of the component
                                             j_components = next(
                                                 (
                                                     j_param.value
                                                     for j_param in parameters.J
                                                     if (
-                                                        get_component_index(
-                                                            j_param.relation[0]
-                                                        )
-                                                        == i_comp
-                                                        and get_component_index(
-                                                            j_param.relation[1]
-                                                        )
-                                                        == outer_component
-                                                    )
-                                                    or (
-                                                        get_component_index(
-                                                            j_param.relation[0]
-                                                        )
-                                                        == outer_component
-                                                        and get_component_index(
-                                                            j_param.relation[1]
-                                                        )
-                                                        == i_comp
+                                                        j_param.relation
+                                                        == pair_relation
+                                                        or j_param.relation
+                                                        == reversed_pair_relation
                                                     )
                                                 )
                                             )
                                         J_neighbors.append((i_p, j_components))
                                     else:
                                         occupied_inner_neighbors.append(
-                                            (row_index, column_index)
+                                            (i_p, row_index, column_index)
                                         )
 
                             # If there is no empty neighbor, the component cannot move
@@ -592,18 +770,19 @@ class Calculations:
 
                             J_max = max(J_neighbors, key=lambda x: x[1])
 
-                            if J_max[1] < 1 and J_max[1] > 0:
+                            if J_max[1] < 1 and J_max[1] >= 0:
                                 # Check if there are empty neighbors with J = 0, if so, pick one randomly
                                 J_0 = list(filter(lambda x: x[1] == 0, J_neighbors))
                                 if len(J_0) > 0:
                                     # Pick one randomly one of the empty neighbors with J = 0
                                     J_max = random_generator.choice(J_0)
                                 else:
+                                    # All components repulse each other, so the component cannot move
                                     continue
                             elif J_max[1] == 0:
                                 # If J_max is 0, all empty neighbors have J = 0 and are equal in terms of "afinity", so pick one randomly
                                 J_max = random_generator.choice(J_neighbors)
-                            elif J_max[1] > 0:
+                            elif J_max[1] >= 1:
                                 # If J_max is not 0, pick the empty neighbor with the highest J value
                                 J_neigh_max = list(
                                     filter(lambda x: x[1] == J_max[1], J_neighbors)
@@ -616,20 +795,109 @@ class Calculations:
 
                             if len(occupied_inner_neighbors) > 0:
                                 pb_inner_components = []
-                                for comp_position in occupied_inner_neighbors:
-                                    row, column = comp_position
+                                for ind_occ, row, column in occupied_inner_neighbors:
                                     comp_index = M[row, column]
-                                    pair_list = [comp_index, i_comp]
-                                    pair_list.sort()
-                                    pair = tuple(pair_list)
-                                    pb = 1 if comp_index > 100 else pbs[pair]
+                                    comp1 = ""
+                                    comp2 = ""
+                                    if Calculations.is_rotation_component(i_comp):
+                                        # If the component is a rotation component, get the state of the component
+                                        state_side = rotation_info["states"].index(
+                                            i_comp
+                                        )
+                                        # Check if the component is oriented in the same direction as the inner component
+                                        if state_side == ind_occ:
+                                            comp1 = simulation.rotation.component + "1"
+                                            if Calculations.is_rotation_component(
+                                                comp_index
+                                            ):
+                                                inner_state_side = rotation_info[
+                                                    "states"
+                                                ].index(comp_index)
+                                                # Check if the inner component is oriented in the opposite direction
+                                                if abs(inner_state_side - ind_occ == 2):
+                                                    comp2 = (
+                                                        simulation.rotation.component
+                                                        + "1"
+                                                    )
+                                                else:
+                                                    comp2 = (
+                                                        simulation.rotation.component
+                                                        + "2"
+                                                    )
+                                            else:
+                                                comp2 = get_component_letter(comp_index)
+                                        else:
+                                            comp1 = simulation.rotation.component + "2"
+                                            if Calculations.is_rotation_component(
+                                                comp_index
+                                            ):
+                                                inner_state_side = rotation_info[
+                                                    "states"
+                                                ].index(comp_index)
+                                                # Check if the inner component is oriented in the opposite direction
+                                                if abs(inner_state_side - ind_occ == 2):
+                                                    comp2 = (
+                                                        simulation.rotation.component
+                                                        + "1"
+                                                    )
+                                                else:
+                                                    comp2 = (
+                                                        simulation.rotation.component
+                                                        + "2"
+                                                    )
+                                            else:
+                                                comp2 = get_component_letter(comp_index)
+                                    else:
+                                        comp1 = get_component_letter(i_comp)
+                                        if Calculations.is_rotation_component(
+                                            comp_index
+                                        ):
+                                            inner_state_side = rotation_info[
+                                                "states"
+                                            ].index(comp_index)
+                                            # Check if the inner component is oriented in the opposite direction
+                                            if abs(inner_state_side - ind_occ == 2):
+                                                comp2 = (
+                                                    simulation.rotation.component + "1"
+                                                )
+                                            else:
+                                                comp2 = (
+                                                    simulation.rotation.component + "2"
+                                                )
+                                        else:
+                                            comp2 = get_component_letter(comp_index)
+
+                                    pair_relation = f"{comp1}|{comp2}"
+                                    reversed_pair_relation = f"{comp2}|{comp1}"
+
+                                    pb = (
+                                        1
+                                        if Calculations.is_intermediate_component(
+                                            comp_index
+                                        )
+                                        else (
+                                            pbs[pair_relation]
+                                            if pair_relation in pbs
+                                            else pbs[reversed_pair_relation]
+                                        )
+                                    )
                                     pb_inner_components.append(pb)
 
                                 pbs_product = np.array(pb_inner_components).prod()
 
-                            pm_total_component = parameters.Pm[i_comp - 1] * pbs_product
+                            pm_total_component = (
+                                parameters.Pm[
+                                    (
+                                        rotation_info["component"]
+                                        if Calculations.is_rotation_component(i_comp)
+                                        else i_comp
+                                    )
+                                    - 1
+                                ]
+                                * pbs_product
+                            )
 
-                            if Calculations.maybe_execute(pm_total_component):
+                            if Calculations.should_execute(pm_total_component):
                                 # Move the component to the empty neighbor with the highest J value
                                 row_move, column_move = inner_neighbors_position[
                                     int(J_max[0])
@@ -637,7 +905,7 @@ class Calculations:
                                 M[row_move, column_move] = i_comp
                                 M[i, j] = 0
                                 moved_components.add((row_move, column_move))
-                                break
+
                         except Exception as e:
                             iteration_log_text.write(f"  Iteration: {n}\n")
                             iteration_log_text.write(
@@ -673,13 +941,39 @@ class Calculations:
                             logger.exception(iteration_log_text.getvalue())
                             raise e
             M_iter[n, :, :] = M.copy()
+            molar_fractions_data[n] = Calculations.get_molar_fractions(
+                M, n, NCOMP, NCELL, rot_comp_index
+            )
 
-        print("Final matrix:")
-        Calculations.show_matrix(M)
+        molar_fractions_table = [molar_fractions_header, *molar_fractions_data]
+
+        # Calculations.show_matrix(M)
 
         logger.info("Calculations completed successfully!")
 
-        return M_iter
+        end_time = datetime.now()
+        elapsed_time = (end_time - start_time).total_seconds()
+        print(
+            f"Elapsed time: {elapsed_time:.2f} seconds"
+        )
+
+        return M_iter, molar_fractions_table
+
+    @staticmethod
+    def is_intermediate_component(i_comp):
+        return i_comp > 200
+
+    @staticmethod
+    def is_empty(inner_comp):
+        return inner_comp == 0
+
+    @staticmethod
+    def is_rotation_component(i_comp):
+        return i_comp > 10 and i_comp < 200
+
+    @staticmethod
+    def is_component(i_comp):
+        return i_comp > 0
 
     @staticmethod
     def show_matrix(M: np.ndarray):
@@ -691,11 +985,28 @@ class Calculations:
         print()
 
     @staticmethod
-    def maybe_execute(probability: float) -> bool:
+    def should_execute(probability: float) -> bool:
+        """
+        Determine whether to execute an action based on a given probability.
+        Args:
+            probability (float): The probability of executing the action.
+        Returns:
+            bool: True if the action should be executed, False otherwise.
+        """
         return np.random.random() < probability
 
     @staticmethod
     def check_constraints(surface_type: SurfaceTypes, r: int, c: int) -> bool:
+        """
+        Check if the given row and column indices are within the bounds of the matrix
+        based on the surface type.
+        Args:
+            surface_type (SurfaceTypes): The type of surface (Box or Cylinder).
+            r (int): Row index.
+            c (int): Column index.
+        Returns:
+            bool: True if the indices are within bounds, False otherwise.
+        """
         if surface_type == SurfaceTypes.Box:
             return r >= 0 and r < Calculations.NL and c >= 0 and c < Calculations.NC
         if surface_type == SurfaceTypes.Cylinder:
@@ -704,10 +1015,51 @@ class Calculations:
 
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
-        return {
-            (get_component_index(j.relation[0]), get_component_index(j.relation[1])): (
-                3 / 2
-            )
-            / (j.value + (3 / 2))
-            for j in js
-        }
+        """
+        Calculate the breaking probabilities (Pb) of each pair of components based on the J values.
+        Args:
+            js (list[PairParameter]): List of PairParameter objects containing J values.
+        Returns:
+            dict: Dictionary with component pairs as keys and their corresponding Pb values.
+        """
+        return {j.relation: (3 / 2) / (j.value + (3 / 2)) for j in js}
+
+    @staticmethod
+    def get_molar_fractions(
+        M: np.ndarray,
+        current_iteration: int,
+        n_comp: int,
+        n_cell: int,
+        rot_comp_index=-1
+    ) -> list[float]:
+        """
+        Calculate the molar fractions of each component in the matrix M.
+        Args:
+            M (np.ndarray): The matrix representing the system.
+            current_iteration (int): The current iteration number.
+            n_comp (int): The number of components.
+            n_cell (int): The total number of cells in the matrix.
+            rot_comp_index (int, optional): Index for rotation components. Defaults to -1.
+        Returns:
+            list[float]: List of molar fractions for each component.
+        """
+        count_line = np.zeros(n_comp + 2, dtype=np.int16)
+
+        nl, nc = M.shape
+
+        # Count the number of each component in the matrix
+        for i in range(nl):
+            for j in range(nc):
+                comp = M[i, j]
+                if not Calculations.is_empty(comp):
+                    if Calculations.is_intermediate_component(comp):
+                        count_line[-1] += 1
+                    elif Calculations.is_rotation_component(comp):
+                        count_line[rot_comp_index] += 1
+                    else:
+                        count_line[comp] += 1
+
+        molar_fractions_line = count_line / n_cell
+        molar_fractions_line[0] = current_iteration
+        molar_fractions_line = molar_fractions_line.tolist()
+        return molar_fractions_line

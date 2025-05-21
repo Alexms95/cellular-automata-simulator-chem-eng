@@ -1,5 +1,6 @@
 from datetime import datetime
 from uuid import UUID
+from typing import TypedDict
 
 from pydantic import BaseModel
 
@@ -26,6 +27,9 @@ class Reaction(BaseModel):
     reversePr: list[float]
     hasIntermediate: bool
 
+class Rotation(BaseModel):
+    component: str
+    Prot: float
 
 class SimulationBase(BaseModel):
     name: str
@@ -35,6 +39,7 @@ class SimulationBase(BaseModel):
     ingredients: list[Ingredient]
     parameters: Parameters
     reactions: list[Reaction] | None
+    rotation: Rotation
 
 
 class SimulationCreate(SimulationBase):
@@ -51,7 +56,13 @@ class SimulationResponse(SimulationBase):
 
 class SimulationComplete(SimulationResponse):
     iterations: str | None
-    results: list[float] | None
+    results: list[list] | None
 
     class Config:
         from_attributes = True
+
+
+class RotationInfo(TypedDict):
+    component: int
+    p_rot: float
+    states: list[int]

@@ -1,18 +1,14 @@
-import { scan, getReport } from "react-scan";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { getReport, scan } from "react-scan";
 import { Toaster } from "sonner";
 import "./index.css";
 
-import {
-  QueryClient,
-  QueryClientProvider,
-  QueryKey,
-} from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Spinner } from "./components/ui/spinner";
 import { TooltipProvider } from "./components/ui/tooltip";
-import httpClient from "./lib/httpClient";
+import { queryClient } from "./queryClient";
 import { routeTree } from "./routeTree.gen";
 
 if (typeof window !== "undefined") {
@@ -27,6 +23,14 @@ if (typeof window !== "undefined") {
 const router = createRouter({
   routeTree,
   defaultPendingComponent: () => <Spinner />,
+  defaultErrorComponent: ({ error }) => {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold">Error</h1>
+        <p className="text-red-500">{error.message}</p>
+      </div>
+    );
+  },
 });
 
 declare module "@tanstack/react-router" {
@@ -35,24 +39,10 @@ declare module "@tanstack/react-router" {
   }
 }
 
-const defaultQueryFn = async ({ queryKey }: { queryKey: QueryKey }) => {
-  const { data } = await httpClient.get(`http://localhost:8000/${queryKey[0]}`);
-  return data;
-};
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: Infinity,
-      queryFn: defaultQueryFn,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <Toaster duration={3000} expand={true} position="top-right" richColors />
+      <Toaster duration={2000} expand={true} position="top-right" richColors />
       <TooltipProvider delayDuration={300}>
         <RouterProvider router={router} />
       </TooltipProvider>
