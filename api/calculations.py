@@ -18,6 +18,16 @@ class Calculations:
 
     @staticmethod
     def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
+        """
+        Calculate the number of cells for each component based on their molar fractions.
+        The function takes the total number of cells and a list of percentages, and returns a list of cell counts for each component.
+        The function ensures that the total number of cells is preserved by rounding the fractional counts and adjusting them if necessary.
+        Args:
+            total (int): The total number of cells.
+            percentages (list[float]): A list of percentages representing the molar fractions of each component.
+        Returns:
+            list[int]: A list of cell counts for each component.
+        """
         fractional_counts = [percentage * total / 100 for percentage in percentages]
 
         rounded_counts = [floor(fraction) for fraction in fractional_counts]
@@ -43,6 +53,13 @@ class Calculations:
 
     @staticmethod
     def calculate_cellular_automata(simulation: SimulationBase) -> tuple[np.ndarray, list]:
+        """
+        Calculate the cellular automata for the given simulation.
+        Args:
+            simulation (SimulationBase): The simulation object containing the parameters and components.
+        Returns:
+            tuple[np.ndarray, list]: A tuple containing the matrix of components and a list that represents a table of molar fractions throughout the iterations.
+        """
         Calculations.NL = simulation.gridHeight
         Calculations.NC = simulation.gridLenght
 
@@ -202,7 +219,7 @@ class Calculations:
                                         # The component cannot rotate
                                         can_rotate = False
                                         break
-                            if can_rotate and Calculations.maybe_execute(
+                            if can_rotate and Calculations.should_execute(
                                 simulation.rotation.Prot
                             ):
                                 # Rotate the component
@@ -880,7 +897,7 @@ class Calculations:
                                 * pbs_product
                             )
 
-                            if Calculations.maybe_execute(pm_total_component):
+                            if Calculations.should_execute(pm_total_component):
                                 # Move the component to the empty neighbor with the highest J value
                                 row_move, column_move = inner_neighbors_position[
                                     int(J_max[0])
@@ -968,11 +985,28 @@ class Calculations:
         print()
 
     @staticmethod
-    def maybe_execute(probability: float) -> bool:
+    def should_execute(probability: float) -> bool:
+        """
+        Determine whether to execute an action based on a given probability.
+        Args:
+            probability (float): The probability of executing the action.
+        Returns:
+            bool: True if the action should be executed, False otherwise.
+        """
         return np.random.random() < probability
 
     @staticmethod
     def check_constraints(surface_type: SurfaceTypes, r: int, c: int) -> bool:
+        """
+        Check if the given row and column indices are within the bounds of the matrix
+        based on the surface type.
+        Args:
+            surface_type (SurfaceTypes): The type of surface (Box or Cylinder).
+            r (int): Row index.
+            c (int): Column index.
+        Returns:
+            bool: True if the indices are within bounds, False otherwise.
+        """
         if surface_type == SurfaceTypes.Box:
             return r >= 0 and r < Calculations.NL and c >= 0 and c < Calculations.NC
         if surface_type == SurfaceTypes.Cylinder:
@@ -981,6 +1015,13 @@ class Calculations:
 
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
+        """
+        Calculate the breaking probabilities (Pb) of each pair of components based on the J values.
+        Args:
+            js (list[PairParameter]): List of PairParameter objects containing J values.
+        Returns:
+            dict: Dictionary with component pairs as keys and their corresponding Pb values.
+        """
         return {j.relation: (3 / 2) / (j.value + (3 / 2)) for j in js}
 
     @staticmethod
@@ -993,6 +1034,14 @@ class Calculations:
     ) -> list[float]:
         """
         Calculate the molar fractions of each component in the matrix M.
+        Args:
+            M (np.ndarray): The matrix representing the system.
+            current_iteration (int): The current iteration number.
+            n_comp (int): The number of components.
+            n_cell (int): The total number of cells in the matrix.
+            rot_comp_index (int, optional): Index for rotation components. Defaults to -1.
+        Returns:
+            list[float]: List of molar fractions for each component.
         """
         count_line = np.zeros(n_comp + 2, dtype=np.int16)
 
