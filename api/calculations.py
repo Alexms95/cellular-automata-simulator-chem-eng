@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from io import StringIO
 from math import floor
@@ -154,6 +155,9 @@ class Calculations:
         molar_fractions_data[0] = Calculations.get_molar_fractions(
             M, 0, NCOMP, NCELL, rot_comp_index
         )
+
+        # Start the cronometer
+        start_time = datetime.now()
 
         for n in range(1, n_iter + 1):
             print(f"Running Iteration: {n}")
@@ -930,6 +934,12 @@ class Calculations:
 
         logger.info("Calculations completed successfully!")
 
+        end_time = datetime.now()
+        elapsed_time = (end_time - start_time).total_seconds()
+        print(
+            f"Elapsed time: {elapsed_time:.2f} seconds"
+        )
+
         return M_iter, molar_fractions_table
 
     @staticmethod
@@ -984,7 +994,7 @@ class Calculations:
         """
         Calculate the molar fractions of each component in the matrix M.
         """
-        count_line = np.zeros(n_comp + 2, dtype=np.int8)
+        count_line = np.zeros(n_comp + 2, dtype=np.int16)
 
         nl, nc = M.shape
 
@@ -1003,7 +1013,4 @@ class Calculations:
         molar_fractions_line = count_line / n_cell
         molar_fractions_line[0] = current_iteration
         molar_fractions_line = molar_fractions_line.tolist()
-        molar_fractions_line = [
-            round(molar_fraction, 2) for molar_fraction in molar_fractions_line
-        ]
         return molar_fractions_line
