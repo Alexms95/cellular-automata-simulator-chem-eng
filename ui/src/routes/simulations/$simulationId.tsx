@@ -221,6 +221,23 @@ function SimulationDetail() {
     );
   }
 
+  if (isLoading || isFetching) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Spinner size="large" />
+      </div>
+    );
+  }
+
+  if (isDecompressing || isdecom || isredecom) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <Spinner size="large" />
+        <span className="text-lg">Loading iterations...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-flex-col">
       <div className="flex justify-between">
