@@ -15,6 +15,8 @@ class Calculations:
     NL = 0
     NC = 0
     NEMPTY = 0
+    M_iter = np.ndarray
+    molar_fractions_table: list
 
     @staticmethod
     def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
@@ -52,7 +54,7 @@ class Calculations:
         return rounded_counts
 
     @staticmethod
-    def calculate_cellular_automata(simulation: SimulationBase) -> tuple[np.ndarray, list]:
+    async def calculate_cellular_automata(simulation: SimulationBase):
         """
         Calculate the cellular automata for the given simulation.
         Args:
@@ -158,10 +160,10 @@ class Calculations:
         intermediate_pairs = []
 
         # Create the empty array to store the matrix at each iteration
-        M_iter = np.zeros((n_iter + 1, NL, NC), dtype=np.int16)
+        Calculations.M_iter = np.zeros((n_iter + 1, NL, NC), dtype=np.int16)
 
-        # Store the initial matrix in the first slice of M_iter
-        M_iter[0, :, :] = M.copy()
+        # Store the initial matrix in the first slice of Calculations.M_iter
+        Calculations.M_iter[0, :, :] = M.copy()
 
         # Prepare the table of molar fractions
         rot_comp_index = rotation_info["component"]
@@ -940,12 +942,13 @@ class Calculations:
                             )
                             logger.exception(iteration_log_text.getvalue())
                             raise e
-            M_iter[n, :, :] = M.copy()
+            Calculations.M_iter[n, :, :] = M.copy()
             molar_fractions_data[n] = Calculations.get_molar_fractions(
                 M, n, NCOMP, NCELL, rot_comp_index
             )
+            yield n, n_iter
 
-        molar_fractions_table = [molar_fractions_header, *molar_fractions_data]
+        Calculations.molar_fractions_table = [molar_fractions_header, *molar_fractions_data]
 
         # Calculations.show_matrix(M)
 
@@ -956,8 +959,6 @@ class Calculations:
         print(
             f"Elapsed time: {elapsed_time:.2f} seconds"
         )
-
-        return M_iter, molar_fractions_table
 
     @staticmethod
     def is_intermediate_component(i_comp):
@@ -1063,3 +1064,6 @@ class Calculations:
         molar_fractions_line[0] = current_iteration
         molar_fractions_line = molar_fractions_line.tolist()
         return molar_fractions_line
+
+    def get_results() -> tuple[np.ndarray, list[list]]:
+        return Calculations.M_iter, Calculations.molar_fractions_table

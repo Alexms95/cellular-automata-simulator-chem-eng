@@ -87,12 +87,15 @@ def delete_simulation(
     return dataAccess.delete_simulation(id, db)
 
 
-@app.post("/simulations/{id}/run", response_model=None)
+@app.get("/simulations/{id}/run")
 def run_simulation(
     id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
 ):
     logger.info(f"Running simulation with id {id}")
-    return dataAccess.run_simulation(id, db)
+    return StreamingResponse(
+        dataAccess.run_simulation(id, db),
+        media_type="text/event-stream"
+    )
 
 
 @app.get("/simulations/{id}", response_model=SimulationComplete)

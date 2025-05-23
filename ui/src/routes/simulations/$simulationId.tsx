@@ -2,11 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import httpClient from "@/lib/httpClient";
 import { Simulation } from "@/models/simulation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronLeft, ChevronUp, Download, Play } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronUp,
+  Download,
+  Play,
+} from "lucide-react";
 import pako from "pako";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { lazy, Suspense } from "react";
@@ -52,54 +58,71 @@ function SimulationDetail() {
     },
   });
 
-  const runSimulation = useMutation({
-    mutationFn: () => httpClient.post(`/simulations/${simulationId}/run`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["simulations"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["decompressedIterations", simulationId],
-      });
-    },
-  });
+  const [isRunning, setIsRunning] = useState(false);
 
-  const onRunSimulation = async () => {
-    const mutation = runSimulation.mutateAsync();
-    toast.promise(mutation, {
-      loading: `Running simulation ${data?.name}...`,
-      success: `Simulation ${data!.name} has just run successfully!`,
-      error: (error) => {
-        const message = error.response?.data?.detail;
-        return message ?? `Error running simulation ${data!.name}`;
-      },
-    });
+  const onRunSimulation = () => {
+    const eventSource = new EventSource(
+      `http://localhost:8000/simulations/${simulationId}/run`
+    );
+
+    setIsRunning(true);
+
+    const toastId = toast.loading("Starting simulation...");
+    eventSource.onmessage = (event) => {
+      const data = event.data;
+
+      if (data === "Simulation completed!") {
+        toast.success(`Simulation ${data} run successfully!`, { id: toastId });
+        eventSource.close();
+        queryClient.invalidateQueries({
+          queryKey: ["simulations"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["decompressedIterations", simulationId],
+        });
+        setIsRunning(false);
+        return;
+      }
+      const progress = parseFloat(JSON.parse(data).progress) * 100;
+      toast.loading(`Running simulation... ${progress.toFixed()} % completed`, {
+        id: toastId,
+      });
+    };
+
+    eventSource.onerror = () => {
+      toast.error("Error running simulation", { id: toastId });
+      eventSource.close();
+      setIsRunning(false);
+    };
   };
 
   const downloadCSV = async () => {
     const promise = (async () => {
-        const response = await httpClient.get(`http://localhost:8000/simulations/${simulationId}/results`, {
+      const response = await httpClient.get(
+        `http://localhost:8000/simulations/${simulationId}/results`,
+        {
           responseType: "blob",
-        });
-
-        const contentDisposition = response.headers["content-disposition"];
-        let filename = "file.csv";
-
-        if (contentDisposition) {
-          const match = contentDisposition.match(/filename="?(.+)"?/);
-          if (match && match[1]) {
-            filename = match[1];
-          }
         }
+      );
 
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
+      const contentDisposition = response.headers["content-disposition"];
+      let filename = "file.csv";
+
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+)"?/);
+        if (match && match[1]) {
+          filename = match[1];
+        }
+      }
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
     })();
 
     toast.promise(promise, {
@@ -116,7 +139,10 @@ function SimulationDetail() {
   };
 
   const scrollToBottom = () => {
-    gridRef.current?.scrollToItem((decompressedIterations?.length ?? 0) - 1 || 0, "start");
+    gridRef.current?.scrollToItem(
+      (decompressedIterations?.length ?? 0) - 1 || 0,
+      "start"
+    );
   };
 
   // const chunks = useRef<Blob[]>([]);
@@ -251,7 +277,7 @@ function SimulationDetail() {
         <Button
           className="flex items-center justify-center gap-2"
           onClick={() => onRunSimulation()}
-          disabled={runSimulation.isPending}
+          disabled={isRunning}
         >
           <Play className="h-4 w-4" />
           Run simulation
@@ -341,7 +367,7 @@ function SimulationDetail() {
                   className="flex items-center justify-center gap-2"
                   variant="secondary"
                   onClick={() => downloadCSV()}
-                  disabled={runSimulation.isPending}
+                  disabled={isRunning}
                 >
                   <Download className="h-4 w-4" />
                   Download Results File

@@ -1,3 +1,4 @@
+import json
 from sqlalchemy import select
 from utils import compress_matrix, decompress_matrix
 from calculations import Calculations
@@ -40,7 +41,7 @@ class SimulationData:
 
         if db_simulation is None:
             raise HTTPException(status_code=400, detail="Simulation not found")
-        
+
         _, compressed_iterations = db_simulation
 
         if compressed_iterations is None:
@@ -148,7 +149,7 @@ class SimulationData:
         db.delete(db_simulation)
         db.commit()
 
-    def run_simulation(self, simulation_id: str, db: Session) -> None:
+    async def run_simulation(self, simulation_id: str, db: Session):
         query = select(SimulationModel).options(
             load_only(
                 SimulationModel.id,
@@ -171,24 +172,32 @@ class SimulationData:
 
         simulation = SimulationBase(**db_simulation.__dict__)
 
-        resulting_matrix, molar_fractions_table = Calculations.calculate_cellular_automata(simulation)
-        
+        async for (
+            current_iteration,
+            total_iterations,
+        ) in Calculations.calculate_cellular_automata(simulation):
+            yield f"data: {json.dumps({"progress": current_iteration/total_iterations})}\n\n"
+
+        resulting_matrix, molar_fractions_table = Calculations.get_results()
+
         db_simulation.iterations = compress_matrix(resulting_matrix.tolist())
         db_simulation.results = molar_fractions_table
 
         db.commit()
         db.refresh(db_simulation)
-    
+
+        yield "data: Simulation completed!\n\n"
+
     def get_results(self, simulation_id: str, db: Session) -> tuple[str, list[list]]:
         query = select(SimulationModel.name, SimulationModel.results).where(SimulationModel.id == simulation_id)
         db_simulation = db.execute(query).first()
 
         if db_simulation is None:
             raise HTTPException(status_code=400, detail="Simulation not found")
-        
+
         name, results = db_simulation
 
         if results is None:
             raise HTTPException(status_code=400, detail=f"Run the simulation {name} to generate results")
-        
+
         return name, results
