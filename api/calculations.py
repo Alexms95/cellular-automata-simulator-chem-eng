@@ -10,13 +10,16 @@ from utils import get_component_index, get_component_letter
 
 SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
 
+VON_NEUMANN_NEIGH = np.array([[-1, 0], [0, -1], [1, 0], [0, 1]], dtype=np.int16)
 
 class Calculations:
-    NL = 0
-    NC = 0
-    NEMPTY = 0
-    M_iter = np.ndarray
-    molar_fractions_table: list
+    def __init__(self, simulation: SimulationBase):
+        self.NL = 0
+        self.NC = 0
+        self.NEMPTY = 0
+        self.M_iter = np.ndarray
+        self.molar_fractions_table: list
+        self.simulation = simulation
 
     @staticmethod
     def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
@@ -53,13 +56,14 @@ class Calculations:
 
         return rounded_counts
 
-    @staticmethod
-    async def calculate_cellular_automata(simulation: SimulationBase):
-        Calculations.NL = simulation.gridHeight
-        Calculations.NC = simulation.gridLenght
+    async def calculate_cellular_automata(self):
+        print(self.NL, self.NC)
+        simulation = self.simulation
+        self.NL = self.simulation.gridHeight
+        self.NC = self.simulation.gridLenght
 
-        NL = Calculations.NL
-        NC = Calculations.NC
+        NL = self.NL
+        NC = self.NC
 
         surface_type = SurfaceTypes.Torus
 
@@ -67,8 +71,8 @@ class Calculations:
 
         EMPTY_FRAC = 0.31  # Fraction of empty cells
 
-        Calculations.NEMPTY = floor(EMPTY_FRAC * NTOT)
-        NCELL = NTOT - Calculations.NEMPTY
+        self.NEMPTY = floor(EMPTY_FRAC * NTOT)
+        NCELL = NTOT - self.NEMPTY
 
         components = simulation.ingredients
         parameters = simulation.parameters
@@ -125,7 +129,7 @@ class Calculations:
 
         # Define the Von Neumann neighborhood
         # North, West, South, East
-        von_neumann_neigh = np.array([[-1, 0], [0, -1], [1, 0], [0, 1]], dtype=np.int16)
+        
 
         n_iter = simulation.iterationsNumber
 
@@ -143,7 +147,7 @@ class Calculations:
             f"  Molar Fractions (Ci): {Ci}\n"
             f"  Cell Counts (Ni): {Ni}\n"
             f"  Surface Type: {surface_type}\n"
-            f"  Empty Cells: NEMPTY={Calculations.NEMPTY}\n"
+            f"  Empty Cells: NEMPTY={self.NEMPTY}\n"
             f"  Occupied Cells: NCELL={NCELL}\n"
             f"  Number of Iterations: n_iter={n_iter}"
         )
@@ -153,10 +157,10 @@ class Calculations:
         intermediate_pairs = []
 
         # Create the empty array to store the matrix at each iteration
-        Calculations.M_iter = np.zeros((n_iter + 1, NL, NC), dtype=np.int16)
+        self.M_iter = np.zeros((n_iter + 1, NL, NC), dtype=np.int16)
 
         # Store the initial matrix in the first slice of Calculations.M_iter
-        Calculations.M_iter[0, :, :] = M.copy()
+        self.M_iter[0, :, :] = M.copy()
 
         # Prepare the table of molar fractions
         rot_comp_index = rotation_info["component"]
@@ -170,7 +174,7 @@ class Calculations:
         molar_fractions_data = np.zeros(
             (n_iter + 1, len(simulation.ingredients) + 2), dtype=np.float16
         ).tolist()
-        molar_fractions_data[0] = Calculations.get_molar_fractions(
+        molar_fractions_data[0] = self.get_molar_fractions(
             M, 0, NCOMP, NCELL, rot_comp_index
         )
 
@@ -187,8 +191,8 @@ class Calculations:
                 for j in range(NC):
                     current_position = (i, j)
                     i_comp = M[i, j]
-                    inner_neighbors_position = von_neumann_neigh + current_position
-                    outer_neighbors_position = 2 * von_neumann_neigh + current_position
+                    inner_neighbors_position = VON_NEUMANN_NEIGH + current_position
+                    outer_neighbors_position = 2 * VON_NEUMANN_NEIGH + current_position
 
                     # Initialize variables used in the calculations
                     possible_reactions = []
@@ -212,7 +216,7 @@ class Calculations:
                             can_rotate = True
                             for inner_neighbor_pos in inner_neighbors_position:
                                 row_index, column_index = inner_neighbor_pos
-                                coordinates = Calculations.check_constraints(
+                                coordinates = self.check_constraints(
                                     surface_type, row_index, column_index
                                 )
                                 if coordinates is not None:
@@ -242,7 +246,7 @@ class Calculations:
                                 poss_reac_index = 0
                                 for inner_neighbor_pos in inner_neighbors_position:
                                     row_index, column_index = inner_neighbor_pos
-                                    coordinates = Calculations.check_constraints(
+                                    coordinates = self.check_constraints(
                                         surface_type, row_index, column_index
                                     )
                                     if coordinates is not None:
@@ -635,7 +639,7 @@ class Calculations:
 
                             for i_p in range(len(inner_neighbors_position)):
                                 row_index, column_index = inner_neighbors_position[i_p]
-                                coordinates = Calculations.check_constraints(
+                                coordinates = self.check_constraints(
                                     surface_type, row_index, column_index
                                 )
                                 if coordinates is not None:
@@ -644,7 +648,7 @@ class Calculations:
                                         M[row_index, column_index]
                                     ):
                                         o_row, o_column = outer_neighbors_position[i_p]
-                                        coordinates = Calculations.check_constraints(
+                                        coordinates = self.check_constraints(
                                             surface_type, o_row, o_column
                                         )
                                         if coordinates is None:
@@ -914,7 +918,7 @@ class Calculations:
                                 row_move, column_move = inner_neighbors_position[
                                     int(J_max[0])
                                 ]
-                                row_move, column_move = Calculations.check_constraints(
+                                row_move, column_move = self.check_constraints(
                                     surface_type, row_move, column_move
                                 )
                                 M[row_move, column_move] = i_comp
@@ -955,14 +959,14 @@ class Calculations:
                             )
                             logger.exception(iteration_log_text.getvalue())
                             raise e
-            Calculations.M_iter[n, :, :] = M.copy()
+            self.M_iter[n, :, :] = M.copy()
             molar_fractions_data[n] = Calculations.get_molar_fractions(
                 M, n, NCOMP, NCELL, rot_comp_index
             )
             if n % 10 == 0 or n == n_iter:
                 yield n, n_iter
 
-        Calculations.molar_fractions_table = [
+        self.molar_fractions_table = [
             molar_fractions_header,
             *molar_fractions_data,
         ]
@@ -1011,9 +1015,8 @@ class Calculations:
         """
         return np.random.random() < probability
 
-    @staticmethod
     def check_constraints(
-        surface_type: SurfaceTypes, r: int, c: int
+        self, surface_type: SurfaceTypes, r: int, c: int
     ) -> tuple[int, int] | None:
         """
         Check the constraints for the given surface type and coordinates.
@@ -1027,13 +1030,13 @@ class Calculations:
         if surface_type == SurfaceTypes.Box:
             return (
                 (r, c)
-                if r >= 0 and r < Calculations.NL and c >= 0 and c < Calculations.NC
+                if r >= 0 and r < self.NL and c >= 0 and c < self.NC
                 else None
             )
         if surface_type == SurfaceTypes.Cylinder:
-            return (r, c % Calculations.NC) if r >= 0 and r < Calculations.NL else None
+            return (r, c % self.NC) if r >= 0 and r < self.NL else None
         if surface_type == SurfaceTypes.Torus:
-            return (r % Calculations.NL, c % Calculations.NC)
+            return (r % self.NL, c % self.NC)
 
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
@@ -1086,5 +1089,5 @@ class Calculations:
         molar_fractions_line = molar_fractions_line.tolist()
         return molar_fractions_line
 
-    def get_results() -> tuple[np.ndarray, list[list]]:
-        return Calculations.M_iter, Calculations.molar_fractions_table
+    def get_results(self) -> tuple[np.ndarray, list[list]]:
+        return self.M_iter, self.molar_fractions_table

@@ -172,13 +172,15 @@ class SimulationData:
 
         simulation = SimulationBase(**db_simulation.__dict__)
 
+        calculations = Calculations(simulation)
+
         async for (
             current_iteration,
             total_iterations,
-        ) in Calculations.calculate_cellular_automata(simulation):
+        ) in calculations.calculate_cellular_automata():
             yield f"data: {json.dumps({"progress": current_iteration/total_iterations})}\n\n"
 
-        resulting_matrix, molar_fractions_table = Calculations.get_results()
+        resulting_matrix, molar_fractions_table = calculations.get_results()
 
         db_simulation.iterations = compress_matrix(resulting_matrix.tolist())
         db_simulation.results = molar_fractions_table
