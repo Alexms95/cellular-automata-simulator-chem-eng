@@ -650,7 +650,9 @@ class Calculations:
                                         if coordinates is None:
                                             J_neighbors.append((i_p, 0))
                                             continue
-                                        outer_component = M[coordinates[0], coordinates[1]]
+                                        outer_component = M[
+                                            coordinates[0], coordinates[1]
+                                        ]
                                         if Calculations.is_intermediate_component(
                                             outer_component
                                         ):
@@ -957,7 +959,7 @@ class Calculations:
             molar_fractions_data[n] = Calculations.get_molar_fractions(
                 M, n, NCOMP, NCELL, rot_comp_index
             )
-            if n % 10 is 0 or n == n_iter:
+            if n % 10 == 0 or n == n_iter:
                 yield n, n_iter
 
         Calculations.molar_fractions_table = [
@@ -1010,7 +1012,9 @@ class Calculations:
         return np.random.random() < probability
 
     @staticmethod
-    def check_constraints(surface_type: SurfaceTypes, r: int, c: int) -> tuple[int, int] | None:
+    def check_constraints(
+        surface_type: SurfaceTypes, r: int, c: int
+    ) -> tuple[int, int] | None:
         """
         Check the constraints for the given surface type and coordinates.
         Args:
@@ -1021,7 +1025,11 @@ class Calculations:
             tuple[int, int] | None: Validated coordinates or None if out of bounds.
         """
         if surface_type == SurfaceTypes.Box:
-            return (r, c) if r >= 0 and r < Calculations.NL and c >= 0 and c < Calculations.NC else None
+            return (
+                (r, c)
+                if r >= 0 and r < Calculations.NL and c >= 0 and c < Calculations.NC
+                else None
+            )
         if surface_type == SurfaceTypes.Cylinder:
             return (r, c % Calculations.NC) if r >= 0 and r < Calculations.NL else None
         if surface_type == SurfaceTypes.Torus:

@@ -60,19 +60,21 @@ function SimulationDetail() {
 
   const [isRunning, setIsRunning] = useState(false);
 
-  const onRunSimulation = () => {
+  const onRunSimulation = (simulationName?: string) => {
     const eventSource = new EventSource(
       `http://localhost:8000/simulations/${simulationId}/run`
     );
 
     setIsRunning(true);
 
+    const name = simulationName || "Simulation";
+    
     const toastId = toast.loading("Starting simulation...");
     eventSource.onmessage = (event) => {
       const data = event.data;
 
       if (data === "Simulation completed!") {
-        toast.success(`Simulation run successfully!`, { id: toastId });
+        toast.success(`${name} run successfully!`, { id: toastId });
         eventSource.close();
         queryClient.invalidateQueries({
           queryKey: ["simulations"],
@@ -84,13 +86,13 @@ function SimulationDetail() {
         return;
       }
       const progress = parseFloat(JSON.parse(data).progress) * 100;
-      toast.loading(`Running simulation... ${progress.toFixed()} % completed`, {
+      toast.loading(`Running ${name}... ${progress.toFixed()} % completed`, {
         id: toastId,
       });
     };
 
     eventSource.onerror = () => {
-      toast.error("Error running simulation", { id: toastId });
+      toast.error(`Error running ${name}`, { id: toastId });
       eventSource.close();
       setIsRunning(false);
     };
@@ -230,32 +232,7 @@ function SimulationDetail() {
   //   return <ReactP5Wrapper sketch={sketch} />;
   // }, []);
 
-  if (isLoading || isFetching) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spinner size="large" />
-      </div>
-    );
-  }
-
-  if (isDecompressing || isdecom || isredecom) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <Spinner size="large" />
-        <span className="text-lg">Loading iterations...</span>
-      </div>
-    );
-  }
-
-  if (isLoading || isFetching) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spinner size="large" />
-      </div>
-    );
-  }
-
-  if (isDecompressing || isdecom || isredecom) {
+  if (isLoading || isFetching || isDecompressing || isdecom || isredecom) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
         <Spinner size="large" />
@@ -276,7 +253,7 @@ function SimulationDetail() {
         <h1 className="text-xl text-center font-bold mb-4">{data?.name}</h1>
         <Button
           className="flex items-center justify-center gap-2"
-          onClick={() => onRunSimulation()}
+          onClick={() => onRunSimulation(data?.name)}
           disabled={isRunning}
         >
           <Play className="h-4 w-4" />
