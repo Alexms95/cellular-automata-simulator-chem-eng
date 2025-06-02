@@ -55,20 +55,13 @@ class Calculations:
 
     @staticmethod
     async def calculate_cellular_automata(simulation: SimulationBase):
-        """
-        Calculate the cellular automata for the given simulation.
-        Args:
-            simulation (SimulationBase): The simulation object containing the parameters and components.
-        Returns:
-            tuple[np.ndarray, list]: A tuple containing the matrix of components and a list that represents a table of molar fractions throughout the iterations.
-        """
         Calculations.NL = simulation.gridHeight
         Calculations.NC = simulation.gridLenght
 
         NL = Calculations.NL
         NC = Calculations.NC
 
-        surface_type = SurfaceTypes.Box
+        surface_type = SurfaceTypes.Torus
 
         NTOT = NC * NL
 
@@ -168,9 +161,15 @@ class Calculations:
         # Prepare the table of molar fractions
         rot_comp_index = rotation_info["component"]
 
-        molar_fractions_header = ["Iteration"] + [comp.name for comp in simulation.ingredients] + ["Intermediate"]
+        molar_fractions_header = (
+            ["Iteration"]
+            + [comp.name for comp in simulation.ingredients]
+            + ["Intermediate"]
+        )
 
-        molar_fractions_data = np.zeros((n_iter + 1, len(simulation.ingredients) + 2), dtype=np.float16).tolist()
+        molar_fractions_data = np.zeros(
+            (n_iter + 1, len(simulation.ingredients) + 2), dtype=np.float16
+        ).tolist()
         molar_fractions_data[0] = Calculations.get_molar_fractions(
             M, 0, NCOMP, NCELL, rot_comp_index
         )
@@ -178,8 +177,9 @@ class Calculations:
         # Start the cronometer
         start_time = datetime.now()
 
+        print("Running simulation")
+
         for n in range(1, n_iter + 1):
-            print(f"Running Iteration: {n}")
             moved_components.clear()
             reacted_components.clear()
             not_reacted_components.clear()
@@ -212,10 +212,12 @@ class Calculations:
                             can_rotate = True
                             for inner_neighbor_pos in inner_neighbors_position:
                                 row_index, column_index = inner_neighbor_pos
-                                if Calculations.check_constraints(
+                                coordinates = Calculations.check_constraints(
                                     surface_type, row_index, column_index
-                                ):
-                                    inner_pos_tuple = (row_index, column_index)
+                                )
+                                if coordinates is not None:
+                                    inner_pos_tuple = coordinates
+                                    row_index, column_index = inner_pos_tuple
                                     inner_comp = M[row_index, column_index]
                                     if Calculations.is_component(inner_comp):
                                         # The component cannot rotate
@@ -240,10 +242,12 @@ class Calculations:
                                 poss_reac_index = 0
                                 for inner_neighbor_pos in inner_neighbors_position:
                                     row_index, column_index = inner_neighbor_pos
-                                    if Calculations.check_constraints(
+                                    coordinates = Calculations.check_constraints(
                                         surface_type, row_index, column_index
-                                    ):
-                                        inner_pos_tuple = (row_index, column_index)
+                                    )
+                                    if coordinates is not None:
+                                        inner_pos_tuple = coordinates
+                                        row_index, column_index = inner_pos_tuple
                                         inner_comp = M[row_index, column_index]
                                         positions_pair = (
                                             current_position,
@@ -275,7 +279,6 @@ class Calculations:
                                                 not in intermediate_pairs
                                             )
                                         ):
-
                                             continue
 
                                         for reaction in simulation.reactions:
@@ -467,7 +470,9 @@ class Calculations:
                                     false_sum = 0
 
                                     # Add the no-reaction option to the list of probabilities if it is not an intermediate
-                                    if not Calculations.is_intermediate_component(i_comp):
+                                    if not Calculations.is_intermediate_component(
+                                        i_comp
+                                    ):
                                         false_sum = sum(
                                             prob[1] for prob in individual_probs
                                         )
@@ -630,19 +635,22 @@ class Calculations:
 
                             for i_p in range(len(inner_neighbors_position)):
                                 row_index, column_index = inner_neighbors_position[i_p]
-                                if Calculations.check_constraints(
+                                coordinates = Calculations.check_constraints(
                                     surface_type, row_index, column_index
-                                ):
+                                )
+                                if coordinates is not None:
+                                    row_index, column_index = coordinates
                                     if Calculations.is_empty(
                                         M[row_index, column_index]
                                     ):
                                         o_row, o_column = outer_neighbors_position[i_p]
-                                        if not Calculations.check_constraints(
+                                        coordinates = Calculations.check_constraints(
                                             surface_type, o_row, o_column
-                                        ):
+                                        )
+                                        if coordinates is None:
                                             J_neighbors.append((i_p, 0))
                                             continue
-                                        outer_component = M[o_row, o_column]
+                                        outer_component = M[coordinates[0], coordinates[1]]
                                         if Calculations.is_intermediate_component(
                                             outer_component
                                         ):
@@ -904,6 +912,9 @@ class Calculations:
                                 row_move, column_move = inner_neighbors_position[
                                     int(J_max[0])
                                 ]
+                                row_move, column_move = Calculations.check_constraints(
+                                    surface_type, row_move, column_move
+                                )
                                 M[row_move, column_move] = i_comp
                                 M[i, j] = 0
                                 moved_components.add((row_move, column_move))
@@ -946,9 +957,13 @@ class Calculations:
             molar_fractions_data[n] = Calculations.get_molar_fractions(
                 M, n, NCOMP, NCELL, rot_comp_index
             )
-            yield n, n_iter
+            if n % 10 is 0 or n == n_iter:
+                yield n, n_iter
 
-        Calculations.molar_fractions_table = [molar_fractions_header, *molar_fractions_data]
+        Calculations.molar_fractions_table = [
+            molar_fractions_header,
+            *molar_fractions_data,
+        ]
 
         # Calculations.show_matrix(M)
 
@@ -956,9 +971,7 @@ class Calculations:
 
         end_time = datetime.now()
         elapsed_time = (end_time - start_time).total_seconds()
-        print(
-            f"Elapsed time: {elapsed_time:.2f} seconds"
-        )
+        print(f"Elapsed time: {elapsed_time:.2f} seconds")
 
     @staticmethod
     def is_intermediate_component(i_comp):
@@ -997,22 +1010,22 @@ class Calculations:
         return np.random.random() < probability
 
     @staticmethod
-    def check_constraints(surface_type: SurfaceTypes, r: int, c: int) -> bool:
+    def check_constraints(surface_type: SurfaceTypes, r: int, c: int) -> tuple[int, int] | None:
         """
-        Check if the given row and column indices are within the bounds of the matrix
-        based on the surface type.
+        Check the constraints for the given surface type and coordinates.
         Args:
-            surface_type (SurfaceTypes): The type of surface (Box or Cylinder).
+            surface_type (SurfaceTypes): The type of surface (Box, Cylinder, Torus).
             r (int): Row index.
             c (int): Column index.
         Returns:
-            bool: True if the indices are within bounds, False otherwise.
+            tuple[int, int] | None: Validated coordinates or None if out of bounds.
         """
         if surface_type == SurfaceTypes.Box:
-            return r >= 0 and r < Calculations.NL and c >= 0 and c < Calculations.NC
+            return (r, c) if r >= 0 and r < Calculations.NL and c >= 0 and c < Calculations.NC else None
         if surface_type == SurfaceTypes.Cylinder:
-            return r >= 0 and r < Calculations.NL
-        return True
+            return (r, c % Calculations.NC) if r >= 0 and r < Calculations.NL else None
+        if surface_type == SurfaceTypes.Torus:
+            return (r % Calculations.NL, c % Calculations.NC)
 
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
@@ -1031,7 +1044,7 @@ class Calculations:
         current_iteration: int,
         n_comp: int,
         n_cell: int,
-        rot_comp_index=-1
+        rot_comp_index=-1,
     ) -> list[float]:
         """
         Calculate the molar fractions of each component in the matrix M.

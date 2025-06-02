@@ -72,7 +72,7 @@ function SimulationDetail() {
       const data = event.data;
 
       if (data === "Simulation completed!") {
-        toast.success(`Simulation ${data} run successfully!`, { id: toastId });
+        toast.success(`Simulation run successfully!`, { id: toastId });
         eventSource.close();
         queryClient.invalidateQueries({
           queryKey: ["simulations"],
