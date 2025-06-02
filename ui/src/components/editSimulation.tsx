@@ -31,6 +31,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -51,9 +52,16 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { Checkbox } from "./ui/checkbox";
 
-export const EditSimulation = ({ id }: { id: string }) => {
+export const EditSimulation = ({
+  id,
+  complete = false,
+  disabled = false
+}: {
+  id: string;
+  complete: boolean;
+  disabled: boolean
+}) => {
   const queryClient = useQueryClient();
 
   const defaultIngredients = [{ name: "A", molarFraction: 1, color: "blue" }];
@@ -242,9 +250,20 @@ export const EditSimulation = ({ id }: { id: string }) => {
   return (
     <Dialog>
       <DialogTrigger onClick={() => resetSimulationData(data)} asChild>
-        <Button variant="outline" size="icon" className="w-8 h-8">
-          <PenIcon className="m-2" />
-        </Button>
+        {complete ? (
+          <Button
+            variant="outline"
+            className="flex items-center justify-center gap-2"
+            disabled={disabled}
+          >
+            <PenIcon className="h-4 w-4" />
+            Edit Simulation
+          </Button>
+        ) : (
+          <Button variant="outline" size="icon" className="w-8 h-8" disabled={disabled}>
+            <PenIcon className="m-2" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%]">
         <DialogHeader>

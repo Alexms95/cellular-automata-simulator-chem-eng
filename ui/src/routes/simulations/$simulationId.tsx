@@ -15,6 +15,7 @@ import pako from "pako";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { EditSimulation } from "@/components/editSimulation";
 import { lazy, Suspense } from "react";
 const SimulationGrid = lazy(() => import("@/components/SimulationGrid"));
 
@@ -68,7 +69,7 @@ function SimulationDetail() {
     setIsRunning(true);
 
     const name = simulationName || "Simulation";
-    
+
     const toastId = toast.loading("Starting simulation...");
     eventSource.onmessage = (event) => {
       const data = event.data;
@@ -262,35 +263,47 @@ function SimulationDetail() {
 
         {/* Legend Section */}
         {(decompressedIterations?.length ?? 0) > 0 && (
-          <div className="w-1/6 fixed bottom-12 left-8 bg-white p-4 rounded-lg border shadow-sm z-10">
-            <h3 className="font-semibold mb-4">Legend</h3>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-gray-200" />
-                <span>Empty</span>
-              </div>
-              {data?.reactions?.some((r) => r.hasIntermediate) && (
+          <div className="flex flex-col gap-20 fixed top-40 right-8 z-10">
+            {data && <EditSimulation disabled={isRunning} complete={true} id={data.id} />}
+            <Button
+              className="flex items-center justify-center gap-2"
+              variant="secondary"
+              onClick={() => downloadCSV()}
+              disabled={isRunning}
+            >
+              <Download className="h-4 w-4" />
+              Download Results File
+            </Button>
+            <div className="bg-white p-4 rounded-lg border shadow-sm">
+              <h3 className="font-semibold mb-4">Legend</h3>
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-yellow-500" />
-                  <span>Intermediate</span>
+                  <div className="w-4 h-4 bg-gray-200" />
+                  <span>Empty</span>
                 </div>
-              )}
-              {data?.ingredients.map((ingredient, index) => {
-                if (String.fromCharCode(65 + index) === rotation?.component) {
+                {data?.reactions?.some((r) => r.hasIntermediate) && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-yellow-500" />
+                    <span>Intermediate</span>
+                  </div>
+                )}
+                {data?.ingredients.map((ingredient, index) => {
+                  if (String.fromCharCode(65 + index) === rotation?.component) {
+                    return (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-gradient-to-b from-amber-800 from-50% to-pink-200 to-50%" />
+                        <span>{ingredient.name}</span>
+                      </div>
+                    );
+                  }
                   return (
                     <div key={index} className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-gradient-to-b from-amber-800 from-50% to-pink-200 to-50%" />
+                      <div className={`w-4 h-4 bg-${ingredient.color}-500`} />
                       <span>{ingredient.name}</span>
                     </div>
                   );
-                }
-                return (
-                  <div key={index} className="flex items-center gap-2">
-                    <div className={`w-4 h-4 bg-${ingredient.color}-500`} />
-                    <span>{ingredient.name}</span>
-                  </div>
-                );
-              })}
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -339,17 +352,6 @@ function SimulationDetail() {
         >
           {(decompressedIterations?.length ?? 0) > 0 ? (
             <>
-              <div className="fixed top-40 left-8 z-10">
-                <Button
-                  className="flex items-center justify-center gap-2"
-                  variant="secondary"
-                  onClick={() => downloadCSV()}
-                  disabled={isRunning}
-                >
-                  <Download className="h-4 w-4" />
-                  Download Results File
-                </Button>
-              </div>
               <SimulationGrid
                 ref={gridRef}
                 iterations={decompressedIterations ?? []}
