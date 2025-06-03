@@ -12,7 +12,7 @@ import {
   Play,
 } from "lucide-react";
 import pako from "pako";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { EditSimulation } from "@/components/editSimulation";
@@ -60,6 +60,29 @@ function SimulationDetail() {
   });
 
   const [isRunning, setIsRunning] = useState(false);
+
+  const gridRef = useRef<any>(null);
+  
+  const simulationGridMemo = useMemo(() => {
+    console.log("Rendering SimulationGrid");
+    if (!decompressedIterations || decompressedIterations.length === 0 || !data) {
+      return (
+        <div className="flex flex-col justify-center h-[70vh]">
+          <h1 className="text-2xl font-bold text-gray-500">
+            Run the simulation to see the results
+          </h1>
+        </div>
+      );
+    }
+    return (
+      <SimulationGrid
+        ref={gridRef}
+        iterations={decompressedIterations}
+        ingredients={data.ingredients}
+        reactions={data.reactions}
+      />
+    );
+  }, [decompressedIterations, data]);
 
   const onRunSimulation = (simulationName?: string) => {
     const eventSource = new EventSource(
@@ -134,8 +157,6 @@ function SimulationDetail() {
       error: "Failed to download CSV file",
     });
   };
-
-  const gridRef = useRef<any>(null);
 
   const scrollToTop = () => {
     gridRef.current?.scrollToItem(0, "start");
@@ -350,23 +371,7 @@ function SimulationDetail() {
             </div>
           }
         >
-          {(decompressedIterations?.length ?? 0) > 0 ? (
-            <>
-              <SimulationGrid
-                ref={gridRef}
-                iterations={decompressedIterations ?? []}
-                ingredients={data?.ingredients ?? []}
-                rotationComponent={data?.rotation?.component}
-                reactions={data?.reactions}
-              />
-            </>
-          ) : (
-            <div className="flex flex-col justify-center h-[70vh]">
-              <h1 className="text-2xl font-bold text-gray-500">
-                Run the simulation to see the results
-              </h1>
-            </div>
-          )}
+          {simulationGridMemo}
         </Suspense>
       </div>
     </div>

@@ -24,7 +24,6 @@ class CellularAutomataCalculator:
         self.simulation = simulation
 
     async def calculate_cellular_automata(self):
-        print(self.NL, self.NC)
         simulation = self.simulation
         self.NL = self.simulation.gridHeight
         self.NC = self.simulation.gridLenght
