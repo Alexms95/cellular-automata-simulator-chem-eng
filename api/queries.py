@@ -1,11 +1,12 @@
 import json
-from sqlalchemy import select
-from utils import compress_matrix, decompress_matrix
-from calculations import Calculations
+
+from calculations import CellularAutomataCalculator
 from fastapi import HTTPException
 from models import SimulationModel
 from schemas import SimulationBase, SimulationCreate
+from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
+from utils import calculate_cell_counts, compress_matrix, decompress_matrix
 
 SELECT_WITHOUT_ITERATIONS = select(
     SimulationModel.id,
@@ -35,8 +36,12 @@ class SimulationData:
 
         return db_simulation
 
-    def get_decompressed_iterations(self, simulation_id: str, db: Session) -> list[list[list[int]]]:
-        query = select(SimulationModel.name, SimulationModel.iterations).where(SimulationModel.id == simulation_id)
+    def get_decompressed_iterations(
+        self, simulation_id: str, db: Session
+    ) -> list[list[list[int]]]:
+        query = select(SimulationModel.name, SimulationModel.iterations).where(
+            SimulationModel.id == simulation_id
+        )
         db_simulation = db.execute(query).first()
 
         if db_simulation is None:
@@ -64,7 +69,7 @@ class SimulationData:
 
         totalCells = newSimulation.gridLenght * newSimulation.gridHeight
 
-        ingredientCellsCount = Calculations.calculate_cell_counts(
+        ingredientCellsCount = calculate_cell_counts(
             totalCells,
             map(lambda ingredient: ingredient.molarFraction, newSimulation.ingredients),
         )
@@ -103,12 +108,9 @@ class SimulationData:
         if db_simulation is None:
             raise HTTPException(status_code=400, detail="Simulation not found")
 
-        query = (
-            SELECT_WITHOUT_ITERATIONS
-            .where(
-                SimulationModel.id != simulation_id,
-                SimulationModel.name == updatedSimulation.name,
-            )
+        query = SELECT_WITHOUT_ITERATIONS.where(
+            SimulationModel.id != simulation_id,
+            SimulationModel.name == updatedSimulation.name,
         )
         already_exists = db.execute(query).first()
 
@@ -123,7 +125,7 @@ class SimulationData:
 
         totalCells = updatedSimulation.gridLenght * updatedSimulation.gridHeight
 
-        ingredientCellsCount = Calculations.calculate_cell_counts(
+        ingredientCellsCount = calculate_cell_counts(
             totalCells,
             map(
                 lambda ingredient: ingredient.molarFraction,
@@ -138,8 +140,12 @@ class SimulationData:
         db.refresh(db_simulation)
 
     def delete_simulation(self, simulation_id: str, db: Session) -> None:
-        query = select(SimulationModel).options(load_only(SimulationModel.id)).where(
-            SimulationModel.id == simulation_id,
+        query = (
+            select(SimulationModel)
+            .options(load_only(SimulationModel.id))
+            .where(
+                SimulationModel.id == simulation_id,
+            )
         )
         db_simulation = db.execute(query).scalars().first()
 
@@ -150,21 +156,25 @@ class SimulationData:
         db.commit()
 
     async def run_simulation(self, simulation_id: str, db: Session):
-        query = select(SimulationModel).options(
-            load_only(
-                SimulationModel.id,
-                SimulationModel.name,
-                SimulationModel.iterationsNumber,
-                SimulationModel.gridLenght,
-                SimulationModel.gridHeight,
-                SimulationModel.ingredients,
-                SimulationModel.parameters,
-                SimulationModel.created_at,
-                SimulationModel.updated_at,
-                SimulationModel.reactions,
-                SimulationModel.rotation,
+        query = (
+            select(SimulationModel)
+            .options(
+                load_only(
+                    SimulationModel.id,
+                    SimulationModel.name,
+                    SimulationModel.iterationsNumber,
+                    SimulationModel.gridLenght,
+                    SimulationModel.gridHeight,
+                    SimulationModel.ingredients,
+                    SimulationModel.parameters,
+                    SimulationModel.created_at,
+                    SimulationModel.updated_at,
+                    SimulationModel.reactions,
+                    SimulationModel.rotation,
+                )
             )
-        ).where(SimulationModel.id == simulation_id)
+            .where(SimulationModel.id == simulation_id)
+        )
         db_simulation = db.execute(query).scalars().first()
 
         if db_simulation is None:
@@ -172,7 +182,7 @@ class SimulationData:
 
         simulation = SimulationBase(**db_simulation.__dict__)
 
-        calculations = Calculations(simulation)
+        calculations = CellularAutomataCalculator(simulation)
 
         async for (
             current_iteration,
@@ -191,7 +201,9 @@ class SimulationData:
         yield "data: Simulation completed!\n\n"
 
     def get_results(self, simulation_id: str, db: Session) -> tuple[str, list[list]]:
-        query = select(SimulationModel.name, SimulationModel.results).where(SimulationModel.id == simulation_id)
+        query = select(SimulationModel.name, SimulationModel.results).where(
+            SimulationModel.id == simulation_id
+        )
         db_simulation = db.execute(query).first()
 
         if db_simulation is None:
@@ -200,6 +212,8 @@ class SimulationData:
         name, results = db_simulation
 
         if results is None:
-            raise HTTPException(status_code=400, detail=f"Run the simulation {name} to generate results")
+            raise HTTPException(
+                status_code=400, detail=f"Run the simulation {name} to generate results"
+            )
 
         return name, results

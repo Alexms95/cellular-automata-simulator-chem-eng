@@ -263,7 +263,7 @@ function SimulationDetail() {
 
         {/* Legend Section */}
         {(decompressedIterations?.length ?? 0) > 0 && (
-          <div className="flex flex-col gap-20 fixed top-40 right-8 z-10">
+          <div className="flex flex-col gap-[4vh] fixed top-28 right-8 z-10 text-sm">
             {data && <EditSimulation disabled={isRunning} complete={true} id={data.id} />}
             <Button
               className="flex items-center justify-center gap-2"

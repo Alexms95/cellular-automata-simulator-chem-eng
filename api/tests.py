@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parent))
 
-from calculations import Calculations, SurfaceTypes
+from calculations import CellularAutomataCalculator, SurfaceTypes
 from schemas import Ingredient, PairParameter, Parameters, Reaction, SimulationBase
 
 
@@ -18,8 +18,15 @@ def mock_get_component_index(monkeypatch):
 
 
 def test_calculate_cell_counts():
-    assert Calculations.calculate_cell_counts(150, [60, 30, 10]) == [90, 45, 15]
-    assert Calculations.calculate_cell_counts(473, [47.3, 52.7]) == [224, 249]
+    assert CellularAutomataCalculator.calculate_cell_counts(150, [60, 30, 10]) == [
+        90,
+        45,
+        15,
+    ]
+    assert CellularAutomataCalculator.calculate_cell_counts(473, [47.3, 52.7]) == [
+        224,
+        249,
+    ]
 
 
 @pytest.mark.usefixtures("mock_get_component_index")
@@ -27,7 +34,7 @@ def test_calculate_pbs():
     # Test case 1: Single pair parameter
     pair_parameters = [PairParameter(relation="AB", value=1.0)]
     expected_result = {(1, 2): 0.6}
-    assert Calculations.calculate_pbs(pair_parameters) == expected_result
+    assert CellularAutomataCalculator.calculate_pbs(pair_parameters) == expected_result
 
     # Test case 2: Multiple pair parameters
     pair_parameters = [
@@ -38,12 +45,12 @@ def test_calculate_pbs():
         (1, 2): 0.6,
         (2, 3): 0.42857142857142855,
     }
-    assert Calculations.calculate_pbs(pair_parameters) == expected_result
+    assert CellularAutomataCalculator.calculate_pbs(pair_parameters) == expected_result
 
     # Test case 3: No pair parameters
     pair_parameters = []
     expected_result = {}
-    assert Calculations.calculate_pbs(pair_parameters) == expected_result
+    assert CellularAutomataCalculator.calculate_pbs(pair_parameters) == expected_result
 
 
 def test_assert_iterations():
@@ -84,7 +91,7 @@ def test_assert_iterations():
     )
 
     # Act
-    iterations = Calculations.calculate_cellular_automata(simulation)
+    iterations = CellularAutomataCalculator.calculate_cellular_automata(simulation)
 
     # Assert
     assert iterations.ndim == 3
@@ -92,7 +99,7 @@ def test_assert_iterations():
     for i in range(1, simulation.iterationsNumber + 1):
         # Check if the number of empty cells keeps constant
         grid = iterations[i]
-        assert len(grid[grid == 0]) == Calculations.NEMPTY
+        assert len(grid[grid == 0]) == CellularAutomataCalculator.NEMPTY
         for j in range(simulation.gridHeight):
             for k in range(simulation.gridLenght):
                 # If current cell is an intermediate, check if there is at least one intermediate in its inner neighborhood
@@ -106,7 +113,7 @@ def test_assert_iterations():
                     ]
                     neighbors_components = []
                     for neighbor in neighbors_cells:
-                        if Calculations.check_constraints(
+                        if CellularAutomataCalculator.check_constraints(
                             SurfaceTypes.Box, neighbor[1], neighbor[2]
                         ):
                             neighbors_components.append(iterations[neighbor])
@@ -130,6 +137,6 @@ def test_assert_iterations():
     ],
 )
 def test_check_constraints(surface_type, r, c, expected):
-    Calculations.NL = 50  # Set grid height
-    Calculations.NC = 50  # Set grid length
-    assert Calculations.check_constraints(surface_type, r, c) == expected
+    CellularAutomataCalculator.NL = 50  # Set grid height
+    CellularAutomataCalculator.NC = 50  # Set grid length
+    assert CellularAutomataCalculator.check_constraints(surface_type, r, c) == expected
