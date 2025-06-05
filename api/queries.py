@@ -1,7 +1,7 @@
 import json
 
-from calculations import CellularAutomataCalculator
 from fastapi import HTTPException
+from services.cellular_automata_calculator import CellularAutomataCalculator
 from models import SimulationModel
 from schemas import SimulationBase, SimulationCreate
 from sqlalchemy import select

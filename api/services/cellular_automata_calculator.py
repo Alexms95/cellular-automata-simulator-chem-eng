@@ -1,0 +1,335 @@
+from datetime import datetime
+from math import floor
+from typing import Dict, List, Optional, Tuple
+from venv import logger
+
+import numpy as np
+from schemas import RotationInfo, SimulationBase
+from services.calculations_helper import SurfaceTypes, calculate_pbs, get_molar_fractions, is_component, is_intermediate_component, is_rotation_component, should_execute
+from services.movement_analyzer import MovementAnalyzer
+from services.reaction_processor import ReactionProcessor
+from services.rotation_manager import RotationManager
+from services.simulation_state import SimulationState
+from utils import calculate_cell_counts, get_component_index
+
+
+class CellularAutomataCalculator:
+    """Calculadora principal do autômato celular refatorada"""
+
+    def __init__(self, simulation: SimulationBase):
+        self.NL = 0
+        self.NC = 0
+        self.NEMPTY = 0
+        self.M_iter = np.ndarray
+        self.molar_fractions_table: list
+        self.simulation = simulation
+
+        # Componentes auxiliares
+        self.movement_analyzer: Optional[MovementAnalyzer] = None
+        self.reaction_processor: Optional[ReactionProcessor] = None
+        self.rotation_manager: Optional[RotationManager] = None
+
+    async def calculate_cellular_automata(self):
+        """Método principal refatorado - orquestra a simulação"""
+        # 1. Inicialização
+        simulation_params = self._initialize_simulation()
+        matrix, rotation_info, pbs = simulation_params
+
+        # 2. Configurar componentes auxiliares
+        self._setup_auxiliary_components(rotation_info, pbs)
+
+        # 3. Preparar estruturas de dados
+        state = SimulationState(
+            self.NL,
+            self.NC,
+            len(self.simulation.ingredients),
+            self.NL * self.NC - self.NEMPTY,
+        )
+
+        # 4. Executar simulação
+        async for progress in self._run_simulation_iterations(
+            matrix, state, rotation_info
+        ):
+            yield progress
+
+    def _initialize_simulation(
+        self,
+    ) -> Tuple[np.ndarray, RotationInfo, Dict[str, float]]:
+        """Inicializa parâmetros da simulação"""
+        self.NL = self.simulation.gridHeight
+        self.NC = self.simulation.gridLenght
+
+        # Configurar superfície e células
+        NTOT = self.NC * self.NL
+        EMPTY_FRAC = 0.31
+        self.NEMPTY = floor(EMPTY_FRAC * NTOT)
+        NCELL = NTOT - self.NEMPTY
+
+        # Configurar rotação
+        rotation_info = self._setup_rotation_info()
+
+        # Criar matriz inicial
+        matrix = self._create_initial_matrix(NCELL, rotation_info)
+
+        # Calcular probabilidades de quebra
+        pbs = calculate_pbs(self.simulation.parameters.J)
+
+        self._log_simulation_parameters(NCELL, rotation_info)
+
+        return matrix, rotation_info, pbs
+
+    def _setup_rotation_info(self) -> RotationInfo:
+        """Configura informações de rotação"""
+        rotation_info: RotationInfo = {"component": -1, "p_rot": 0, "states": [0]}
+
+        if (
+            self.simulation.rotation.component
+            and self.simulation.rotation.component != "None"
+        ):
+
+            rot_comp_index = get_component_index(self.simulation.rotation.component)
+            rotation_info = {
+                "component": rot_comp_index,
+                "p_rot": self.simulation.rotation.Prot,
+                "states": [rot_comp_index * 10 + i for i in range(1, 5)],
+            }
+
+        return rotation_info
+
+    def _create_initial_matrix(
+        self, ncell: int, rotation_info: RotationInfo
+    ) -> np.ndarray:
+        """Cria a matriz inicial com distribuição aleatória de componentes"""
+        matrix = np.zeros((self.NL, self.NC), dtype=np.int16)
+        components = self.simulation.ingredients
+
+        # Calcular frações molares e contagens
+        ci = np.array([comp.molarFraction for comp in components])
+        ni = calculate_cell_counts(ncell, ci)
+
+        random_generator = np.random.default_rng()
+
+        # Distribuir componentes aleatoriamente
+        for i, component in enumerate(components):
+            comp_index = i + 1
+
+            for _ in range(ni[i]):
+                while True:
+                    r, c = np.random.randint(0, self.NL), np.random.randint(0, self.NC)
+
+                    if matrix[r, c] == 0:
+                        if rotation_info["component"] == comp_index:
+                            comp_index = random_generator.choice(
+                                rotation_info["states"]
+                            )
+
+                        matrix[r, c] = comp_index
+                        break
+
+        return matrix
+
+    def _setup_auxiliary_components(
+        self, rotation_info: RotationInfo, pbs: Dict[str, float]
+    ):
+        """Configura componentes auxiliares"""
+        self.movement_analyzer = MovementAnalyzer(
+            self.simulation, rotation_info, self.simulation.parameters, pbs
+        )
+        self.reaction_processor = ReactionProcessor(self.simulation, rotation_info)
+        self.rotation_manager = RotationManager(rotation_info)
+
+    def _log_simulation_parameters(self, ncell: int, rotation_info: RotationInfo):
+        """Registra parâmetros da simulação no log"""
+        components = self.simulation.ingredients
+        component_names = [comp.name for comp in components]
+        ci = np.array([comp.molarFraction for comp in components])
+        ni = calculate_cell_counts(ncell, ci)
+
+        logger.info(
+            "Simulation Inputs:\n"
+            f"  Grid Dimensions: Lines={self.NL}, Columns={self.NC}\n"
+            f"  Number of Components: NCOMP={len(components)}\n"
+            f"  Component Names: {component_names}\n"
+            f"  Molar Fractions (Ci): {ci}\n"
+            f"  Cell Counts (Ni): {ni}\n"
+            f"  Surface Type: {SurfaceTypes.Torus}\n"
+            f"  Empty Cells: NEMPTY={self.NEMPTY}\n"
+            f"  Occupied Cells: NCELL={ncell}\n"
+            f"  Number of Iterations: n_iter={self.simulation.iterationsNumber}"
+        )
+
+    async def _run_simulation_iterations(
+        self, matrix: np.ndarray, state: SimulationState, rotation_info: RotationInfo
+    ):
+        """Executa as iterações da simulação"""
+        n_iter = self.simulation.iterationsNumber
+        surface_type = SurfaceTypes.Torus
+
+        # Inicializar estruturas para armazenamento de resultados
+        self._initialize_result_structures(matrix, n_iter, rotation_info)
+
+        start_time = datetime.now()
+
+        for n in range(1, n_iter + 1):
+            state.clear_iteration_state()
+
+            for i in range(self.NL):
+                for j in range(self.NC):
+                    current_position = (i, j)
+                    component = matrix[i, j]
+
+                    if not is_component(component):
+                        continue
+
+                    # Processar rotação
+                    if self._process_rotation(
+                        matrix, current_position, component, surface_type, rotation_info
+                    ):
+                        continue
+
+                    # Processar reações
+                    if (
+                        current_position not in state.reacted_components
+                        and not is_rotation_component(component)
+                    ):
+                        self._process_reactions(
+                            matrix, current_position, component, surface_type, state
+                        )
+
+                    # Processar movimento
+                    if (
+                        current_position not in state.moved_components
+                        and current_position not in state.reacted_components
+                        and not is_intermediate_component(component)
+                    ):
+                        self._process_movement(
+                            matrix, current_position, component, surface_type, state
+                        )
+
+            # Armazenar resultados da iteração
+            self._store_iteration_results(
+                matrix,
+                n,
+                len(self.simulation.ingredients),
+                self.NL * self.NC - self.NEMPTY,
+                rotation_info["component"],
+            )
+
+            if n % 10 == 0 or n == n_iter:
+                yield n, n_iter
+
+        end_time = datetime.now()
+        elapsed_time = (end_time - start_time).total_seconds()
+        print(f"Elapsed time: {elapsed_time:.2f} seconds")
+
+    def _initialize_result_structures(
+        self, matrix: np.ndarray, n_iter: int, rotation_info: RotationInfo
+    ):
+        """Inicializa estruturas para armazenamento de resultados"""
+        self.M_iter = np.zeros((n_iter + 1, self.NL, self.NC), dtype=np.int16)
+        self.M_iter[0, :, :] = matrix.copy()
+
+        molar_fractions_header = (
+            ["Iteration"]
+            + [comp.name for comp in self.simulation.ingredients]
+            + ["Intermediate"]
+        )
+
+        self.molar_fractions_table = [
+            molar_fractions_header,
+            *[None] * (n_iter + 1),  # Placeholder for iteration data
+        ]
+        self.molar_fractions_table[1] = get_molar_fractions(
+            matrix,
+            0,
+            len(self.simulation.ingredients),
+            self.NL * self.NC - self.NEMPTY,
+            rotation_info["component"] if hasattr(self, "rotation_info") else -1,
+        )
+
+    def _process_rotation(
+        self,
+        matrix: np.ndarray,
+        position: Tuple[int, int],
+        component: int,
+        surface_type: SurfaceTypes,
+        rotation_info: RotationInfo,
+    ) -> bool:
+        """Processa rotação de componentes e retorna se ocorreu rotação"""
+        if (
+            is_rotation_component(component)
+            and self.rotation_manager.can_rotate(
+                matrix, position, surface_type, self.check_constraints
+            )
+            and should_execute(rotation_info["p_rot"])
+        ):
+
+            self.rotation_manager.rotate_component(matrix, position, component)
+            return True
+        return False
+
+    def _process_reactions(
+        self,
+        matrix: np.ndarray,
+        position: Tuple[int, int],
+        component: int,
+        surface_type: SurfaceTypes,
+        state: SimulationState,
+    ):
+        """Processa reações químicas para um componente"""
+        possible_reactions = self.reaction_processor.find_possible_reactions(
+            matrix, position, component, surface_type, self.check_constraints, state
+        )
+
+        if possible_reactions:
+            self.reaction_processor.select_and_execute_reaction(
+                possible_reactions, component, matrix, state
+            )
+
+    def _process_movement(
+        self,
+        matrix: np.ndarray,
+        position: Tuple[int, int],
+        component: int,
+        surface_type: SurfaceTypes,
+        state: SimulationState,
+    ):
+        """Processa movimento de componentes"""
+        can_move, target_pos, probability = (
+            self.movement_analyzer.analyze_movement_possibility(
+                matrix, position, component, surface_type, self.check_constraints
+            )
+        )
+
+        if can_move and should_execute(probability):
+            i, j = position
+            matrix[target_pos[0], target_pos[1]] = component
+            matrix[i, j] = 0
+            state.moved_components.add(target_pos)
+
+    def _store_iteration_results(
+        self,
+        matrix: np.ndarray,
+        iteration: int,
+        n_comp: int,
+        n_cell: int,
+        rot_comp_index: int,
+    ):
+        """Armazena resultados da iteração atual"""
+        self.M_iter[iteration, :, :] = matrix.copy()
+        self.molar_fractions_table[iteration + 1] = get_molar_fractions(
+            matrix, iteration, n_comp, n_cell, rot_comp_index
+        )
+
+    def check_constraints(
+        self, surface_type: SurfaceTypes, r: int, c: int
+    ) -> Optional[Tuple[int, int]]:
+        if surface_type == SurfaceTypes.Box:
+            return (r, c) if 0 <= r < self.NL and 0 <= c < self.NC else None
+        if surface_type == SurfaceTypes.Cylinder:
+            return (r, c % self.NC) if 0 <= r < self.NL else None
+        if surface_type == SurfaceTypes.Torus:
+            return (r % self.NL, c % self.NC)
+
+    def get_results(self) -> Tuple[np.ndarray, List[List]]:
+        return self.M_iter, self.molar_fractions_table

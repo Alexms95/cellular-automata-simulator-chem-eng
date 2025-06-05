@@ -14,7 +14,7 @@ SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
 VON_NEUMANN_NEIGH = np.array([[-1, 0], [0, -1], [1, 0], [0, 1]], dtype=np.int16)
 
 
-class CellularAutomataCalculator:
+class OldCellularAutomataCalculator:
     def __init__(self, simulation: SimulationBase):
         self.NL = 0
         self.NC = 0
@@ -91,7 +91,7 @@ class CellularAutomataCalculator:
 
         n_iter = simulation.iterationsNumber
 
-        pbs = CellularAutomataCalculator.calculate_pbs(parameters.J)
+        pbs = OldCellularAutomataCalculator.calculate_pbs(parameters.J)
 
         moved_components = set()
         reacted_components = set()
@@ -167,9 +167,9 @@ class CellularAutomataCalculator:
                     pb_inner_components = []
                     pm_total_component = 0
 
-                    if CellularAutomataCalculator.is_component(i_comp):
+                    if OldCellularAutomataCalculator.is_component(i_comp):
                         # Component rotation
-                        if CellularAutomataCalculator.is_rotation_component(i_comp):
+                        if OldCellularAutomataCalculator.is_rotation_component(i_comp):
                             # Check the inner neighbors. If there is at least one occupied neighbor, the component cannot rotate
                             can_rotate = True
                             for inner_neighbor_pos in inner_neighbors_position:
@@ -181,7 +181,7 @@ class CellularAutomataCalculator:
                                     inner_pos_tuple = coordinates
                                     row_index, column_index = inner_pos_tuple
                                     inner_comp = M[row_index, column_index]
-                                    if CellularAutomataCalculator.is_component(
+                                    if OldCellularAutomataCalculator.is_component(
                                         inner_comp
                                     ):
                                         # The component cannot rotate
@@ -189,7 +189,7 @@ class CellularAutomataCalculator:
                                         break
                             if (
                                 can_rotate
-                                and CellularAutomataCalculator.should_execute(
+                                and OldCellularAutomataCalculator.should_execute(
                                     simulation.rotation.Prot
                                 )
                             ):
@@ -201,7 +201,7 @@ class CellularAutomataCalculator:
                                 continue
                         if (
                             current_position not in reacted_components
-                            and not CellularAutomataCalculator.is_rotation_component(
+                            and not OldCellularAutomataCalculator.is_rotation_component(
                                 i_comp
                             )
                         ):
@@ -228,7 +228,7 @@ class CellularAutomataCalculator:
                                         )
                                         # Skip empty cells, the same component, already not reacted components, already reacted components in the neighborhood, and moved components in the neighborhood
                                         if (
-                                            CellularAutomataCalculator.is_empty(
+                                            OldCellularAutomataCalculator.is_empty(
                                                 inner_comp
                                             )
                                             or inner_comp == i_comp
@@ -240,10 +240,10 @@ class CellularAutomataCalculator:
                                             or inner_pos_tuple in moved_components
                                             # Exclude the case where both components are intermediates but are not a pair (avoid single intermediates in the grid)
                                             or (
-                                                CellularAutomataCalculator.is_intermediate_component(
+                                                OldCellularAutomataCalculator.is_intermediate_component(
                                                     i_comp
                                                 )
-                                                and CellularAutomataCalculator.is_intermediate_component(
+                                                and OldCellularAutomataCalculator.is_intermediate_component(
                                                     inner_comp
                                                 )
                                                 and (i, j, row_index, column_index)
@@ -441,7 +441,7 @@ class CellularAutomataCalculator:
                                     false_sum = 0
 
                                     # Add the no-reaction option to the list of probabilities if it is not an intermediate
-                                    if not CellularAutomataCalculator.is_intermediate_component(
+                                    if not OldCellularAutomataCalculator.is_intermediate_component(
                                         i_comp
                                     ):
                                         false_sum = sum(
@@ -479,9 +479,9 @@ class CellularAutomataCalculator:
                                         prod1_row, prod1_column = prod1_pos
                                         prod2_row, prod2_column = prod2_pos
 
-                                        if CellularAutomataCalculator.is_intermediate_component(
+                                        if OldCellularAutomataCalculator.is_intermediate_component(
                                             M[prod1_row, prod1_column]
-                                        ) and CellularAutomataCalculator.is_intermediate_component(
+                                        ) and OldCellularAutomataCalculator.is_intermediate_component(
                                             M[prod2_row, prod2_column]
                                         ):
                                             # If the reactants are intermediates, remove their positions from the intermediate pairs (at this moment, there are reactants yet)
@@ -529,9 +529,9 @@ class CellularAutomataCalculator:
                                         )
 
                                         # If the products are intermediates, store their positions to avoid reacting to other intermediates
-                                        if CellularAutomataCalculator.is_intermediate_component(
+                                        if OldCellularAutomataCalculator.is_intermediate_component(
                                             prod_1
-                                        ) and CellularAutomataCalculator.is_intermediate_component(
+                                        ) and OldCellularAutomataCalculator.is_intermediate_component(
                                             prod_2
                                         ):
                                             intermediate_pairs.append(
@@ -595,7 +595,7 @@ class CellularAutomataCalculator:
                         if (
                             current_position in moved_components
                             or current_position in reacted_components
-                            or CellularAutomataCalculator.is_intermediate_component(
+                            or OldCellularAutomataCalculator.is_intermediate_component(
                                 i_comp
                             )
                         ):
@@ -613,7 +613,7 @@ class CellularAutomataCalculator:
                                 )
                                 if coordinates is not None:
                                     row_index, column_index = coordinates
-                                    if CellularAutomataCalculator.is_empty(
+                                    if OldCellularAutomataCalculator.is_empty(
                                         M[row_index, column_index]
                                     ):
                                         o_row, o_column = outer_neighbors_position[i_p]
@@ -626,19 +626,19 @@ class CellularAutomataCalculator:
                                         outer_component = M[
                                             coordinates[0], coordinates[1]
                                         ]
-                                        if CellularAutomataCalculator.is_intermediate_component(
+                                        if OldCellularAutomataCalculator.is_intermediate_component(
                                             outer_component
                                         ):
                                             # If the outer component is an intermediate, the joining probability is 0
                                             J_neighbors.append((i_p, 0))
                                             continue
-                                        if CellularAutomataCalculator.is_component(
+                                        if OldCellularAutomataCalculator.is_component(
                                             outer_component
                                         ):
                                             # Analyze the direction of rotation components to find the correct J of the interaction
                                             comp1 = ""
                                             comp2 = ""
-                                            if CellularAutomataCalculator.is_rotation_component(
+                                            if OldCellularAutomataCalculator.is_rotation_component(
                                                 i_comp
                                             ):
                                                 state_side = rotation_info[
@@ -650,7 +650,7 @@ class CellularAutomataCalculator:
                                                         simulation.rotation.component
                                                         + "1"
                                                     )
-                                                    if CellularAutomataCalculator.is_rotation_component(
+                                                    if OldCellularAutomataCalculator.is_rotation_component(
                                                         outer_component
                                                     ):
                                                         outer_state_side = (
@@ -680,7 +680,7 @@ class CellularAutomataCalculator:
                                                         simulation.rotation.component
                                                         + "2"
                                                     )
-                                                    if CellularAutomataCalculator.is_rotation_component(
+                                                    if OldCellularAutomataCalculator.is_rotation_component(
                                                         outer_component
                                                     ):
                                                         outer_state_side = (
@@ -707,7 +707,7 @@ class CellularAutomataCalculator:
                                                         )
                                             else:
                                                 comp1 = get_component_letter(i_comp)
-                                                if CellularAutomataCalculator.is_rotation_component(
+                                                if OldCellularAutomataCalculator.is_rotation_component(
                                                     outer_component
                                                 ):
                                                     outer_state_side = rotation_info[
@@ -786,7 +786,7 @@ class CellularAutomataCalculator:
                                     comp_index = M[row, column]
                                     comp1 = ""
                                     comp2 = ""
-                                    if CellularAutomataCalculator.is_rotation_component(
+                                    if OldCellularAutomataCalculator.is_rotation_component(
                                         i_comp
                                     ):
                                         # If the component is a rotation component, get the state of the component
@@ -796,7 +796,7 @@ class CellularAutomataCalculator:
                                         # Check if the component is oriented in the same direction as the inner component
                                         if state_side == ind_occ:
                                             comp1 = simulation.rotation.component + "1"
-                                            if CellularAutomataCalculator.is_rotation_component(
+                                            if OldCellularAutomataCalculator.is_rotation_component(
                                                 comp_index
                                             ):
                                                 inner_state_side = rotation_info[
@@ -817,7 +817,7 @@ class CellularAutomataCalculator:
                                                 comp2 = get_component_letter(comp_index)
                                         else:
                                             comp1 = simulation.rotation.component + "2"
-                                            if CellularAutomataCalculator.is_rotation_component(
+                                            if OldCellularAutomataCalculator.is_rotation_component(
                                                 comp_index
                                             ):
                                                 inner_state_side = rotation_info[
@@ -838,7 +838,7 @@ class CellularAutomataCalculator:
                                                 comp2 = get_component_letter(comp_index)
                                     else:
                                         comp1 = get_component_letter(i_comp)
-                                        if CellularAutomataCalculator.is_rotation_component(
+                                        if OldCellularAutomataCalculator.is_rotation_component(
                                             comp_index
                                         ):
                                             inner_state_side = rotation_info[
@@ -861,7 +861,7 @@ class CellularAutomataCalculator:
 
                                     pb = (
                                         1
-                                        if CellularAutomataCalculator.is_intermediate_component(
+                                        if OldCellularAutomataCalculator.is_intermediate_component(
                                             comp_index
                                         )
                                         else (
@@ -878,7 +878,7 @@ class CellularAutomataCalculator:
                                 parameters.Pm[
                                     (
                                         rotation_info["component"]
-                                        if CellularAutomataCalculator.is_rotation_component(
+                                        if OldCellularAutomataCalculator.is_rotation_component(
                                             i_comp
                                         )
                                         else i_comp
@@ -888,7 +888,7 @@ class CellularAutomataCalculator:
                                 * pbs_product
                             )
 
-                            if CellularAutomataCalculator.should_execute(
+                            if OldCellularAutomataCalculator.should_execute(
                                 pm_total_component
                             ):
                                 # Move the component to the empty neighbor with the highest J value
@@ -937,7 +937,7 @@ class CellularAutomataCalculator:
                             logger.exception(iteration_log_text.getvalue())
                             raise e
             self.M_iter[n, :, :] = M.copy()
-            molar_fractions_data[n] = CellularAutomataCalculator.get_molar_fractions(
+            molar_fractions_data[n] = OldCellularAutomataCalculator.get_molar_fractions(
                 M, n, NCOMP, NCELL, rot_comp_index
             )
             if n % 10 == 0 or n == n_iter:
@@ -1049,10 +1049,10 @@ class CellularAutomataCalculator:
         for i in range(nl):
             for j in range(nc):
                 comp = M[i, j]
-                if not CellularAutomataCalculator.is_empty(comp):
-                    if CellularAutomataCalculator.is_intermediate_component(comp):
+                if not OldCellularAutomataCalculator.is_empty(comp):
+                    if OldCellularAutomataCalculator.is_intermediate_component(comp):
                         count_line[-1] += 1
-                    elif CellularAutomataCalculator.is_rotation_component(comp):
+                    elif OldCellularAutomataCalculator.is_rotation_component(comp):
                         count_line[rot_comp_index] += 1
                     else:
                         count_line[comp] += 1
