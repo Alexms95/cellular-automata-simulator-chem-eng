@@ -1,0 +1,30 @@
+flowchart TD
+    Start[Start: Initialize simulation parameters] --> InitializeSimulation[CellularAutomataCalculator._initialize_simulation]
+    InitializeSimulation --> SetupRotationInfo[CellularAutomataCalculator._setup_rotation_info]
+    SetupRotationInfo --> CreateMatrix[CellularAutomataCalculator._create_initial_matrix]
+    CreateMatrix --> CalculateBreakProbabilities[calculate_pbs]
+    CalculateBreakProbabilities --> LogSimulationParameters[CellularAutomataCalculator._log_simulation_parameters]
+    LogSimulationParameters --> SetupAuxiliaryComponents[CellularAutomataCalculator._setup_auxiliary_components]
+    SetupAuxiliaryComponents --> PrepareState[SimulationState.__init__]
+    PrepareState --> RunIterations[CellularAutomataCalculator._run_simulation_iterations]
+
+    subgraph IterationLoop[Simulation Iteration]
+        RunIterations --> ClearState[SimulationState.clear_iteration_state]
+        ClearState --> ProcessCells[Iterate over matrix cells]
+        ProcessCells --> CheckComponent{Is it a valid component?}
+        CheckComponent -->|No| SkipCell[Skip cell]
+        CheckComponent -->|Yes| ProcessRotation[CellularAutomataCalculator._process_rotation]
+        ProcessRotation --> RotationOccurred{Did rotation occur?}
+        RotationOccurred -->|Yes| NextCell[Go to next cell]
+        RotationOccurred -->|No| ProcessReactions[CellularAutomataCalculator._process_reactions]
+        ProcessReactions --> FindReactions[ReactionProcessor.find_possible_reactions]
+        FindReactions --> ExecuteReaction[ReactionProcessor.select_and_execute_reaction]
+        ExecuteReaction --> ProcessMovement[CellularAutomataCalculator._process_movement]
+        ProcessMovement --> AnalyzeMovement[MovementAnalyzer.analyze_movement_possibility]
+        AnalyzeMovement --> StoreResults[CellularAutomataCalculator._store_iteration_results]
+        StoreResults --> NextIteration{Iteration completed?}
+        NextIteration -->|No| RunIterations
+        NextIteration -->|Yes| EndIteration[End Iteration]
+    end
+
+    EndIteration --> End[End: Results stored]
