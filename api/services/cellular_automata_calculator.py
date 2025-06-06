@@ -118,18 +118,17 @@ class CellularAutomataCalculator:
         random_generator = np.random.default_rng()
 
         # Randomly distribute components
-        for i, component in enumerate(components):
-            comp_index = i + 1
-
+        for i, _ in enumerate(components):
             for _ in range(ni[i]):
                 while True:
                     r, c = np.random.randint(0, self.NL), np.random.randint(0, self.NC)
-
                     if matrix[r, c] == 0:
+                        comp_index = i + 1
                         if rotation_info["component"] == comp_index:
                             comp_index = random_generator.choice(
                                 rotation_info["states"]
                             )
+                            print(comp_index)
 
                         matrix[r, c] = comp_index
                         break
