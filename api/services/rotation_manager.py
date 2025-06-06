@@ -1,11 +1,12 @@
 from typing import Tuple
+
 import numpy as np
 from schemas import RotationInfo
 from services.calculations_helper import VON_NEUMANN_NEIGH, SurfaceTypes, is_component
 
 
 class RotationManager:
-    """Gerencia rotação de componentes"""
+    """Manages component rotation"""
 
     def __init__(self, rotation_info: RotationInfo):
         self.rotation_info = rotation_info
@@ -17,7 +18,7 @@ class RotationManager:
         surface_type: SurfaceTypes,
         constraint_checker,
     ) -> bool:
-        """Verifica se um componente pode rotacionar"""
+        """Checks if a component can rotate"""
         inner_neighbors_position = VON_NEUMANN_NEIGH + np.array(position)
 
         for neighbor_pos in inner_neighbors_position:
@@ -34,7 +35,7 @@ class RotationManager:
     def rotate_component(
         self, matrix: np.ndarray, position: Tuple[int, int], current_component: int
     ):
-        """Rotaciona um componente para um novo estado"""
+        """Rotates a component to a new state"""
         states = self.rotation_info["states"]
         available_states = [state for state in states if state != current_component]
 

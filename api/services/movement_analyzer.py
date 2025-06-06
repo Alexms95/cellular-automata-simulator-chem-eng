@@ -1,14 +1,20 @@
 from typing import Dict, List, Optional, Tuple
-import numpy as np
 
-from services.calculations_helper import SurfaceTypes
+import numpy as np
 from schemas import Parameters, RotationInfo, SimulationBase
-from services.calculations_helper import VON_NEUMANN_NEIGH, is_component, is_empty, is_intermediate_component, is_rotation_component
+from services.calculations_helper import (
+    VON_NEUMANN_NEIGH,
+    SurfaceTypes,
+    is_component,
+    is_empty,
+    is_intermediate_component,
+    is_rotation_component,
+)
 from utils import get_component_letter
 
 
 class MovementAnalyzer:
-    """Analisa possibilidades de movimento de componentes"""
+    """Analyzes movement possibilities of components"""
 
     def __init__(
         self,
@@ -31,7 +37,7 @@ class MovementAnalyzer:
         constraint_checker,
     ) -> Tuple[bool, Optional[Tuple[int, int]], float]:
         """
-        Analisa se um componente pode se mover e para onde.
+        Analyzes if a component can move and to where.
 
         Returns:
             Tuple[bool, Optional[Tuple[int, int]], float]: (can_move, target_position, probability)
@@ -78,7 +84,7 @@ class MovementAnalyzer:
         surface_type: SurfaceTypes,
         constraint_checker,
     ) -> List[Tuple[int, float]]:
-        """Calcula os valores J para vizinhos vazios"""
+        """Calculates J values for empty neighbors"""
         j_neighbors = []
 
         for i_p in range(len(inner_neighbors_position)):
@@ -112,7 +118,7 @@ class MovementAnalyzer:
         surface_type: SurfaceTypes,
         constraint_checker,
     ) -> float:
-        """Calcula o valor J para uma posição específica"""
+        """Calculates the J value for a specific position"""
         o_row, o_column = outer_neighbors_position[position_index]
         coordinates = constraint_checker(surface_type, o_row, o_column)
 
@@ -121,9 +127,9 @@ class MovementAnalyzer:
 
         outer_component = matrix[coordinates[0], coordinates[1]]
 
-        if is_intermediate_component(
+        if is_intermediate_component(outer_component) or not is_component(
             outer_component
-        ) or not is_component(outer_component):
+        ):
             return 0.0
 
         comp1, comp2 = self._get_component_pair_for_interaction(
@@ -135,7 +141,7 @@ class MovementAnalyzer:
     def _get_component_pair_for_interaction(
         self, component1: int, component2: int, direction: int
     ) -> Tuple[str, str]:
-        """Determina o par de componentes para interação considerando rotação"""
+        """Determines the component pair for interaction considering rotation"""
         comp1 = self._get_component_representation(component1, direction)
         comp2 = self._get_component_representation(component2, direction, is_outer=True)
         return comp1, comp2
@@ -143,18 +149,18 @@ class MovementAnalyzer:
     def _get_component_representation(
         self, component: int, direction: int, is_outer: bool = False
     ) -> str:
-        """Obtém a representação string do componente considerando rotação"""
+        """Gets the string representation of the component considering rotation"""
         if is_rotation_component(component):
             state_side = self.rotation_info["states"].index(component)
 
             if is_outer:
-                # Para componente externo, verificar orientação oposta
+                # For outer component, check opposite orientation
                 if abs(state_side - direction) == 2:
                     return self.simulation.rotation.component + "1"
                 else:
                     return self.simulation.rotation.component + "2"
             else:
-                # Para componente interno
+                # For inner component
                 if state_side == direction:
                     return self.simulation.rotation.component + "1"
                 else:
@@ -163,7 +169,7 @@ class MovementAnalyzer:
             return get_component_letter(component)
 
     def _find_j_value_for_pair(self, comp1: str, comp2: str) -> float:
-        """Encontra o valor J para um par de componentes"""
+        """Finds the J value for a pair of components"""
         pair_relation = f"{comp1}|{comp2}"
         reversed_pair_relation = f"{comp2}|{comp1}"
 
@@ -176,7 +182,7 @@ class MovementAnalyzer:
     def _select_target_neighbor(
         self, j_neighbors: List[Tuple[int, float]]
     ) -> Optional[Tuple[int, float]]:
-        """Seleciona o vizinho alvo para movimento"""
+        """Selects the target neighbor for movement"""
         if not j_neighbors:
             return None
 
@@ -201,7 +207,7 @@ class MovementAnalyzer:
         surface_type: SurfaceTypes,
         constraint_checker,
     ) -> List[Tuple[int, int, int]]:
-        """Obtém vizinhos internos ocupados"""
+        """Gets occupied inner neighbors"""
         occupied = []
 
         for i_p, (row_idx, col_idx) in enumerate(inner_neighbors_position):
@@ -219,7 +225,7 @@ class MovementAnalyzer:
         occupied_inner_neighbors: List[Tuple[int, int, int]],
         matrix: np.ndarray,
     ) -> float:
-        """Calcula a probabilidade de movimento considerando vizinhos ocupados"""
+        """Calculates the movement probability considering occupied neighbors"""
         if not occupied_inner_neighbors:
             component_index = (
                 self.rotation_info["component"]

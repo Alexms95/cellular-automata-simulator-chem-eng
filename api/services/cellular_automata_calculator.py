@@ -5,7 +5,15 @@ from venv import logger
 
 import numpy as np
 from schemas import RotationInfo, SimulationBase
-from services.calculations_helper import SurfaceTypes, calculate_pbs, get_molar_fractions, is_component, is_intermediate_component, is_rotation_component, should_execute
+from services.calculations_helper import (
+    SurfaceTypes,
+    calculate_pbs,
+    get_molar_fractions,
+    is_component,
+    is_intermediate_component,
+    is_rotation_component,
+    should_execute,
+)
 from services.movement_analyzer import MovementAnalyzer
 from services.reaction_processor import ReactionProcessor
 from services.rotation_manager import RotationManager
@@ -14,7 +22,7 @@ from utils import calculate_cell_counts, get_component_index
 
 
 class CellularAutomataCalculator:
-    """Calculadora principal do autômato celular refatorada"""
+    """Main cellular automata calculator"""
 
     def __init__(self, simulation: SimulationBase):
         self.NL = 0
@@ -24,21 +32,21 @@ class CellularAutomataCalculator:
         self.molar_fractions_table: list
         self.simulation = simulation
 
-        # Componentes auxiliares
+        # Auxiliary components
         self.movement_analyzer: Optional[MovementAnalyzer] = None
         self.reaction_processor: Optional[ReactionProcessor] = None
         self.rotation_manager: Optional[RotationManager] = None
 
     async def calculate_cellular_automata(self):
-        """Método principal refatorado - orquestra a simulação"""
-        # 1. Inicialização
+        """Main method - orchestrates the simulation"""
+        # 1. Initialization
         simulation_params = self._initialize_simulation()
         matrix, rotation_info, pbs = simulation_params
 
-        # 2. Configurar componentes auxiliares
+        # 2. Setup auxiliary components
         self._setup_auxiliary_components(rotation_info, pbs)
 
-        # 3. Preparar estruturas de dados
+        # 3. Prepare data structures
         state = SimulationState(
             self.NL,
             self.NC,
@@ -46,7 +54,7 @@ class CellularAutomataCalculator:
             self.NL * self.NC - self.NEMPTY,
         )
 
-        # 4. Executar simulação
+        # 4. Run simulation
         async for progress in self._run_simulation_iterations(
             matrix, state, rotation_info
         ):
@@ -55,23 +63,23 @@ class CellularAutomataCalculator:
     def _initialize_simulation(
         self,
     ) -> Tuple[np.ndarray, RotationInfo, Dict[str, float]]:
-        """Inicializa parâmetros da simulação"""
+        """Initializes simulation parameters"""
         self.NL = self.simulation.gridHeight
         self.NC = self.simulation.gridLenght
 
-        # Configurar superfície e células
+        # Setup surface and cells
         NTOT = self.NC * self.NL
         EMPTY_FRAC = 0.31
         self.NEMPTY = floor(EMPTY_FRAC * NTOT)
         NCELL = NTOT - self.NEMPTY
 
-        # Configurar rotação
+        # Setup rotation
         rotation_info = self._setup_rotation_info()
 
-        # Criar matriz inicial
+        # Create initial matrix
         matrix = self._create_initial_matrix(NCELL, rotation_info)
 
-        # Calcular probabilidades de quebra
+        # Calculate break probabilities
         pbs = calculate_pbs(self.simulation.parameters.J)
 
         self._log_simulation_parameters(NCELL, rotation_info)
@@ -79,7 +87,7 @@ class CellularAutomataCalculator:
         return matrix, rotation_info, pbs
 
     def _setup_rotation_info(self) -> RotationInfo:
-        """Configura informações de rotação"""
+        """Sets up rotation information"""
         rotation_info: RotationInfo = {"component": -1, "p_rot": 0, "states": [0]}
 
         if (
@@ -99,17 +107,17 @@ class CellularAutomataCalculator:
     def _create_initial_matrix(
         self, ncell: int, rotation_info: RotationInfo
     ) -> np.ndarray:
-        """Cria a matriz inicial com distribuição aleatória de componentes"""
+        """Creates the initial matrix with random distribution of components"""
         matrix = np.zeros((self.NL, self.NC), dtype=np.int16)
         components = self.simulation.ingredients
 
-        # Calcular frações molares e contagens
+        # Calculate molar fractions and counts
         ci = np.array([comp.molarFraction for comp in components])
         ni = calculate_cell_counts(ncell, ci)
 
         random_generator = np.random.default_rng()
 
-        # Distribuir componentes aleatoriamente
+        # Randomly distribute components
         for i, component in enumerate(components):
             comp_index = i + 1
 
@@ -131,7 +139,7 @@ class CellularAutomataCalculator:
     def _setup_auxiliary_components(
         self, rotation_info: RotationInfo, pbs: Dict[str, float]
     ):
-        """Configura componentes auxiliares"""
+        """Sets up auxiliary components"""
         self.movement_analyzer = MovementAnalyzer(
             self.simulation, rotation_info, self.simulation.parameters, pbs
         )
@@ -139,7 +147,7 @@ class CellularAutomataCalculator:
         self.rotation_manager = RotationManager(rotation_info)
 
     def _log_simulation_parameters(self, ncell: int, rotation_info: RotationInfo):
-        """Registra parâmetros da simulação no log"""
+        """Logs simulation parameters"""
         components = self.simulation.ingredients
         component_names = [comp.name for comp in components]
         ci = np.array([comp.molarFraction for comp in components])
@@ -161,11 +169,11 @@ class CellularAutomataCalculator:
     async def _run_simulation_iterations(
         self, matrix: np.ndarray, state: SimulationState, rotation_info: RotationInfo
     ):
-        """Executa as iterações da simulação"""
+        """Runs the simulation iterations"""
         n_iter = self.simulation.iterationsNumber
         surface_type = SurfaceTypes.Torus
 
-        # Inicializar estruturas para armazenamento de resultados
+        # Initialize structures for storing results
         self._initialize_result_structures(matrix, n_iter, rotation_info)
 
         start_time = datetime.now()
@@ -181,13 +189,13 @@ class CellularAutomataCalculator:
                     if not is_component(component):
                         continue
 
-                    # Processar rotação
+                    # Process rotation
                     if self._process_rotation(
                         matrix, current_position, component, surface_type, rotation_info
                     ):
                         continue
 
-                    # Processar reações
+                    # Process reactions
                     if (
                         current_position not in state.reacted_components
                         and not is_rotation_component(component)
@@ -196,7 +204,7 @@ class CellularAutomataCalculator:
                             matrix, current_position, component, surface_type, state
                         )
 
-                    # Processar movimento
+                    # Process movement
                     if (
                         current_position not in state.moved_components
                         and current_position not in state.reacted_components
@@ -206,7 +214,7 @@ class CellularAutomataCalculator:
                             matrix, current_position, component, surface_type, state
                         )
 
-            # Armazenar resultados da iteração
+            # Store iteration results
             self._store_iteration_results(
                 matrix,
                 n,
@@ -225,7 +233,7 @@ class CellularAutomataCalculator:
     def _initialize_result_structures(
         self, matrix: np.ndarray, n_iter: int, rotation_info: RotationInfo
     ):
-        """Inicializa estruturas para armazenamento de resultados"""
+        """Initializes structures for storing results"""
         self.M_iter = np.zeros((n_iter + 1, self.NL, self.NC), dtype=np.int16)
         self.M_iter[0, :, :] = matrix.copy()
 
@@ -255,7 +263,7 @@ class CellularAutomataCalculator:
         surface_type: SurfaceTypes,
         rotation_info: RotationInfo,
     ) -> bool:
-        """Processa rotação de componentes e retorna se ocorreu rotação"""
+        """Processes component rotation and returns if rotation occurred"""
         if (
             is_rotation_component(component)
             and self.rotation_manager.can_rotate(
@@ -276,7 +284,7 @@ class CellularAutomataCalculator:
         surface_type: SurfaceTypes,
         state: SimulationState,
     ):
-        """Processa reações químicas para um componente"""
+        """Processes chemical reactions for a component"""
         possible_reactions = self.reaction_processor.find_possible_reactions(
             matrix, position, component, surface_type, self.check_constraints, state
         )
@@ -294,7 +302,7 @@ class CellularAutomataCalculator:
         surface_type: SurfaceTypes,
         state: SimulationState,
     ):
-        """Processa movimento de componentes"""
+        """Processes component movement"""
         can_move, target_pos, probability = (
             self.movement_analyzer.analyze_movement_possibility(
                 matrix, position, component, surface_type, self.check_constraints
@@ -315,7 +323,7 @@ class CellularAutomataCalculator:
         n_cell: int,
         rot_comp_index: int,
     ):
-        """Armazena resultados da iteração atual"""
+        """Stores results of the current iteration"""
         self.M_iter[iteration, :, :] = matrix.copy()
         self.molar_fractions_table[iteration + 1] = get_molar_fractions(
             matrix, iteration, n_comp, n_cell, rot_comp_index

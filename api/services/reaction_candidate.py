@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 
 class ReactionCandidate:
-    """Representa uma reação candidata"""
+    """Represents a candidate reaction"""
 
     def __init__(
         self,

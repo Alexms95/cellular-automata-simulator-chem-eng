@@ -2,7 +2,7 @@ from typing import List, Set, Tuple
 
 
 class SimulationState:
-    """Encapsula o estado da simulação durante as iterações"""
+    """Encapsulates the simulation state during iterations"""
 
     def __init__(self, nl: int, nc: int, n_comp: int, n_cell: int):
         self.moved_components: Set[Tuple[int, int]] = set()
@@ -15,7 +15,7 @@ class SimulationState:
         self.n_cell = n_cell
 
     def clear_iteration_state(self):
-        """Limpa o estado entre iterações"""
+        """Clears the state between iterations"""
         self.moved_components.clear()
         self.reacted_components.clear()
         self.not_reacted_components.clear()

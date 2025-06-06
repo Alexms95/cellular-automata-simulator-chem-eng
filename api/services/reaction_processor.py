@@ -2,14 +2,19 @@ from typing import List, Tuple
 
 import numpy as np
 from schemas import Reaction, RotationInfo, SimulationBase
-from services.calculations_helper import VON_NEUMANN_NEIGH, SurfaceTypes, is_empty, is_intermediate_component
+from services.calculations_helper import (
+    VON_NEUMANN_NEIGH,
+    SurfaceTypes,
+    is_empty,
+    is_intermediate_component,
+)
 from services.reaction_candidate import ReactionCandidate
 from services.simulation_state import SimulationState
 from utils import get_component_index
 
 
 class ReactionProcessor:
-    """Processa reações químicas na simulação"""
+    """Processes chemical reactions in the simulation"""
 
     def __init__(self, simulation: SimulationBase, rotation_info: RotationInfo):
         self.simulation = simulation
@@ -24,7 +29,7 @@ class ReactionProcessor:
         constraint_checker,
         state: SimulationState,
     ) -> List[ReactionCandidate]:
-        """Encontra todas as reações possíveis para um componente"""
+        """Finds all possible reactions for a component"""
         i, j = position
         inner_neighbors_position = VON_NEUMANN_NEIGH + np.array(position)
         possible_reactions = []
@@ -61,7 +66,7 @@ class ReactionProcessor:
         neighbor_position: Tuple[int, int],
         state: SimulationState,
     ) -> bool:
-        """Determina se um vizinho deve ser ignorado para reações"""
+        """Determines if a neighbor should be skipped for reactions"""
         positions_pair = (position, neighbor_position)
         reversed_positions_pair = (neighbor_position, position)
 
@@ -85,10 +90,8 @@ class ReactionProcessor:
         pos2: Tuple[int, int],
         state: SimulationState,
     ) -> bool:
-        """Verifica se são intermediários não pareados"""
-        if is_intermediate_component(
-            comp1
-        ) and is_intermediate_component(comp2):
+        """Checks if they are unpaired intermediates"""
+        if is_intermediate_component(comp1) and is_intermediate_component(comp2):
 
             i, j, row_idx, col_idx = (*pos1, *pos2)
             return (i, j, row_idx, col_idx) not in state.intermediate_pairs
@@ -103,7 +106,7 @@ class ReactionProcessor:
         pos2: Tuple[int, int],
         reaction_index_start: int,
     ) -> List[ReactionCandidate]:
-        """Encontra reações para um par específico de componentes"""
+        """Finds reactions for a specific pair of components"""
         reactions = []
         reaction_index = reaction_index_start
 
@@ -148,7 +151,7 @@ class ReactionProcessor:
         pos2: Tuple[int, int],
         reaction_index: int,
     ) -> List[ReactionCandidate]:
-        """Verifica todas as combinações de reação possíveis"""
+        """Checks all possible reaction combinations"""
         candidates = []
 
         # Reação direta (reagentes -> produtos/intermediários)
@@ -226,7 +229,7 @@ class ReactionProcessor:
         matrix: np.ndarray,
         state: SimulationState,
     ) -> bool:
-        """Seleciona e executa uma reação baseada nas probabilidades"""
+        """Selects and executes a reaction based on probabilities"""
         if not possible_reactions:
             return False
 
@@ -269,7 +272,7 @@ class ReactionProcessor:
     def _mark_components_as_not_reacted(
         self, reactions: List[ReactionCandidate], state: SimulationState
     ):
-        """Marca componentes como não reagidos"""
+        """Marks components as not reacted"""
         for reaction in reactions:
             if reaction.index != -1:
                 state.not_reacted_components.add(reaction.products_position[0])
@@ -278,16 +281,14 @@ class ReactionProcessor:
     def _execute_reaction(
         self, reaction: ReactionCandidate, matrix: np.ndarray, state: SimulationState
     ):
-        """Executa uma reação específica"""
+        """Executes a specific reaction"""
         pos1, pos2 = reaction.products_position
         prod1, prod2 = reaction.products
 
         # Remover pares intermediários se existirem
         if is_intermediate_component(
             matrix[pos1[0], pos1[1]]
-        ) and is_intermediate_component(
-            matrix[pos2[0], pos2[1]]
-        ):
+        ) and is_intermediate_component(matrix[pos2[0], pos2[1]]):
 
             self._remove_intermediate_pairs(pos1, pos2, state)
 
@@ -300,16 +301,14 @@ class ReactionProcessor:
         state.reacted_components.add(pos2)
 
         # Adicionar novos pares intermediários se necessário
-        if is_intermediate_component(
-            prod1
-        ) and is_intermediate_component(prod2):
+        if is_intermediate_component(prod1) and is_intermediate_component(prod2):
 
             self._add_intermediate_pairs(pos1, pos2, state)
 
     def _remove_intermediate_pairs(
         self, pos1: Tuple[int, int], pos2: Tuple[int, int], state: SimulationState
     ):
-        """Remove pares intermediários da lista"""
+        """Removes intermediate pairs from the list"""
         pairs_to_remove = [(*pos1, *pos2), (*pos2, *pos1)]
 
         for pair in pairs_to_remove:
@@ -319,7 +318,7 @@ class ReactionProcessor:
     def _add_intermediate_pairs(
         self, pos1: Tuple[int, int], pos2: Tuple[int, int], state: SimulationState
     ):
-        """Adiciona novos pares intermediários à lista"""
+        """Adds new intermediate pairs to the list"""
         state.intermediate_pairs.extend([(*pos1, *pos2), (*pos2, *pos1)])
 
     def _mark_other_reactions_as_not_executed(
@@ -328,7 +327,7 @@ class ReactionProcessor:
         executed_reaction: ReactionCandidate,
         state: SimulationState,
     ):
-        """Marca outras reações como não executadas"""
+        """Marks other reactions as not executed"""
         for reaction in all_reactions:
             if reaction.index != executed_reaction.index and reaction.index != -1:
                 state.not_reacted_components.add(reaction.products_position[0])
