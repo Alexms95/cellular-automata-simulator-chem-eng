@@ -19,6 +19,7 @@ class ReactionProcessor:
     def __init__(self, simulation: SimulationBase, rotation_info: RotationInfo):
         self.simulation = simulation
         self.rotation_info = rotation_info
+        self.random_generator = np.random.default_rng()
 
     def find_possible_reactions(
         self,
@@ -90,7 +91,7 @@ class ReactionProcessor:
         pos2: Tuple[int, int],
         state: SimulationState,
     ) -> bool:
-        """Checks if they are unpaired intermediates"""
+        """Checks if two components are unpaired intermediates"""
         if is_intermediate_component(comp1) and is_intermediate_component(comp2):
 
             i, j, row_idx, col_idx = (*pos1, *pos2)
@@ -123,7 +124,7 @@ class ReactionProcessor:
 
             comp_pair = [comp1, comp2]
 
-            # Verificar todas as combinações possíveis de reação
+            # Check all possible reaction combinations
             reaction_candidates = self._check_reaction_combinations(
                 comp_pair,
                 reactants,
@@ -154,7 +155,7 @@ class ReactionProcessor:
         """Checks all possible reaction combinations"""
         candidates = []
 
-        # Reação direta (reagentes -> produtos/intermediários)
+        # Direct reaction (reactants -> products/intermediates)
         if comp_pair == reactants:
             target_products = intermediates if reaction.hasIntermediate else products
             candidates.append(
@@ -170,7 +171,7 @@ class ReactionProcessor:
                 )
             )
 
-        # Reação reversa (produtos -> reagentes/intermediários)
+        # Reverse reaction (products -> reactants/intermediates)
         if comp_pair == products:
             target_products = intermediates if reaction.hasIntermediate else reactants
             prob_index = 1 if reaction.hasIntermediate else 0
@@ -194,7 +195,7 @@ class ReactionProcessor:
                 )
             )
 
-        # Reações com intermediários
+        # Reactions with intermediates
         if intermediates and comp_pair == intermediates:
             # Intermediários -> produtos
             candidates.append(
@@ -255,7 +256,7 @@ class ReactionProcessor:
         ]
 
         # Selecionar reação
-        chosen_reaction = np.random.choice(possible_reactions, p=normalized_probs)
+        chosen_reaction = self.random_generator.choice(possible_reactions, p=normalized_probs)
 
         if chosen_reaction.index == -1:  # Não-reação
             self._mark_components_as_not_reacted(possible_reactions[:-1], state)
@@ -289,7 +290,6 @@ class ReactionProcessor:
         if is_intermediate_component(
             matrix[pos1[0], pos1[1]]
         ) and is_intermediate_component(matrix[pos2[0], pos2[1]]):
-
             self._remove_intermediate_pairs(pos1, pos2, state)
 
         # Aplicar produtos

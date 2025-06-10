@@ -41,4 +41,5 @@ class RotationManager:
 
         if available_states:
             new_state = np.random.choice(available_states)
+            print(f"Rotating component {current_component} at position {position} to new state {new_state}")
             matrix[position[0], position[1]] = new_state

@@ -128,7 +128,6 @@ class CellularAutomataCalculator:
                             comp_index = random_generator.choice(
                                 rotation_info["states"]
                             )
-                            print(comp_index)
 
                         matrix[r, c] = comp_index
                         break
@@ -199,9 +198,10 @@ class CellularAutomataCalculator:
                         current_position not in state.reacted_components
                         and not is_rotation_component(component)
                     ):
-                        self._process_reactions(
+                        if self._process_reactions(
                             matrix, current_position, component, surface_type, state
-                        )
+                        ):
+                            continue
 
                     # Process movement
                     if (
@@ -251,7 +251,7 @@ class CellularAutomataCalculator:
             0,
             len(self.simulation.ingredients),
             self.NL * self.NC - self.NEMPTY,
-            rotation_info["component"] if hasattr(self, "rotation_info") else -1,
+            rotation_info["component"],
         )
 
     def _process_rotation(
@@ -282,16 +282,17 @@ class CellularAutomataCalculator:
         component: int,
         surface_type: SurfaceTypes,
         state: SimulationState,
-    ):
-        """Processes chemical reactions for a component"""
+    ) -> bool:
+        """Processes chemical reactions for a component and returns if any reaction occurred"""
         possible_reactions = self.reaction_processor.find_possible_reactions(
             matrix, position, component, surface_type, self.check_constraints, state
         )
 
         if possible_reactions:
-            self.reaction_processor.select_and_execute_reaction(
+            return self.reaction_processor.select_and_execute_reaction(
                 possible_reactions, component, matrix, state
             )
+        return False
 
     def _process_movement(
         self,
