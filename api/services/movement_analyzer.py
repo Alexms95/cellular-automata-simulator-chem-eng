@@ -27,6 +27,7 @@ class MovementAnalyzer:
         self.rotation_info = rotation_info
         self.parameters = parameters
         self.pbs = pbs
+        self.random_generator = np.random.default_rng()
 
     def analyze_movement_possibility(
         self,
@@ -191,14 +192,14 @@ class MovementAnalyzer:
         if j_max[1] < 1 and j_max[1] >= 0:
             j_zero_neighbors = [n for n in j_neighbors if n[1] == 0]
             if j_zero_neighbors:
-                return np.random.default_rng().choice(j_zero_neighbors)
+                return self.random_generator.choice(j_zero_neighbors)
             else:
                 return None
         elif j_max[1] == 0:
-            return np.random.default_rng().choice(j_neighbors)
+            return self.random_generator.choice(j_neighbors)
         else:  # j_max[1] >= 1
             max_j_neighbors = [n for n in j_neighbors if n[1] == j_max[1]]
-            return np.random.default_rng().choice(max_j_neighbors)
+            return self.random_generator.choice(max_j_neighbors)
 
     def _get_occupied_inner_neighbors(
         self,

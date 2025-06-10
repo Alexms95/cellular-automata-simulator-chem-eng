@@ -188,7 +188,7 @@ class CellularAutomataCalculator:
                         continue
 
                     # Process rotation
-                    if self._process_rotation(
+                    if self._try_process_rotation(
                         matrix, current_position, component, surface_type, rotation_info
                     ):
                         continue
@@ -198,7 +198,7 @@ class CellularAutomataCalculator:
                         current_position not in state.reacted_components
                         and not is_rotation_component(component)
                     ):
-                        if self._process_reactions(
+                        if self._try_process_reactions(
                             matrix, current_position, component, surface_type, state
                         ):
                             continue
@@ -209,7 +209,7 @@ class CellularAutomataCalculator:
                         and current_position not in state.reacted_components
                         and not is_intermediate_component(component)
                     ):
-                        self._process_movement(
+                        self._try_process_movement(
                             matrix, current_position, component, surface_type, state
                         )
 
@@ -254,7 +254,7 @@ class CellularAutomataCalculator:
             rotation_info["component"],
         )
 
-    def _process_rotation(
+    def _try_process_rotation(
         self,
         matrix: np.ndarray,
         position: Tuple[int, int],
@@ -275,7 +275,7 @@ class CellularAutomataCalculator:
             return True
         return False
 
-    def _process_reactions(
+    def _try_process_reactions(
         self,
         matrix: np.ndarray,
         position: Tuple[int, int],
@@ -294,7 +294,7 @@ class CellularAutomataCalculator:
             )
         return False
 
-    def _process_movement(
+    def _try_process_movement(
         self,
         matrix: np.ndarray,
         position: Tuple[int, int],
