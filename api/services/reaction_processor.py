@@ -197,13 +197,13 @@ class ReactionProcessor:
 
         # Reactions with intermediates
         if intermediates and comp_pair == intermediates:
-            # Intermediários -> produtos
+            # Intermediates -> products
             candidates.append(
                 ReactionCandidate(
                     reaction_index + 4, products, (pos1, pos2), reaction.Pr[1]
                 )
             )
-            # Intermediários -> reagentes
+            # Intermediates -> reactants
             candidates.append(
                 ReactionCandidate(
                     reaction_index + 5, reactants, (pos1, pos2), reaction.reversePr[0]
@@ -234,14 +234,14 @@ class ReactionProcessor:
         if not possible_reactions:
             return False
 
-        # Calcular probabilidades normalizadas
+        # Calculate normalized probabilities
         true_sum = sum(reaction.reaction_probability for reaction in possible_reactions)
 
         if true_sum == 0:
             self._mark_components_as_not_reacted(possible_reactions, state)
             return False
 
-        # Adicionar opção de não-reação para não-intermediários
+        # Add no-reaction option for non-intermediates
         if not is_intermediate_component(component):
             false_sum = len(possible_reactions) - true_sum
             no_reaction = ReactionCandidate(-1, [], ((-1, -1), (-1, -1)), false_sum)
@@ -250,19 +250,21 @@ class ReactionProcessor:
         else:
             total_sum = true_sum
 
-        # Normalizar probabilidades
+        # Normalize probabilities
         normalized_probs = [
             r.reaction_probability / total_sum for r in possible_reactions
         ]
 
-        # Selecionar reação
-        chosen_reaction = self.random_generator.choice(possible_reactions, p=normalized_probs)
+        # Select reaction
+        chosen_reaction = self.random_generator.choice(
+            possible_reactions, p=normalized_probs
+        )
 
-        if chosen_reaction.index == -1:  # Não-reação
+        if chosen_reaction.index == -1:  # No reaction
             self._mark_components_as_not_reacted(possible_reactions[:-1], state)
             return False
 
-        # Executar reação
+        # Execute reaction
         self._execute_reaction(chosen_reaction, matrix, state)
         self._mark_other_reactions_as_not_executed(
             possible_reactions, chosen_reaction, state
@@ -286,21 +288,21 @@ class ReactionProcessor:
         pos1, pos2 = reaction.products_position
         prod1, prod2 = reaction.products
 
-        # Remover pares intermediários se existirem
+        # Remove intermediate pairs if they exist
         if is_intermediate_component(
             matrix[pos1[0], pos1[1]]
         ) and is_intermediate_component(matrix[pos2[0], pos2[1]]):
             self._remove_intermediate_pairs(pos1, pos2, state)
 
-        # Aplicar produtos
+        # Apply products
         matrix[pos1[0], pos1[1]] = prod1
         matrix[pos2[0], pos2[1]] = prod2
 
-        # Marcar como reagidos
+        # Mark as reacted
         state.reacted_components.add(pos1)
         state.reacted_components.add(pos2)
 
-        # Adicionar novos pares intermediários se necessário
+        # Add new intermediate pairs if necessary
         if is_intermediate_component(prod1) and is_intermediate_component(prod2):
 
             self._add_intermediate_pairs(pos1, pos2, state)
