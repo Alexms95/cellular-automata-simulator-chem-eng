@@ -43,8 +43,8 @@ class CellularAutomataCalculator:
         simulation_params = self._initialize_simulation()
         matrix, rotation_info, pbs = simulation_params
 
-        # 2. Setup auxiliary components
-        self._setup_auxiliary_components(rotation_info, pbs)
+        # 2. Setup auxiliary services
+        self._setup_auxiliary_services(rotation_info, pbs)
 
         # 3. Prepare data structures
         state = SimulationState(
@@ -134,7 +134,7 @@ class CellularAutomataCalculator:
 
         return matrix
 
-    def _setup_auxiliary_components(
+    def _setup_auxiliary_services(
         self, rotation_info: RotationInfo, pbs: Dict[str, float]
     ):
         """Sets up auxiliary components"""
