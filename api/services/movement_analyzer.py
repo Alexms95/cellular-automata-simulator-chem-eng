@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
-from schemas import Parameters, RotationInfo, SimulationBase
+from domain.schemas import Parameters, RotationInfo, SimulationBase
 from services.calculations_helper import (
     VON_NEUMANN_NEIGH,
     SurfaceTypes,

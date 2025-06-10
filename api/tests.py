@@ -6,7 +6,7 @@ import pytest
 sys.path.append(str(Path(__file__).resolve().parent))
 
 from calculations import CellularAutomataCalculator, SurfaceTypes
-from schemas import Ingredient, PairParameter, Parameters, Reaction, SimulationBase
+from api.domain.schemas import Ingredient, PairParameter, Parameters, Reaction, SimulationBase
 
 
 @pytest.fixture

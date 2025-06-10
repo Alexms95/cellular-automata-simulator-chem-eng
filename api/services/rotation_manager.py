@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import numpy as np
-from schemas import RotationInfo
+from domain.schemas import RotationInfo
 from services.calculations_helper import VON_NEUMANN_NEIGH, SurfaceTypes, is_component
 
 

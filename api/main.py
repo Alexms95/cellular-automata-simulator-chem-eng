@@ -1,13 +1,14 @@
-from fastapi.responses import JSONResponse, StreamingResponse
-from utils import convert_to_csv
 from config import get_settings
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from logger import logger
 from queries import SimulationData
-from schemas import SimulationComplete, SimulationCreate, SimulationResponse
+from domain.schemas import SimulationComplete, SimulationCreate, SimulationResponse
+from services.main_service import MainService
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
-from logger import logger
+from utils import convert_to_csv
 
 settings = get_settings()
 
@@ -24,6 +25,10 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def get_service(dataAccess: SimulationData = Depends()):
+    return MainService(dataAccess)
 
 
 origins = ["*"]
@@ -52,77 +57,76 @@ async def log_exceptions(request: Request, call_next):
 
 @app.get("/simulations", response_model=list[SimulationResponse])
 def get_simulations(
-    dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+    service: MainService = Depends(get_service), db: Session = Depends(get_db)
 ):
     logger.info("Fetching all simulations")
-    return dataAccess.get_simulations(db)
+    return service.get_simulations(db)
 
 
 @app.post("/simulations", response_model=None)
 def create_simulation(
     newSimulation: SimulationCreate,
-    dataAccess: SimulationData = Depends(),
+    service: MainService = Depends(get_service),
     db: Session = Depends(get_db),
 ):
     logger.info(f"Creating simulation: {newSimulation}")
-    return dataAccess.create_simulation(newSimulation, db)
+    return service.create_simulation(newSimulation, db)
 
 
 @app.put("/simulations/{id}", response_model=None)
 def update_simulation(
     id: str,
     updatedSimulation: SimulationCreate,
-    dataAccess: SimulationData = Depends(),
+    service: MainService = Depends(get_service),
     db: Session = Depends(get_db),
 ):
     logger.info(f"Updating simulation with id {id}: {updatedSimulation}")
-    return dataAccess.update_simulation(id, updatedSimulation, db)
+    return service.update_simulation(id, updatedSimulation, db)
 
 
 @app.delete("/simulations/{id}", response_model=None)
 def delete_simulation(
-    id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+    id: str, service: MainService = Depends(get_service), db: Session = Depends(get_db)
 ):
     logger.info(f"Deleting simulation with id {id}")
-    return dataAccess.delete_simulation(id, db)
+    return service.delete_simulation(id, db)
 
 
 @app.get("/simulations/{id}/run")
 def run_simulation(
-    id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+    id: str, service: MainService = Depends(get_service), db: Session = Depends(get_db)
 ):
     logger.info(f"Running simulation with id {id}")
     return StreamingResponse(
-        dataAccess.run_simulation(id, db),
-        media_type="text/event-stream"
+        service.run_simulation(id, db), media_type="text/event-stream"
     )
 
 
 @app.get("/simulations/{id}", response_model=SimulationComplete)
 def get_simulation(
-    id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+    id: str, service: MainService = Depends(get_service), db: Session = Depends(get_db)
 ):
     logger.info(f"Fetching complete simulation with id {id}")
-    return dataAccess.get_simulation(id, db)
+    return service.get_simulation(id, db)
 
 
 @app.get(
     "/simulations/{id}/decompressed-iterations", response_model=list[list[list[int]]]
 )
 def get_decompressed_iterations(
-    id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+    id: str, service: MainService = Depends(get_service), db: Session = Depends(get_db)
 ):
     logger.info(f"Fetching decompressed iterations for simulation with id {id}")
-    return dataAccess.get_decompressed_iterations(id, db)
+    return service.get_decompressed_iterations(id, db)
 
 
 @app.get("/simulations/{id}/results")
 def get_results(
-    id: str, dataAccess: SimulationData = Depends(), db: Session = Depends(get_db)
+    id: str, service: MainService = Depends(get_service), db: Session = Depends(get_db)
 ) -> StreamingResponse:
     logger.info(f"Downloading results for simulation with id {id}")
 
-    name, results = dataAccess.get_results(id, db)
+    name, results = service.get_results(id, db)
 
     csv_buffer = convert_to_csv(results)
 

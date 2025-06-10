@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Tuple
 from venv import logger
 
 import numpy as np
-from schemas import RotationInfo, SimulationBase
+from domain.schemas import RotationInfo, SimulationBase
 from services.calculations_helper import (
     SurfaceTypes,
     calculate_pbs,

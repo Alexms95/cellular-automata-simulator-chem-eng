@@ -5,7 +5,7 @@ from math import floor
 
 import numpy as np
 from logger import logger
-from schemas import PairParameter, RotationInfo, SimulationBase
+from domain.schemas import PairParameter, RotationInfo, SimulationBase
 from utils import calculate_cell_counts, get_component_index, get_component_letter
 
 SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])

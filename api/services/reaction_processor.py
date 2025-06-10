@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 import numpy as np
-from schemas import Reaction, RotationInfo, SimulationBase
+from domain.schemas import Reaction, RotationInfo, SimulationBase
 from services.calculations_helper import (
     VON_NEUMANN_NEIGH,
     SurfaceTypes,

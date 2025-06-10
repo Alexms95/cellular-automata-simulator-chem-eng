@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Dict, List
 import numpy as np
 
-from schemas import PairParameter
+from domain.schemas import PairParameter
 
 # North, West, South, East
 VON_NEUMANN_NEIGH = np.array([[-1, 0], [0, -1], [1, 0], [0, 1]], dtype=np.int16)
