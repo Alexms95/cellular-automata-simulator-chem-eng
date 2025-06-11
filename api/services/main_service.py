@@ -3,7 +3,6 @@ import json
 from domain.schemas import RotationInfo, SimulationBase, SimulationCreate
 from fastapi import HTTPException
 from queries import SimulationData
-from services.calculations_helper import calculate_pbs
 from services.cellular_automata_calculator import CellularAutomataCalculator
 from services.movement_analyzer import MovementAnalyzer
 from services.reaction_processor import ReactionProcessor
@@ -62,22 +61,17 @@ class MainService:
 
         simulation = SimulationBase(**simulation_data.__dict__)
 
-        pbs = calculate_pbs(simulation.parameters.J)
-
-        rotation_info = self._setup_rotation_info(simulation)
-
-        movement_analyzer = MovementAnalyzer(
-            simulation,
-            rotation_info,
-            simulation.parameters,
-            pbs,
-        )
-
-        reaction_processor = ReactionProcessor(simulation, rotation_info)
-
-        rotation_manager = RotationManager(rotation_info)
+        rotation_manager = RotationManager(simulation.rotation)
 
         simulation_state = SimulationState()
+
+        movement_analyzer = MovementAnalyzer(
+            simulation.rotation.component,
+            rotation_manager,
+            simulation.parameters,
+        )
+
+        reaction_processor = ReactionProcessor(simulation.reactions)
 
         calculations = CellularAutomataCalculator(
             simulation,

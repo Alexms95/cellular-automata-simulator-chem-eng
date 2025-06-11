@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 import numpy as np
-from domain.schemas import Reaction, RotationInfo, SimulationBase
+from domain.schemas import Reaction
 from services.calculations_helper import (
     VON_NEUMANN_NEIGH,
     SurfaceTypes,
@@ -16,9 +16,8 @@ from utils import get_component_index
 class ReactionProcessor:
     """Processes chemical reactions in the simulation"""
 
-    def __init__(self, simulation: SimulationBase, rotation_info: RotationInfo):
-        self.simulation = simulation
-        self.rotation_info = rotation_info
+    def __init__(self, reactions: List[Reaction]):
+        self.reactions = reactions
         self.random_generator = np.random.default_rng()
 
     def find_possible_reactions(
@@ -111,7 +110,7 @@ class ReactionProcessor:
         reactions = []
         reaction_index = reaction_index_start
 
-        for reaction in self.simulation.reactions:
+        for reaction in self.reactions:
             reactants = [get_component_index(comp) for comp in reaction.reactants]
             products = [get_component_index(comp) for comp in reaction.products]
 

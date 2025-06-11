@@ -1,15 +1,17 @@
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
-from domain.schemas import Parameters, RotationInfo, SimulationBase
+from domain.schemas import Parameters
 from services.calculations_helper import (
     VON_NEUMANN_NEIGH,
     SurfaceTypes,
+    calculate_pbs,
     is_component,
     is_empty,
     is_intermediate_component,
     is_rotation_component,
 )
+from services.rotation_manager import RotationManager
 from utils import get_component_letter
 
 
@@ -18,15 +20,14 @@ class MovementAnalyzer:
 
     def __init__(
         self,
-        simulation: SimulationBase,
-        rotation_info: RotationInfo,
+        rotation_component: str,
+        rotation_manager: RotationManager,
         parameters: Parameters,
-        pbs: Dict[str, float],
     ):
-        self.simulation = simulation
-        self.rotation_info = rotation_info
+        self.rotation_component = rotation_component
+        self.rotation_info = rotation_manager.get_rotation_info()
         self.parameters = parameters
-        self.pbs = pbs
+        self.pbs = calculate_pbs(parameters.J)
         self.random_generator = np.random.default_rng()
 
     def analyze_movement_possibility(
@@ -152,20 +153,20 @@ class MovementAnalyzer:
     ) -> str:
         """Gets the string representation of the component considering rotation"""
         if is_rotation_component(component):
-            state_side = self.rotation_info["states"].index(component)
+            state_side = self.rotation_info.get("states").index(component)
 
             if is_outer:
                 # For outer component, check opposite orientation
                 if abs(state_side - direction) == 2:
-                    return self.simulation.rotation.component + "1"
+                    return self.rotation_component + "1"
                 else:
-                    return self.simulation.rotation.component + "2"
+                    return self.rotation_component + "2"
             else:
                 # For inner component
                 if state_side == direction:
-                    return self.simulation.rotation.component + "1"
+                    return self.rotation_component + "1"
                 else:
-                    return self.simulation.rotation.component + "2"
+                    return self.rotation_component + "2"
         else:
             return get_component_letter(component)
 
@@ -229,7 +230,7 @@ class MovementAnalyzer:
         """Calculates the movement probability considering occupied neighbors"""
         if not occupied_inner_neighbors:
             component_index = (
-                self.rotation_info["component"]
+                self.rotation_info.get("component")
                 if is_rotation_component(component)
                 else component
             )
@@ -255,7 +256,7 @@ class MovementAnalyzer:
 
         pbs_product = np.array(pb_values).prod()
         component_index = (
-            self.rotation_info["component"]
+            self.rotation_info.get("component")
             if is_rotation_component(component)
             else component
         )
