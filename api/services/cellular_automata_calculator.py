@@ -7,7 +7,6 @@ import numpy as np
 from domain.schemas import RotationInfo, SimulationBase
 from services.calculations_helper import (
     SurfaceTypes,
-    calculate_pbs,
     get_molar_fractions,
     is_component,
     is_intermediate_component,
@@ -24,7 +23,14 @@ from utils import calculate_cell_counts, get_component_index
 class CellularAutomataCalculator:
     """Main cellular automata calculator"""
 
-    def __init__(self, simulation: SimulationBase):
+    def __init__(
+        self,
+        simulation: SimulationBase,
+        movement_analyzer: MovementAnalyzer,
+        reaction_processor: ReactionProcessor,
+        rotation_manager: RotationManager,
+        simulation_state: SimulationState,
+    ):
         self.NL = 0
         self.NC = 0
         self.NEMPTY = 0
@@ -32,37 +38,26 @@ class CellularAutomataCalculator:
         self.molar_fractions_table: list
         self.simulation = simulation
 
-        # Auxiliary components
-        self.movement_analyzer: Optional[MovementAnalyzer] = None
-        self.reaction_processor: Optional[ReactionProcessor] = None
-        self.rotation_manager: Optional[RotationManager] = None
+        # Auxiliary services
+        self.movement_analyzer = movement_analyzer
+        self.reaction_processor = reaction_processor
+        self.rotation_manager = rotation_manager
+        self.simulation_state = simulation_state
 
     async def calculate_cellular_automata(self):
         """Main method - orchestrates the simulation"""
-        # 1. Initialization
-        simulation_params = self._initialize_simulation()
-        matrix, rotation_info, pbs = simulation_params
+        # Initialization
+        matrix = self._initialize_simulation()
 
-        # 2. Setup auxiliary services
-        self._setup_auxiliary_services(rotation_info, pbs)
-
-        # 3. Prepare data structures
-        state = SimulationState(
-            self.NL,
-            self.NC,
-            len(self.simulation.ingredients),
-            self.NL * self.NC - self.NEMPTY,
-        )
-
-        # 4. Run simulation
+        # Run simulation
         async for progress in self._run_simulation_iterations(
-            matrix, state, rotation_info
+            matrix
         ):
             yield progress
 
     def _initialize_simulation(
         self,
-    ) -> Tuple[np.ndarray, RotationInfo, Dict[str, float]]:
+    ) -> np.ndarray:
         """Initializes simulation parameters"""
         self.NL = self.simulation.gridHeight
         self.NC = self.simulation.gridLenght
@@ -73,43 +68,21 @@ class CellularAutomataCalculator:
         self.NEMPTY = floor(EMPTY_FRAC * NTOT)
         NCELL = NTOT - self.NEMPTY
 
-        # Setup rotation
-        rotation_info = self._setup_rotation_info()
-
         # Create initial matrix
-        matrix = self._create_initial_matrix(NCELL, rotation_info)
+        matrix = self._create_initial_matrix(NCELL)
 
-        # Calculate break probabilities
-        pbs = calculate_pbs(self.simulation.parameters.J)
+        self._log_simulation_parameters(NCELL)
 
-        self._log_simulation_parameters(NCELL, rotation_info)
-
-        return matrix, rotation_info, pbs
-
-    def _setup_rotation_info(self) -> RotationInfo:
-        """Sets up rotation information"""
-        rotation_info: RotationInfo = {"component": -1, "p_rot": 0, "states": [0]}
-
-        if (
-            self.simulation.rotation.component
-            and self.simulation.rotation.component != "None"
-        ):
-
-            rot_comp_index = get_component_index(self.simulation.rotation.component)
-            rotation_info = {
-                "component": rot_comp_index,
-                "p_rot": self.simulation.rotation.Prot,
-                "states": [rot_comp_index * 10 + i for i in range(1, 5)],
-            }
-
-        return rotation_info
+        return matrix
 
     def _create_initial_matrix(
-        self, ncell: int, rotation_info: RotationInfo
+        self, ncell: int
     ) -> np.ndarray:
         """Creates the initial matrix with random distribution of components"""
         matrix = np.zeros((self.NL, self.NC), dtype=np.int16)
         components = self.simulation.ingredients
+
+        rotation_info = self.rotation_manager.rotation_info
 
         # Calculate molar fractions and counts
         ci = np.array([comp.molarFraction for comp in components])
@@ -134,17 +107,7 @@ class CellularAutomataCalculator:
 
         return matrix
 
-    def _setup_auxiliary_services(
-        self, rotation_info: RotationInfo, pbs: Dict[str, float]
-    ):
-        """Sets up auxiliary components"""
-        self.movement_analyzer = MovementAnalyzer(
-            self.simulation, rotation_info, self.simulation.parameters, pbs
-        )
-        self.reaction_processor = ReactionProcessor(self.simulation, rotation_info)
-        self.rotation_manager = RotationManager(rotation_info)
-
-    def _log_simulation_parameters(self, ncell: int, rotation_info: RotationInfo):
+    def _log_simulation_parameters(self, ncell: int):
         """Logs simulation parameters"""
         components = self.simulation.ingredients
         component_names = [comp.name for comp in components]
@@ -165,14 +128,17 @@ class CellularAutomataCalculator:
         )
 
     async def _run_simulation_iterations(
-        self, matrix: np.ndarray, state: SimulationState, rotation_info: RotationInfo
+        self, matrix: np.ndarray
     ):
         """Runs the simulation iterations"""
         n_iter = self.simulation.iterationsNumber
         surface_type = SurfaceTypes.Torus
 
+        rotation_info = self.rotation_manager.rotation_info
+        state = self.simulation_state
+
         # Initialize structures for storing results
-        self._initialize_result_structures(matrix, n_iter, rotation_info)
+        self._initialize_result_structures(matrix, n_iter)
 
         start_time = datetime.now()
 
@@ -230,11 +196,13 @@ class CellularAutomataCalculator:
         print(f"Elapsed time: {elapsed_time:.2f} seconds")
 
     def _initialize_result_structures(
-        self, matrix: np.ndarray, n_iter: int, rotation_info: RotationInfo
+        self, matrix: np.ndarray, n_iter: int
     ):
         """Initializes structures for storing results"""
         self.M_iter = np.zeros((n_iter + 1, self.NL, self.NC), dtype=np.int16)
         self.M_iter[0, :, :] = matrix.copy()
+
+        rotation_info = self.rotation_manager.rotation_info
 
         molar_fractions_header = (
             ["Iteration"]

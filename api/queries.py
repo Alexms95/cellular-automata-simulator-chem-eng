@@ -1,5 +1,5 @@
-from domain.schemas import SimulationCreate
 from domain.models import SimulationModel
+from domain.schemas import SimulationCreate
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -19,68 +19,71 @@ SELECT_WITHOUT_ITERATIONS = select(
 
 
 class SimulationData:
-    def get_simulations(self, db: Session):
-        return db.execute(SELECT_WITHOUT_ITERATIONS).all()
+    def __init__(self, db: Session):
+        self.db = db
 
-    def get_simulation(self, simulation_id: str, db: Session):
+    def get_simulations(self):
+        return self.db.execute(SELECT_WITHOUT_ITERATIONS).all()
+
+    def get_simulation(self, simulation_id: str):
         query = select(SimulationModel).where(SimulationModel.id == simulation_id)
-        return db.execute(query).scalars().first()
+        return self.db.execute(query).scalars().first()
 
-    def get_simulation_by_name(self, name: str, db: Session):
+    def get_simulation_by_name(self, name: str):
         query = SELECT_WITHOUT_ITERATIONS.where(SimulationModel.name == name)
-        return db.execute(query).first()
+        return self.db.execute(query).first()
 
-    def get_simulation_by_name_excluding_id(
-        self, name: str, simulation_id: str, db: Session
-    ):
+    def get_simulation_by_name_excluding_id(self, name: str, simulation_id: str):
         query = SELECT_WITHOUT_ITERATIONS.where(
             SimulationModel.name == name, SimulationModel.id != simulation_id
         )
-        return db.execute(query).first()
+        return self.db.execute(query).first()
 
-    def get_compressed_iterations(self, simulation_id: str, db: Session):
+    def get_compressed_iterations(self, simulation_id: str):
         query = select(SimulationModel.iterations).where(
             SimulationModel.id == simulation_id
         )
-        result = db.execute(query).first()
+        result = self.db.execute(query).first()
         return result[0] if result else None
 
-    def create_simulation(self, newSimulation: SimulationCreate, db: Session):
+    def create_simulation(self, newSimulation: SimulationCreate):
         db_simulation = SimulationModel(**newSimulation.model_dump())
-        db.add(db_simulation)
-        db.commit()
-        db.refresh(db_simulation)
+        self.db.add(db_simulation)
+        self.db.commit()
+        self.db.refresh(db_simulation)
 
-    def update_simulation(self, simulation_id: str, updatedSimulation: SimulationCreate, db: Session):
+    def update_simulation(
+        self, simulation_id: str, updatedSimulation: SimulationCreate
+    ):
         query = select(SimulationModel).where(SimulationModel.id == simulation_id)
-        db_simulation = db.execute(query).scalars().first()
+        db_simulation = self.db.execute(query).scalars().first()
 
         for key, value in updatedSimulation.model_dump(exclude_unset=True).items():
             setattr(db_simulation, key, value)
 
-        db.commit()
-        db.refresh(db_simulation)
+        self.db.commit()
+        self.db.refresh(db_simulation)
 
-    def delete_simulation(self, simulation_id: str, db: Session):
+    def delete_simulation(self, simulation_id: str):
         query = select(SimulationModel).where(SimulationModel.id == simulation_id)
-        db_simulation = db.execute(query).scalars().first()
-        db.delete(db_simulation)
-        db.commit()
+        db_simulation = self.db.execute(query).scalars().first()
+        self.db.delete(db_simulation)
+        self.db.commit()
 
     def save_simulation_results(
-        self, simulation_id: str, compressed_matrix, molar_fractions_table, db: Session
+        self, simulation_id: str, compressed_matrix, molar_fractions_table
     ):
         query = select(SimulationModel).where(SimulationModel.id == simulation_id)
-        db_simulation = db.execute(query).scalars().first()
+        db_simulation = self.db.execute(query).scalars().first()
 
         db_simulation.iterations = compressed_matrix
         db_simulation.results = molar_fractions_table
 
-        db.commit()
-        db.refresh(db_simulation)
+        self.db.commit()
+        self.db.refresh(db_simulation)
 
-    def get_results(self, simulation_id: str, db: Session):
+    def get_results(self, simulation_id: str):
         query = select(SimulationModel.name, SimulationModel.results).where(
             SimulationModel.id == simulation_id
         )
-        return db.execute(query).first()
+        return self.db.execute(query).first()
