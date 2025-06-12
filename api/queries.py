@@ -1,4 +1,4 @@
-from domain.models import IterationModel, SimulationModel
+from domain.models import IterationsModel, SimulationModel
 from domain.schemas import SimulationCreate
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -77,10 +77,10 @@ class SimulationData:
         db_simulation = self.db.execute(query).scalars().first()
 
         for chunk_data in chunks:
-            iteration_entry = IterationModel(
+            iteration_entry = IterationsModel(
                 simulation_id=simulation_id,
-                chunk=chunk_data["chunk"],
-                iterations=chunk_data["iterations"],
+                chunk_number=chunk_data["chunk_number"],
+                data=chunk_data["data"],
             )
             self.db.add(iteration_entry)
 
@@ -96,7 +96,7 @@ class SimulationData:
         return self.db.execute(query).first()
 
     def get_iterations_by_simulation(self, simulation_id: str, chunk: int = 0):
-        query = select(IterationModel).where(
-            IterationModel.simulation_id == simulation_id, IterationModel.chunk == chunk
+        query = select(IterationsModel).where(
+            IterationsModel.simulation_id == simulation_id, IterationsModel.chunk_number == chunk
         )
         return self.db.execute(query).scalars().all()

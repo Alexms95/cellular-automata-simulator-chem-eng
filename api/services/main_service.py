@@ -89,7 +89,6 @@ class MainService:
             yield f"data: {json.dumps({'progress': current_iteration / total_iterations})}\n\n"
 
         resulting_matrix, molar_fractions_table = calculations.get_results()
-        # compressed_matrix = compress_matrix(resulting_matrix.tolist())
 
         self.save_simulation_results(
             simulation_id, resulting_matrix.tolist(), molar_fractions_table
@@ -135,8 +134,8 @@ class MainService:
         chunks = []
         for chunk_number, start in enumerate(range(0, len(resulting_matrix), 1000)):
             chunk_data = {
-                "chunk": chunk_number + 1,
-                "iterations": compress_matrix(
+                "chunk_number": chunk_number + 1,
+                "data": compress_matrix(
                     resulting_matrix[start : start + 1000]
                 ),
             }
