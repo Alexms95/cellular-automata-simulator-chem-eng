@@ -1,8 +1,11 @@
 import uuid
-from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
-from sqlalchemy.sql import func
-from sqlalchemy.ext.declarative import declarative_base
+from typing import List
+
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy.sql import func
 
 Base = declarative_base()
 
@@ -27,7 +30,21 @@ class SimulationModel(Base):
         onupdate=func.current_timestamp(),
         server_onupdate=func.current_timestamp(),
     )
-    iterations = Column(Text)
     results = Column(JSON)
     reactions = Column(JSON)
     rotation = Column(JSON)
+    iterations: Mapped[List["IterationsModel"]] = relationship(
+        "IterationsModel",
+        cascade="all, delete-orphan",
+    )
+
+
+class IterationsModel(Base):
+    __tablename__ = "TB_ITERATIONS"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    simulation_id = Column(
+        UUID(as_uuid=True), ForeignKey("TB_SIMULATIONS.id"), nullable=False
+    )
+    chunk_number = Column(Integer, nullable=False)
+    data = Column(Text, nullable=False)

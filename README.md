@@ -4,9 +4,10 @@ This project is a simulator for cellular automata, allowing users to create, con
 
 ## Prerequisites
 
-- **Python**: Version 3.12.6 or higher.
+- **Python**: Version 3.12.6.
 - **Node.js**: Version 20 or higher.
 - **npm**: Comes with Node.js.
+- **PostgreSQL**: Version 12 or higher.
 
 ## Instructions to Run the Application
 
@@ -49,7 +50,23 @@ cd tcc-eng-quimica
     pip install -r requirements.txt
     ```
 
-4. **Run the API**:
+4. **Configure environment variables**:
+
+    Copy `.env.example` to `.env` and update the values as needed:
+
+    ```sh
+    cp .env.example .env
+    ```
+
+5. **Run database migrations**:
+
+    Ensure PostgreSQL is running and properly configured (in the .env file), then execute:
+
+    ```sh
+    alembic upgrade head
+    ```
+
+6. **Run the API**:
 
     ```sh
     uvicorn main:app --host 0.0.0.0 --port 8000
@@ -112,6 +129,6 @@ cd tcc-eng-quimica
 
 - **API**: Backend service built with FastAPI.
 - **UI**: Frontend application built with React, TypeScript, and Vite.
-- **Database**: Uses Alembic for migrations.
+- **Database**: Uses PostgreSQL with Alembic for migrations.
 
 Enjoy exploring and simulating cellular automata!

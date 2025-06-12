@@ -1,5 +1,6 @@
 import json
 
+import numpy as np
 from domain.schemas import RotationInfo, SimulationBase, SimulationCreate
 from fastapi import HTTPException
 from queries import SimulationData
@@ -88,10 +89,10 @@ class MainService:
             yield f"data: {json.dumps({'progress': current_iteration / total_iterations})}\n\n"
 
         resulting_matrix, molar_fractions_table = calculations.get_results()
-        compressed_matrix = compress_matrix(resulting_matrix.tolist())
+        # compressed_matrix = compress_matrix(resulting_matrix.tolist())
 
-        self.dataAccess.save_simulation_results(
-            simulation_id, compressed_matrix, molar_fractions_table
+        self.save_simulation_results(
+            simulation_id, resulting_matrix.tolist(), molar_fractions_table
         )
 
         yield "data: Simulation completed!\n\n"
@@ -126,3 +127,21 @@ class MainService:
             }
 
         return rotation_info
+
+    def save_simulation_results(
+        self, simulation_id, resulting_matrix: list[list[list]], molar_fractions_table
+    ):
+        # Divide into chunks (1000 iterations per chunk)
+        chunks = []
+        for chunk_number, start in enumerate(range(0, len(resulting_matrix), 1000)):
+            chunk_data = {
+                "chunk": chunk_number + 1,
+                "iterations": compress_matrix(
+                    resulting_matrix[start : start + 1000]
+                ),
+            }
+            chunks.append(chunk_data)
+
+        self.dataAccess.save_simulation_results(
+            simulation_id, chunks, molar_fractions_table
+        )

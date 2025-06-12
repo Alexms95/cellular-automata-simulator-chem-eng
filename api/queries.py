@@ -1,4 +1,4 @@
-from domain.models import SimulationModel
+from domain.models import IterationModel, SimulationModel
 from domain.schemas import SimulationCreate
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -71,12 +71,19 @@ class SimulationData:
         self.db.commit()
 
     def save_simulation_results(
-        self, simulation_id: str, compressed_matrix, molar_fractions_table
+        self, simulation_id: str, chunks: list[dict], molar_fractions_table: list
     ):
         query = select(SimulationModel).where(SimulationModel.id == simulation_id)
         db_simulation = self.db.execute(query).scalars().first()
 
-        db_simulation.iterations = compressed_matrix
+        for chunk_data in chunks:
+            iteration_entry = IterationModel(
+                simulation_id=simulation_id,
+                chunk=chunk_data["chunk"],
+                iterations=chunk_data["iterations"],
+            )
+            self.db.add(iteration_entry)
+
         db_simulation.results = molar_fractions_table
 
         self.db.commit()
@@ -87,3 +94,9 @@ class SimulationData:
             SimulationModel.id == simulation_id
         )
         return self.db.execute(query).first()
+
+    def get_iterations_by_simulation(self, simulation_id: str, chunk: int = 0):
+        query = select(IterationModel).where(
+            IterationModel.simulation_id == simulation_id, IterationModel.chunk == chunk
+        )
+        return self.db.execute(query).scalars().all()
