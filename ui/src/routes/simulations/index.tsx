@@ -1,37 +1,11 @@
-import { EditSimulation } from "@/components/editSimulation";
 import { NewSimulation } from "@/components/newSimulation";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogActionDestructive,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SimulationCard } from "@/components/SimulationCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import httpClient from "@/lib/httpClient";
 import { SimulationForm } from "@/lib/utils";
 import { Simulation } from "@/models/simulation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRightIcon, CopyIcon, Trash2Icon } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/simulations/")({
@@ -111,129 +85,12 @@ function SimulationsList() {
             {data
               ?.sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1))
               .map((simulation) => (
-                <Card key={simulation.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div>
-                            <EditSimulation id={simulation.id} />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>Edit</TooltipContent>
-                      </Tooltip>
-                      <CardTitle>{simulation.name}</CardTitle>
-                      <AlertDialog>
-                        <Tooltip>
-                          <AlertDialogTrigger asChild>
-                            <div>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="w-8 h-8"
-                                >
-                                  <Trash2Icon className="m-2 text-red-600" />
-                                </Button>
-                              </TooltipTrigger>
-                            </div>
-                          </AlertDialogTrigger>
-                          <TooltipContent>Delete</TooltipContent>
-                        </Tooltip>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Are you sure you want to delete {simulation.name}?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogActionDestructive
-                              onClick={() => onDelete(simulation.id)}
-                            >
-                              Yes, Delete
-                            </AlertDialogActionDestructive>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                    <CardDescription className="text-xs">
-                      <span>
-                        <span className="block">
-                          {simulation.iterationsNumber} iterations
-                        </span>
-                        <span className="block">
-                          Grid Dimensions:{" "}
-                          {`${simulation.gridHeight} x ${simulation.gridLenght} (${simulation.gridLenght * simulation.gridHeight} cells)`}
-                        </span>
-                        <span className="block">
-                          Components:{" "}
-                          {simulation.ingredients
-                            .flatMap((i) => i.name)
-                            .join(", ")}
-                        </span>
-                        <span className="block">
-                          Created at:{" "}
-                          {new Date(
-                            simulation.created_at + "Z"
-                          ).toLocaleString()}
-                        </span>
-                        <span className="block">
-                          Last updated at:{" "}
-                          {new Date(
-                            simulation.updated_at + "Z"
-                          ).toLocaleString()}
-                        </span>
-                      </span>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardFooter className="gap-2">
-                    <div className="w-1/2">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            className="w-full h-8 text-xs flex items-center justify-center gap-2"
-                            variant="outline"
-                          >
-                            <CopyIcon className="w-4 h-4" />
-                            Create a copy
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Do you wish to create a copy of {simulation.name}?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action will create a new simulation with the
-                              same configuration as {simulation.name}.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => onCopy(simulation.id)}
-                            >
-                              Create
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                    <Link
-                      to={`/simulations/${simulation.id}`}
-                      className="w-1/2"
-                    >
-                      <Button className="w-full h-8 text-xs flex items-center justify-center gap-2">
-                        <ArrowRightIcon className="w-4 h-4" />
-                        Open
-                      </Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
+                <SimulationCard
+                  key={simulation.id}
+                  simulation={simulation}
+                  onDelete={onDelete}
+                  onCopy={onCopy}
+                />
               ))}
           </ul>
         )}

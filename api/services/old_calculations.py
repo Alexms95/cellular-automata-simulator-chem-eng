@@ -5,75 +5,40 @@ from math import floor
 
 import numpy as np
 from logger import logger
-from schemas import PairParameter, RotationInfo, SimulationBase
-from utils import get_component_index, get_component_letter
+from domain.schemas import PairParameter, RotationInfo, SimulationBase
+from utils import calculate_cell_counts, get_component_index, get_component_letter
 
 SurfaceTypes = Enum("SurfaceType", [("Torus", 1), ("Cylinder", 2), ("Box", 3)])
 
+# North, West, South, East
+VON_NEUMANN_NEIGH = np.array([[-1, 0], [0, -1], [1, 0], [0, 1]], dtype=np.int16)
 
-class Calculations:
-    NL = 0
-    NC = 0
-    NEMPTY = 0
 
-    @staticmethod
-    def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
-        """
-        Calculate the number of cells for each component based on their molar fractions.
-        The function takes the total number of cells and a list of percentages, and returns a list of cell counts for each component.
-        The function ensures that the total number of cells is preserved by rounding the fractional counts and adjusting them if necessary.
-        Args:
-            total (int): The total number of cells.
-            percentages (list[float]): A list of percentages representing the molar fractions of each component.
-        Returns:
-            list[int]: A list of cell counts for each component.
-        """
-        fractional_counts = [percentage * total / 100 for percentage in percentages]
+class OldCellularAutomataCalculator:
+    def __init__(self, simulation: SimulationBase):
+        self.NL = 0
+        self.NC = 0
+        self.NEMPTY = 0
+        self.M_iter = np.ndarray
+        self.molar_fractions_table: list
+        self.simulation = simulation
 
-        rounded_counts = [floor(fraction) for fraction in fractional_counts]
+    async def calculate_cellular_automata(self):
+        simulation = self.simulation
+        self.NL = self.simulation.gridHeight
+        self.NC = self.simulation.gridLenght
 
-        error = abs(sum(fractional_counts) - sum(rounded_counts))
+        NL = self.NL
+        NC = self.NC
 
-        if error == 0:
-            return rounded_counts
-
-        adjustment_list = [
-            {"index": index, "difference": fraction - rounded_count}
-            for index, (fraction, rounded_count) in enumerate(
-                zip(fractional_counts, rounded_counts)
-            )
-        ]
-
-        adjustment_list.sort(key=lambda x: x["difference"], reverse=True)
-
-        for i in range(round(error)):
-            rounded_counts[adjustment_list[i]["index"]] += 1
-
-        return rounded_counts
-
-    @staticmethod
-    def calculate_cellular_automata(simulation: SimulationBase) -> tuple[np.ndarray, list]:
-        """
-        Calculate the cellular automata for the given simulation.
-        Args:
-            simulation (SimulationBase): The simulation object containing the parameters and components.
-        Returns:
-            tuple[np.ndarray, list]: A tuple containing the matrix of components and a list that represents a table of molar fractions throughout the iterations.
-        """
-        Calculations.NL = simulation.gridHeight
-        Calculations.NC = simulation.gridLenght
-
-        NL = Calculations.NL
-        NC = Calculations.NC
-
-        surface_type = SurfaceTypes.Box
+        surface_type = SurfaceTypes.Torus
 
         NTOT = NC * NL
 
         EMPTY_FRAC = 0.31  # Fraction of empty cells
 
-        Calculations.NEMPTY = floor(EMPTY_FRAC * NTOT)
-        NCELL = NTOT - Calculations.NEMPTY
+        self.NEMPTY = floor(EMPTY_FRAC * NTOT)
+        NCELL = NTOT - self.NEMPTY
 
         components = simulation.ingredients
         parameters = simulation.parameters
@@ -102,7 +67,7 @@ class Calculations:
         Ci = np.array([comp.molarFraction for comp in components])
 
         print(Ci)
-        Ni = Calculations.calculate_cell_counts(NCELL, Ci)
+        Ni = calculate_cell_counts(NCELL, Ci)
 
         M = np.zeros((NL, NC), dtype=np.int16)
 
@@ -124,17 +89,9 @@ class Calculations:
                         M[r, c] = comp_index
                         break
 
-        # Show the matrix formatting the output as a table
-        # print("Initial matrix:")
-        # Calculations.show_matrix(M)
-
-        # Define the Von Neumann neighborhood
-        # North, West, South, East
-        von_neumann_neigh = np.array([[-1, 0], [0, -1], [1, 0], [0, 1]], dtype=np.int16)
-
         n_iter = simulation.iterationsNumber
 
-        pbs = Calculations.calculate_pbs(parameters.J)
+        pbs = OldCellularAutomataCalculator.calculate_pbs(parameters.J)
 
         moved_components = set()
         reacted_components = set()
@@ -148,7 +105,7 @@ class Calculations:
             f"  Molar Fractions (Ci): {Ci}\n"
             f"  Cell Counts (Ni): {Ni}\n"
             f"  Surface Type: {surface_type}\n"
-            f"  Empty Cells: NEMPTY={Calculations.NEMPTY}\n"
+            f"  Empty Cells: NEMPTY={self.NEMPTY}\n"
             f"  Occupied Cells: NCELL={NCELL}\n"
             f"  Number of Iterations: n_iter={n_iter}"
         )
@@ -158,26 +115,33 @@ class Calculations:
         intermediate_pairs = []
 
         # Create the empty array to store the matrix at each iteration
-        M_iter = np.zeros((n_iter + 1, NL, NC), dtype=np.int16)
+        self.M_iter = np.zeros((n_iter + 1, NL, NC), dtype=np.int16)
 
-        # Store the initial matrix in the first slice of M_iter
-        M_iter[0, :, :] = M.copy()
+        # Store the initial matrix in the first slice of Calculations.M_iter
+        self.M_iter[0, :, :] = M.copy()
 
         # Prepare the table of molar fractions
         rot_comp_index = rotation_info["component"]
 
-        molar_fractions_header = ["Iteration"] + [comp.name for comp in simulation.ingredients] + ["Intermediate"]
+        molar_fractions_header = (
+            ["Iteration"]
+            + [comp.name for comp in simulation.ingredients]
+            + ["Intermediate"]
+        )
 
-        molar_fractions_data = np.zeros((n_iter + 1, len(simulation.ingredients) + 2), dtype=np.float16).tolist()
-        molar_fractions_data[0] = Calculations.get_molar_fractions(
+        molar_fractions_data = np.zeros(
+            (n_iter + 1, len(simulation.ingredients) + 2), dtype=np.float16
+        ).tolist()
+        molar_fractions_data[0] = self.get_molar_fractions(
             M, 0, NCOMP, NCELL, rot_comp_index
         )
 
         # Start the cronometer
         start_time = datetime.now()
 
+        print("Running simulation")
+
         for n in range(1, n_iter + 1):
-            print(f"Running Iteration: {n}")
             moved_components.clear()
             reacted_components.clear()
             not_reacted_components.clear()
@@ -185,8 +149,8 @@ class Calculations:
                 for j in range(NC):
                     current_position = (i, j)
                     i_comp = M[i, j]
-                    inner_neighbors_position = von_neumann_neigh + current_position
-                    outer_neighbors_position = 2 * von_neumann_neigh + current_position
+                    inner_neighbors_position = VON_NEUMANN_NEIGH + current_position
+                    outer_neighbors_position = 2 * VON_NEUMANN_NEIGH + current_position
 
                     # Initialize variables used in the calculations
                     possible_reactions = []
@@ -203,24 +167,31 @@ class Calculations:
                     pb_inner_components = []
                     pm_total_component = 0
 
-                    if Calculations.is_component(i_comp):
+                    if OldCellularAutomataCalculator.is_component(i_comp):
                         # Component rotation
-                        if Calculations.is_rotation_component(i_comp):
+                        if OldCellularAutomataCalculator.is_rotation_component(i_comp):
                             # Check the inner neighbors. If there is at least one occupied neighbor, the component cannot rotate
                             can_rotate = True
                             for inner_neighbor_pos in inner_neighbors_position:
                                 row_index, column_index = inner_neighbor_pos
-                                if Calculations.check_constraints(
+                                coordinates = self.check_constraints(
                                     surface_type, row_index, column_index
-                                ):
-                                    inner_pos_tuple = (row_index, column_index)
+                                )
+                                if coordinates is not None:
+                                    inner_pos_tuple = coordinates
+                                    row_index, column_index = inner_pos_tuple
                                     inner_comp = M[row_index, column_index]
-                                    if Calculations.is_component(inner_comp):
+                                    if OldCellularAutomataCalculator.is_component(
+                                        inner_comp
+                                    ):
                                         # The component cannot rotate
                                         can_rotate = False
                                         break
-                            if can_rotate and Calculations.should_execute(
-                                simulation.rotation.Prot
+                            if (
+                                can_rotate
+                                and OldCellularAutomataCalculator.should_execute(
+                                    simulation.rotation.Prot
+                                )
                             ):
                                 # Rotate the component
                                 states = rotation_info["states"]
@@ -230,7 +201,9 @@ class Calculations:
                                 continue
                         if (
                             current_position not in reacted_components
-                            and not Calculations.is_rotation_component(i_comp)
+                            and not OldCellularAutomataCalculator.is_rotation_component(
+                                i_comp
+                            )
                         ):
                             try:
                                 # Scan all the neighbors of the component to get all reaction pairs
@@ -238,10 +211,12 @@ class Calculations:
                                 poss_reac_index = 0
                                 for inner_neighbor_pos in inner_neighbors_position:
                                     row_index, column_index = inner_neighbor_pos
-                                    if Calculations.check_constraints(
+                                    coordinates = self.check_constraints(
                                         surface_type, row_index, column_index
-                                    ):
-                                        inner_pos_tuple = (row_index, column_index)
+                                    )
+                                    if coordinates is not None:
+                                        inner_pos_tuple = coordinates
+                                        row_index, column_index = inner_pos_tuple
                                         inner_comp = M[row_index, column_index]
                                         positions_pair = (
                                             current_position,
@@ -253,7 +228,9 @@ class Calculations:
                                         )
                                         # Skip empty cells, the same component, already not reacted components, already reacted components in the neighborhood, and moved components in the neighborhood
                                         if (
-                                            Calculations.is_empty(inner_comp)
+                                            OldCellularAutomataCalculator.is_empty(
+                                                inner_comp
+                                            )
                                             or inner_comp == i_comp
                                             or positions_pair in not_reacted_components
                                             or reversed_positions_pair
@@ -263,17 +240,16 @@ class Calculations:
                                             or inner_pos_tuple in moved_components
                                             # Exclude the case where both components are intermediates but are not a pair (avoid single intermediates in the grid)
                                             or (
-                                                Calculations.is_intermediate_component(
+                                                OldCellularAutomataCalculator.is_intermediate_component(
                                                     i_comp
                                                 )
-                                                and Calculations.is_intermediate_component(
+                                                and OldCellularAutomataCalculator.is_intermediate_component(
                                                     inner_comp
                                                 )
                                                 and (i, j, row_index, column_index)
                                                 not in intermediate_pairs
                                             )
                                         ):
-
                                             continue
 
                                         for reaction in simulation.reactions:
@@ -465,7 +441,9 @@ class Calculations:
                                     false_sum = 0
 
                                     # Add the no-reaction option to the list of probabilities if it is not an intermediate
-                                    if not Calculations.is_intermediate_component(i_comp):
+                                    if not OldCellularAutomataCalculator.is_intermediate_component(
+                                        i_comp
+                                    ):
                                         false_sum = sum(
                                             prob[1] for prob in individual_probs
                                         )
@@ -501,9 +479,9 @@ class Calculations:
                                         prod1_row, prod1_column = prod1_pos
                                         prod2_row, prod2_column = prod2_pos
 
-                                        if Calculations.is_intermediate_component(
+                                        if OldCellularAutomataCalculator.is_intermediate_component(
                                             M[prod1_row, prod1_column]
-                                        ) and Calculations.is_intermediate_component(
+                                        ) and OldCellularAutomataCalculator.is_intermediate_component(
                                             M[prod2_row, prod2_column]
                                         ):
                                             # If the reactants are intermediates, remove their positions from the intermediate pairs (at this moment, there are reactants yet)
@@ -551,9 +529,9 @@ class Calculations:
                                         )
 
                                         # If the products are intermediates, store their positions to avoid reacting to other intermediates
-                                        if Calculations.is_intermediate_component(
+                                        if OldCellularAutomataCalculator.is_intermediate_component(
                                             prod_1
-                                        ) and Calculations.is_intermediate_component(
+                                        ) and OldCellularAutomataCalculator.is_intermediate_component(
                                             prod_2
                                         ):
                                             intermediate_pairs.append(
@@ -617,7 +595,9 @@ class Calculations:
                         if (
                             current_position in moved_components
                             or current_position in reacted_components
-                            or Calculations.is_intermediate_component(i_comp)
+                            or OldCellularAutomataCalculator.is_intermediate_component(
+                                i_comp
+                            )
                         ):
                             continue
                         try:
@@ -628,30 +608,37 @@ class Calculations:
 
                             for i_p in range(len(inner_neighbors_position)):
                                 row_index, column_index = inner_neighbors_position[i_p]
-                                if Calculations.check_constraints(
+                                coordinates = self.check_constraints(
                                     surface_type, row_index, column_index
-                                ):
-                                    if Calculations.is_empty(
+                                )
+                                if coordinates is not None:
+                                    row_index, column_index = coordinates
+                                    if OldCellularAutomataCalculator.is_empty(
                                         M[row_index, column_index]
                                     ):
                                         o_row, o_column = outer_neighbors_position[i_p]
-                                        if not Calculations.check_constraints(
+                                        coordinates = self.check_constraints(
                                             surface_type, o_row, o_column
-                                        ):
+                                        )
+                                        if coordinates is None:
                                             J_neighbors.append((i_p, 0))
                                             continue
-                                        outer_component = M[o_row, o_column]
-                                        if Calculations.is_intermediate_component(
+                                        outer_component = M[
+                                            coordinates[0], coordinates[1]
+                                        ]
+                                        if OldCellularAutomataCalculator.is_intermediate_component(
                                             outer_component
                                         ):
                                             # If the outer component is an intermediate, the joining probability is 0
                                             J_neighbors.append((i_p, 0))
                                             continue
-                                        if Calculations.is_component(outer_component):
+                                        if OldCellularAutomataCalculator.is_component(
+                                            outer_component
+                                        ):
                                             # Analyze the direction of rotation components to find the correct J of the interaction
                                             comp1 = ""
                                             comp2 = ""
-                                            if Calculations.is_rotation_component(
+                                            if OldCellularAutomataCalculator.is_rotation_component(
                                                 i_comp
                                             ):
                                                 state_side = rotation_info[
@@ -663,7 +650,7 @@ class Calculations:
                                                         simulation.rotation.component
                                                         + "1"
                                                     )
-                                                    if Calculations.is_rotation_component(
+                                                    if OldCellularAutomataCalculator.is_rotation_component(
                                                         outer_component
                                                     ):
                                                         outer_state_side = (
@@ -693,7 +680,7 @@ class Calculations:
                                                         simulation.rotation.component
                                                         + "2"
                                                     )
-                                                    if Calculations.is_rotation_component(
+                                                    if OldCellularAutomataCalculator.is_rotation_component(
                                                         outer_component
                                                     ):
                                                         outer_state_side = (
@@ -720,7 +707,7 @@ class Calculations:
                                                         )
                                             else:
                                                 comp1 = get_component_letter(i_comp)
-                                                if Calculations.is_rotation_component(
+                                                if OldCellularAutomataCalculator.is_rotation_component(
                                                     outer_component
                                                 ):
                                                     outer_state_side = rotation_info[
@@ -799,7 +786,9 @@ class Calculations:
                                     comp_index = M[row, column]
                                     comp1 = ""
                                     comp2 = ""
-                                    if Calculations.is_rotation_component(i_comp):
+                                    if OldCellularAutomataCalculator.is_rotation_component(
+                                        i_comp
+                                    ):
                                         # If the component is a rotation component, get the state of the component
                                         state_side = rotation_info["states"].index(
                                             i_comp
@@ -807,7 +796,7 @@ class Calculations:
                                         # Check if the component is oriented in the same direction as the inner component
                                         if state_side == ind_occ:
                                             comp1 = simulation.rotation.component + "1"
-                                            if Calculations.is_rotation_component(
+                                            if OldCellularAutomataCalculator.is_rotation_component(
                                                 comp_index
                                             ):
                                                 inner_state_side = rotation_info[
@@ -828,7 +817,7 @@ class Calculations:
                                                 comp2 = get_component_letter(comp_index)
                                         else:
                                             comp1 = simulation.rotation.component + "2"
-                                            if Calculations.is_rotation_component(
+                                            if OldCellularAutomataCalculator.is_rotation_component(
                                                 comp_index
                                             ):
                                                 inner_state_side = rotation_info[
@@ -849,7 +838,7 @@ class Calculations:
                                                 comp2 = get_component_letter(comp_index)
                                     else:
                                         comp1 = get_component_letter(i_comp)
-                                        if Calculations.is_rotation_component(
+                                        if OldCellularAutomataCalculator.is_rotation_component(
                                             comp_index
                                         ):
                                             inner_state_side = rotation_info[
@@ -872,7 +861,7 @@ class Calculations:
 
                                     pb = (
                                         1
-                                        if Calculations.is_intermediate_component(
+                                        if OldCellularAutomataCalculator.is_intermediate_component(
                                             comp_index
                                         )
                                         else (
@@ -889,7 +878,9 @@ class Calculations:
                                 parameters.Pm[
                                     (
                                         rotation_info["component"]
-                                        if Calculations.is_rotation_component(i_comp)
+                                        if OldCellularAutomataCalculator.is_rotation_component(
+                                            i_comp
+                                        )
                                         else i_comp
                                     )
                                     - 1
@@ -897,11 +888,16 @@ class Calculations:
                                 * pbs_product
                             )
 
-                            if Calculations.should_execute(pm_total_component):
+                            if OldCellularAutomataCalculator.should_execute(
+                                pm_total_component
+                            ):
                                 # Move the component to the empty neighbor with the highest J value
                                 row_move, column_move = inner_neighbors_position[
                                     int(J_max[0])
                                 ]
+                                row_move, column_move = self.check_constraints(
+                                    surface_type, row_move, column_move
+                                )
                                 M[row_move, column_move] = i_comp
                                 M[i, j] = 0
                                 moved_components.add((row_move, column_move))
@@ -940,12 +936,17 @@ class Calculations:
                             )
                             logger.exception(iteration_log_text.getvalue())
                             raise e
-            M_iter[n, :, :] = M.copy()
-            molar_fractions_data[n] = Calculations.get_molar_fractions(
+            self.M_iter[n, :, :] = M.copy()
+            molar_fractions_data[n] = OldCellularAutomataCalculator.get_molar_fractions(
                 M, n, NCOMP, NCELL, rot_comp_index
             )
+            if n % 10 == 0 or n == n_iter:
+                yield n, n_iter
 
-        molar_fractions_table = [molar_fractions_header, *molar_fractions_data]
+        self.molar_fractions_table = [
+            molar_fractions_header,
+            *molar_fractions_data,
+        ]
 
         # Calculations.show_matrix(M)
 
@@ -953,11 +954,7 @@ class Calculations:
 
         end_time = datetime.now()
         elapsed_time = (end_time - start_time).total_seconds()
-        print(
-            f"Elapsed time: {elapsed_time:.2f} seconds"
-        )
-
-        return M_iter, molar_fractions_table
+        print(f"Elapsed time: {elapsed_time:.2f} seconds")
 
     @staticmethod
     def is_intermediate_component(i_comp):
@@ -995,23 +992,24 @@ class Calculations:
         """
         return np.random.random() < probability
 
-    @staticmethod
-    def check_constraints(surface_type: SurfaceTypes, r: int, c: int) -> bool:
+    def check_constraints(
+        self, surface_type: SurfaceTypes, r: int, c: int
+    ) -> tuple[int, int] | None:
         """
-        Check if the given row and column indices are within the bounds of the matrix
-        based on the surface type.
+        Check the constraints for the given surface type and coordinates.
         Args:
-            surface_type (SurfaceTypes): The type of surface (Box or Cylinder).
+            surface_type (SurfaceTypes): The type of surface (Box, Cylinder, Torus).
             r (int): Row index.
             c (int): Column index.
         Returns:
-            bool: True if the indices are within bounds, False otherwise.
+            tuple[int, int] | None: Validated coordinates or None if out of bounds.
         """
         if surface_type == SurfaceTypes.Box:
-            return r >= 0 and r < Calculations.NL and c >= 0 and c < Calculations.NC
+            return (r, c) if r >= 0 and r < self.NL and c >= 0 and c < self.NC else None
         if surface_type == SurfaceTypes.Cylinder:
-            return r >= 0 and r < Calculations.NL
-        return True
+            return (r, c % self.NC) if r >= 0 and r < self.NL else None
+        if surface_type == SurfaceTypes.Torus:
+            return (r % self.NL, c % self.NC)
 
     @staticmethod
     def calculate_pbs(js: list[PairParameter]):
@@ -1030,7 +1028,7 @@ class Calculations:
         current_iteration: int,
         n_comp: int,
         n_cell: int,
-        rot_comp_index=-1
+        rot_comp_index=-1,
     ) -> list[float]:
         """
         Calculate the molar fractions of each component in the matrix M.
@@ -1051,10 +1049,10 @@ class Calculations:
         for i in range(nl):
             for j in range(nc):
                 comp = M[i, j]
-                if not Calculations.is_empty(comp):
-                    if Calculations.is_intermediate_component(comp):
+                if not OldCellularAutomataCalculator.is_empty(comp):
+                    if OldCellularAutomataCalculator.is_intermediate_component(comp):
                         count_line[-1] += 1
-                    elif Calculations.is_rotation_component(comp):
+                    elif OldCellularAutomataCalculator.is_rotation_component(comp):
                         count_line[rot_comp_index] += 1
                     else:
                         count_line[comp] += 1
@@ -1063,3 +1061,6 @@ class Calculations:
         molar_fractions_line[0] = current_iteration
         molar_fractions_line = molar_fractions_line.tolist()
         return molar_fractions_line
+
+    def get_results(self) -> tuple[np.ndarray, list[list]]:
+        return self.M_iter, self.molar_fractions_table

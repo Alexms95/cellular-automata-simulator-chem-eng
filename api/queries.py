@@ -1,10 +1,7 @@
+from domain.models import SimulationModel
+from domain.schemas import SimulationCreate
 from sqlalchemy import select
-from utils import compress_matrix, decompress_matrix
-from calculations import Calculations
-from fastapi import HTTPException
-from models import SimulationModel
-from schemas import SimulationBase, SimulationCreate
-from sqlalchemy.orm import Session, load_only
+from sqlalchemy.orm import Session
 
 SELECT_WITHOUT_ITERATIONS = select(
     SimulationModel.id,
@@ -22,173 +19,71 @@ SELECT_WITHOUT_ITERATIONS = select(
 
 
 class SimulationData:
-    def get_simulations(self, db: Session) -> list[SimulationModel]:
-        return db.execute(SELECT_WITHOUT_ITERATIONS).all()
+    def __init__(self, db: Session):
+        self.db = db
 
-    def get_simulation(self, simulation_id: str, db: Session) -> SimulationModel:
+    def get_simulations(self):
+        return self.db.execute(SELECT_WITHOUT_ITERATIONS).all()
+
+    def get_simulation(self, simulation_id: str):
         query = select(SimulationModel).where(SimulationModel.id == simulation_id)
-        db_simulation = db.execute(query).scalars().first()
+        return self.db.execute(query).scalars().first()
 
-        if db_simulation is None:
-            raise HTTPException(status_code=400, detail="Simulation not found")
+    def get_simulation_by_name(self, name: str):
+        query = SELECT_WITHOUT_ITERATIONS.where(SimulationModel.name == name)
+        return self.db.execute(query).first()
 
-        return db_simulation
-
-    def get_decompressed_iterations(self, simulation_id: str, db: Session) -> list[list[list[int]]]:
-        query = select(SimulationModel.name, SimulationModel.iterations).where(SimulationModel.id == simulation_id)
-        db_simulation = db.execute(query).first()
-
-        if db_simulation is None:
-            raise HTTPException(status_code=400, detail="Simulation not found")
-        
-        _, compressed_iterations = db_simulation
-
-        if compressed_iterations is None:
-            return []
-
-        return decompress_matrix(compressed_iterations)
-
-    def create_simulation(self, newSimulation: SimulationCreate, db: Session) -> None:
+    def get_simulation_by_name_excluding_id(self, name: str, simulation_id: str):
         query = SELECT_WITHOUT_ITERATIONS.where(
-            SimulationModel.name == newSimulation.name
+            SimulationModel.name == name, SimulationModel.id != simulation_id
         )
-        already_exists = db.execute(query).first()
-        if already_exists:
-            raise HTTPException(
-                status_code=409,
-                detail=f"A simulation named {newSimulation.name} already exists",
-            )
+        return self.db.execute(query).first()
 
+    def get_compressed_iterations(self, simulation_id: str):
+        query = select(SimulationModel.iterations).where(
+            SimulationModel.id == simulation_id
+        )
+        result = self.db.execute(query).first()
+        return result[0] if result else None
+
+    def create_simulation(self, newSimulation: SimulationCreate):
         db_simulation = SimulationModel(**newSimulation.model_dump())
-
-        totalCells = newSimulation.gridLenght * newSimulation.gridHeight
-
-        ingredientCellsCount = Calculations.calculate_cell_counts(
-            totalCells,
-            map(lambda ingredient: ingredient.molarFraction, newSimulation.ingredients),
-        )
-
-        for i, cellsCount in enumerate(ingredientCellsCount):
-            db_simulation.ingredients[i]["initialCellsCount"] = cellsCount
-
-        db.add(db_simulation)
-        db.commit()
-        db.refresh(db_simulation)
+        self.db.add(db_simulation)
+        self.db.commit()
+        self.db.refresh(db_simulation)
 
     def update_simulation(
-        self, simulation_id: str, updatedSimulation: SimulationCreate, db: Session
-    ) -> None:
-        query = (
-            select(SimulationModel)
-            .options(
-                load_only(
-                    SimulationModel.id,
-                    SimulationModel.name,
-                    SimulationModel.iterationsNumber,
-                    SimulationModel.gridLenght,
-                    SimulationModel.gridHeight,
-                    SimulationModel.ingredients,
-                    SimulationModel.parameters,
-                    SimulationModel.created_at,
-                    SimulationModel.updated_at,
-                    SimulationModel.reactions,
-                    SimulationModel.rotation,
-                )
-            )
-            .where(SimulationModel.id == simulation_id)
-        )
-        db_simulation = db.execute(query).scalars().first()
-
-        if db_simulation is None:
-            raise HTTPException(status_code=400, detail="Simulation not found")
-
-        query = (
-            SELECT_WITHOUT_ITERATIONS
-            .where(
-                SimulationModel.id != simulation_id,
-                SimulationModel.name == updatedSimulation.name,
-            )
-        )
-        already_exists = db.execute(query).first()
-
-        if already_exists:
-            raise HTTPException(
-                status_code=409,
-                detail=f"A simulation named {updatedSimulation.name} already exists",
-            )
+        self, simulation_id: str, updatedSimulation: SimulationCreate
+    ):
+        query = select(SimulationModel).where(SimulationModel.id == simulation_id)
+        db_simulation = self.db.execute(query).scalars().first()
 
         for key, value in updatedSimulation.model_dump(exclude_unset=True).items():
             setattr(db_simulation, key, value)
 
-        totalCells = updatedSimulation.gridLenght * updatedSimulation.gridHeight
+        self.db.commit()
+        self.db.refresh(db_simulation)
 
-        ingredientCellsCount = Calculations.calculate_cell_counts(
-            totalCells,
-            map(
-                lambda ingredient: ingredient.molarFraction,
-                updatedSimulation.ingredients,
-            ),
-        )
+    def delete_simulation(self, simulation_id: str):
+        query = select(SimulationModel).where(SimulationModel.id == simulation_id)
+        db_simulation = self.db.execute(query).scalars().first()
+        self.db.delete(db_simulation)
+        self.db.commit()
 
-        for i, cellsCount in enumerate(ingredientCellsCount):
-            db_simulation.ingredients[i]["initialCellsCount"] = cellsCount
+    def save_simulation_results(
+        self, simulation_id: str, compressed_matrix, molar_fractions_table
+    ):
+        query = select(SimulationModel).where(SimulationModel.id == simulation_id)
+        db_simulation = self.db.execute(query).scalars().first()
 
-        db.commit()
-        db.refresh(db_simulation)
-
-    def delete_simulation(self, simulation_id: str, db: Session) -> None:
-        query = select(SimulationModel).options(load_only(SimulationModel.id)).where(
-            SimulationModel.id == simulation_id,
-        )
-        db_simulation = db.execute(query).scalars().first()
-
-        if db_simulation is None:
-            raise HTTPException(status_code=400, detail="Simulation not found")
-
-        db.delete(db_simulation)
-        db.commit()
-
-    def run_simulation(self, simulation_id: str, db: Session) -> None:
-        query = select(SimulationModel).options(
-            load_only(
-                SimulationModel.id,
-                SimulationModel.name,
-                SimulationModel.iterationsNumber,
-                SimulationModel.gridLenght,
-                SimulationModel.gridHeight,
-                SimulationModel.ingredients,
-                SimulationModel.parameters,
-                SimulationModel.created_at,
-                SimulationModel.updated_at,
-                SimulationModel.reactions,
-                SimulationModel.rotation,
-            )
-        ).where(SimulationModel.id == simulation_id)
-        db_simulation = db.execute(query).scalars().first()
-
-        if db_simulation is None:
-            raise HTTPException(status_code=400, detail="Simulation not found")
-
-        simulation = SimulationBase(**db_simulation.__dict__)
-
-        resulting_matrix, molar_fractions_table = Calculations.calculate_cellular_automata(simulation)
-        
-        db_simulation.iterations = compress_matrix(resulting_matrix.tolist())
+        db_simulation.iterations = compressed_matrix
         db_simulation.results = molar_fractions_table
 
-        db.commit()
-        db.refresh(db_simulation)
-    
-    def get_results(self, simulation_id: str, db: Session) -> tuple[str, list[list]]:
-        query = select(SimulationModel.name, SimulationModel.results).where(SimulationModel.id == simulation_id)
-        db_simulation = db.execute(query).first()
+        self.db.commit()
+        self.db.refresh(db_simulation)
 
-        if db_simulation is None:
-            raise HTTPException(status_code=400, detail="Simulation not found")
-        
-        name, results = db_simulation
-
-        if results is None:
-            raise HTTPException(status_code=400, detail=f"Run the simulation {name} to generate results")
-        
-        return name, results
+    def get_results(self, simulation_id: str):
+        query = select(SimulationModel.name, SimulationModel.results).where(
+            SimulationModel.id == simulation_id
+        )
+        return self.db.execute(query).first()

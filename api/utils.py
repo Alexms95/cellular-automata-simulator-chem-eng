@@ -3,6 +3,7 @@ import csv
 import gzip
 import io
 import json
+from math import floor
 
 
 def get_component_index(char: str) -> int:
@@ -54,3 +55,38 @@ def convert_to_csv(data: list[list]) -> str:
     writer = csv.writer(output)
     writer.writerows(data)
     return output.getvalue()
+
+
+def calculate_cell_counts(total: int, percentages: list[float]) -> list[int]:
+    """
+    Calculate the number of cells for each component based on their molar fractions.
+    The function takes the total number of cells and a list of percentages, and returns a list of cell counts for each component.
+    The function ensures that the total number of cells is preserved by rounding the fractional counts and adjusting them if necessary.
+    Args:
+        total (int): The total number of cells.
+        percentages (list[float]): A list of percentages representing the molar fractions of each component.
+    Returns:
+        list[int]: A list of cell counts for each component.
+    """
+    fractional_counts = [percentage * total / 100 for percentage in percentages]
+
+    rounded_counts = [floor(fraction) for fraction in fractional_counts]
+
+    error = abs(sum(fractional_counts) - sum(rounded_counts))
+
+    if error == 0:
+        return rounded_counts
+
+    adjustment_list = [
+        {"index": index, "difference": fraction - rounded_count}
+        for index, (fraction, rounded_count) in enumerate(
+            zip(fractional_counts, rounded_counts)
+        )
+    ]
+
+    adjustment_list.sort(key=lambda x: x["difference"], reverse=True)
+
+    for i in range(round(error)):
+        rounded_counts[adjustment_list[i]["index"]] += 1
+
+    return rounded_counts

@@ -2,13 +2,20 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import httpClient from "@/lib/httpClient";
 import { Simulation } from "@/models/simulation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronLeft, ChevronUp, Download, Play } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronUp,
+  Download,
+  Play,
+} from "lucide-react";
 import pako from "pako";
-import { useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { EditSimulation } from "@/components/editSimulation";
 import { lazy, Suspense } from "react";
 const SimulationGrid = lazy(() => import("@/components/SimulationGrid"));
 
@@ -52,54 +59,96 @@ function SimulationDetail() {
     },
   });
 
-  const runSimulation = useMutation({
-    mutationFn: () => httpClient.post(`/simulations/${simulationId}/run`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["simulations"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["decompressedIterations", simulationId],
-      });
-    },
-  });
+  const [isRunning, setIsRunning] = useState(false);
 
-  const onRunSimulation = async () => {
-    const mutation = runSimulation.mutateAsync();
-    toast.promise(mutation, {
-      loading: `Running simulation ${data?.name}...`,
-      success: `Simulation ${data!.name} has just run successfully!`,
-      error: (error) => {
-        const message = error.response?.data?.detail;
-        return message ?? `Error running simulation ${data!.name}`;
-      },
-    });
+  const gridRef = useRef<any>(null);
+  
+  const simulationGridMemo = useMemo(() => {
+    console.log("Rendering SimulationGrid");
+    if (!decompressedIterations || decompressedIterations.length === 0 || !data) {
+      return (
+        <div className="flex flex-col justify-center h-[70vh]">
+          <h1 className="text-2xl font-bold text-gray-500">
+            Run the simulation to see the results
+          </h1>
+        </div>
+      );
+    }
+    return (
+      <SimulationGrid
+        ref={gridRef}
+        iterations={decompressedIterations}
+        ingredients={data.ingredients}
+        reactions={data.reactions}
+      />
+    );
+  }, [decompressedIterations, data]);
+
+  const onRunSimulation = (simulationName?: string) => {
+    const eventSource = new EventSource(
+      `http://localhost:8000/simulations/${simulationId}/run`
+    );
+
+    setIsRunning(true);
+
+    const name = simulationName || "Simulation";
+
+    const toastId = toast.loading("Starting simulation...");
+    eventSource.onmessage = (event) => {
+      const data = event.data;
+
+      if (data === "Simulation completed!") {
+        toast.success(`${name} run successfully!`, { id: toastId });
+        eventSource.close();
+        queryClient.invalidateQueries({
+          queryKey: ["simulations"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["decompressedIterations", simulationId],
+        });
+        setIsRunning(false);
+        return;
+      }
+      const progress = parseFloat(JSON.parse(data).progress) * 100;
+      toast.loading(`Running ${name}... ${progress.toFixed()} % completed`, {
+        id: toastId,
+      });
+    };
+
+    eventSource.onerror = () => {
+      toast.error(`Error running ${name}`, { id: toastId });
+      eventSource.close();
+      setIsRunning(false);
+    };
   };
 
   const downloadCSV = async () => {
     const promise = (async () => {
-        const response = await httpClient.get(`http://localhost:8000/simulations/${simulationId}/results`, {
+      const response = await httpClient.get(
+        `http://localhost:8000/simulations/${simulationId}/results`,
+        {
           responseType: "blob",
-        });
-
-        const contentDisposition = response.headers["content-disposition"];
-        let filename = "file.csv";
-
-        if (contentDisposition) {
-          const match = contentDisposition.match(/filename="?(.+)"?/);
-          if (match && match[1]) {
-            filename = match[1];
-          }
         }
+      );
 
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
+      const contentDisposition = response.headers["content-disposition"];
+      let filename = "file.csv";
+
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+)"?/);
+        if (match && match[1]) {
+          filename = match[1];
+        }
+      }
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
     })();
 
     toast.promise(promise, {
@@ -109,14 +158,15 @@ function SimulationDetail() {
     });
   };
 
-  const gridRef = useRef<any>(null);
-
   const scrollToTop = () => {
     gridRef.current?.scrollToItem(0, "start");
   };
 
   const scrollToBottom = () => {
-    gridRef.current?.scrollToItem((decompressedIterations?.length ?? 0) - 1 || 0, "start");
+    gridRef.current?.scrollToItem(
+      (decompressedIterations?.length ?? 0) - 1 || 0,
+      "start"
+    );
   };
 
   // const chunks = useRef<Blob[]>([]);
@@ -204,32 +254,7 @@ function SimulationDetail() {
   //   return <ReactP5Wrapper sketch={sketch} />;
   // }, []);
 
-  if (isLoading || isFetching) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spinner size="large" />
-      </div>
-    );
-  }
-
-  if (isDecompressing || isdecom || isredecom) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <Spinner size="large" />
-        <span className="text-lg">Loading iterations...</span>
-      </div>
-    );
-  }
-
-  if (isLoading || isFetching) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spinner size="large" />
-      </div>
-    );
-  }
-
-  if (isDecompressing || isdecom || isredecom) {
+  if (isLoading || isFetching || isDecompressing || isdecom || isredecom) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
         <Spinner size="large" />
@@ -250,8 +275,8 @@ function SimulationDetail() {
         <h1 className="text-xl text-center font-bold mb-4">{data?.name}</h1>
         <Button
           className="flex items-center justify-center gap-2"
-          onClick={() => onRunSimulation()}
-          disabled={runSimulation.isPending}
+          onClick={() => onRunSimulation(data?.name)}
+          disabled={isRunning}
         >
           <Play className="h-4 w-4" />
           Run simulation
@@ -259,35 +284,47 @@ function SimulationDetail() {
 
         {/* Legend Section */}
         {(decompressedIterations?.length ?? 0) > 0 && (
-          <div className="w-1/6 fixed bottom-12 left-8 bg-white p-4 rounded-lg border shadow-sm z-10">
-            <h3 className="font-semibold mb-4">Legend</h3>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-gray-200" />
-                <span>Empty</span>
-              </div>
-              {data?.reactions?.some((r) => r.hasIntermediate) && (
+          <div className="flex flex-col gap-[4vh] fixed top-28 right-8 z-10 text-sm">
+            {data && <EditSimulation disabled={isRunning} complete={true} id={data.id} />}
+            <Button
+              className="flex items-center justify-center gap-2"
+              variant="secondary"
+              onClick={() => downloadCSV()}
+              disabled={isRunning}
+            >
+              <Download className="h-4 w-4" />
+              Download Results File
+            </Button>
+            <div className="bg-white p-4 rounded-lg border shadow-sm">
+              <h3 className="font-semibold mb-4">Legend</h3>
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-yellow-500" />
-                  <span>Intermediate</span>
+                  <div className="w-4 h-4 bg-gray-200" />
+                  <span>Empty</span>
                 </div>
-              )}
-              {data?.ingredients.map((ingredient, index) => {
-                if (String.fromCharCode(65 + index) === rotation?.component) {
+                {data?.reactions?.some((r) => r.hasIntermediate) && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-yellow-500" />
+                    <span>Intermediate</span>
+                  </div>
+                )}
+                {data?.ingredients.map((ingredient, index) => {
+                  if (String.fromCharCode(65 + index) === rotation?.component) {
+                    return (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-gradient-to-b from-amber-800 from-50% to-pink-200 to-50%" />
+                        <span>{ingredient.name}</span>
+                      </div>
+                    );
+                  }
                   return (
                     <div key={index} className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-gradient-to-b from-amber-800 from-50% to-pink-200 to-50%" />
+                      <div className={`w-4 h-4 bg-${ingredient.color}-500`} />
                       <span>{ingredient.name}</span>
                     </div>
                   );
-                }
-                return (
-                  <div key={index} className="flex items-center gap-2">
-                    <div className={`w-4 h-4 bg-${ingredient.color}-500`} />
-                    <span>{ingredient.name}</span>
-                  </div>
-                );
-              })}
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -334,34 +371,7 @@ function SimulationDetail() {
             </div>
           }
         >
-          {(decompressedIterations?.length ?? 0) > 0 ? (
-            <>
-              <div className="fixed top-40 left-8 z-10">
-                <Button
-                  className="flex items-center justify-center gap-2"
-                  variant="secondary"
-                  onClick={() => downloadCSV()}
-                  disabled={runSimulation.isPending}
-                >
-                  <Download className="h-4 w-4" />
-                  Download Results File
-                </Button>
-              </div>
-              <SimulationGrid
-                ref={gridRef}
-                iterations={decompressedIterations ?? []}
-                ingredients={data?.ingredients ?? []}
-                rotationComponent={data?.rotation?.component}
-                reactions={data?.reactions}
-              />
-            </>
-          ) : (
-            <div className="flex flex-col justify-center h-[70vh]">
-              <h1 className="text-2xl font-bold text-gray-500">
-                Run the simulation to see the results
-              </h1>
-            </div>
-          )}
+          {simulationGridMemo}
         </Suspense>
       </div>
     </div>

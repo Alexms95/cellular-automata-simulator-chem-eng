@@ -56,19 +56,19 @@ const SimulationGrid = forwardRef<
   }> | null,
   Props
 >(function SimulationGrid({ iterations, ingredients }: Props, ref) {
-  const [height, setHeight] = useState(window.innerHeight * 0.8);
+  const [height, setHeight] = useState(window.innerHeight * 0.80);
 
   useEffect(() => {
-    const handleResize = () => setHeight(window.innerHeight * 0.8);
+    const handleResize = () => setHeight(window.innerHeight * 0.80);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return (
-    <div className="pb-4">
+    <div className="">
       <FixedSizeList
         height={height}
-        width="100%"
+        width="70%"
         itemCount={iterations.length}
         itemSize={20 * (iterations[0].length + 1)}
         itemData={{ iterations, ingredients }}
