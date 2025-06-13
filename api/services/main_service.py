@@ -1,6 +1,5 @@
 import json
 
-import numpy as np
 from domain.schemas import RotationInfo, SimulationBase, SimulationCreate
 from fastapi import HTTPException
 from queries import SimulationData
@@ -96,12 +95,6 @@ class MainService:
 
         yield "data: Simulation completed!\n\n"
 
-    def get_decompressed_iterations(self, simulation_id):
-        compressed_iterations = self.dataAccess.get_compressed_iterations(simulation_id)
-        if compressed_iterations is None:
-            return []
-
-        return decompress_matrix(compressed_iterations)
 
     def get_results(self, simulation_id):
         name, results = self.dataAccess.get_results(simulation_id)
@@ -111,6 +104,7 @@ class MainService:
             )
 
         return name, results
+    
 
     def _setup_rotation_info(self, simulation: SimulationBase) -> RotationInfo:
         """Sets up rotation information"""
@@ -144,3 +138,15 @@ class MainService:
         self.dataAccess.save_simulation_results(
             simulation_id, chunks, molar_fractions_table
         )
+
+
+    def get_iterations_by_simulation(self, simulation_id: str, chunk_number: int = 0):
+        return self.dataAccess.get_iterations_by_simulation(simulation_id, chunk_number)
+
+    def get_decompressed_iterations(self, simulation_id: str, chunk_number: int = 0):
+        iterations = self.get_iterations_by_simulation(simulation_id, chunk_number)
+        if not iterations:
+            raise HTTPException(status_code=404, detail="No iterations found for this simulation")
+
+        decompressed_data = decompress_matrix(iterations.data)
+        return decompressed_data

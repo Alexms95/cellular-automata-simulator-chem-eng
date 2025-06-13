@@ -39,13 +39,6 @@ class SimulationData:
         )
         return self.db.execute(query).first()
 
-    def get_compressed_iterations(self, simulation_id: str):
-        query = select(SimulationModel.iterations).where(
-            SimulationModel.id == simulation_id
-        )
-        result = self.db.execute(query).first()
-        return result[0] if result else None
-
     def create_simulation(self, newSimulation: SimulationCreate):
         db_simulation = SimulationModel(**newSimulation.model_dump())
         self.db.add(db_simulation)
@@ -95,8 +88,9 @@ class SimulationData:
         )
         return self.db.execute(query).first()
 
-    def get_iterations_by_simulation(self, simulation_id: str, chunk: int = 0):
+    def get_iterations_by_simulation(self, simulation_id: str, chunk_number: int = 0):
         query = select(IterationsModel).where(
-            IterationsModel.simulation_id == simulation_id, IterationsModel.chunk_number == chunk
+            IterationsModel.simulation_id == simulation_id,
+            IterationsModel.chunk_number == chunk_number,
         )
-        return self.db.execute(query).scalars().all()
+        return self.db.execute(query).scalars().first()
