@@ -31,7 +31,14 @@ def compress_matrix(matrix: list) -> str:
     Returns:
         str: The compressed and encoded matrix as a string.
     """
+    print(matrix)
     json_bytes = json.dumps(matrix).encode("utf-8")
+    print(json.dumps(matrix))
+    print(json_bytes)
+    print(gzip.compress(json_bytes))
+    print(base64.b64encode(gzip.compress(json_bytes)))
+    print(base64.b64encode(gzip.compress(json_bytes)).decode("utf-8"))
+    print("Compressed and encoded matrix:", base64.b64encode(gzip.compress(json_bytes)).decode("utf-8"))
     return base64.b64encode(gzip.compress(json_bytes)).decode("utf-8")
 
 

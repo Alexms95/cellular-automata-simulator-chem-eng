@@ -102,7 +102,7 @@ def get_simulation(id: str, service: MainService = Depends(get_service)):
 
 
 @app.get(
-    "/iterations/decompressed?simulation_id={simulation_id}&chunk_number={chunk_number}",
+    "/iterations/decompressed",
     response_model=list[list[list[int]]],
 )
 def get_decompressed_iterations(

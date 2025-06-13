@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 import { EditSimulation } from "@/components/editSimulation";
 import { lazy, Suspense } from "react";
+import { Iterations } from "@/models/iterations";
 const SimulationGrid = lazy(() => import("@/components/SimulationGrid"));
 
 export const Route = createFileRoute("/simulations/$simulationId")({
@@ -31,8 +32,20 @@ function SimulationDetail() {
     queryKey: ["simulations", simulationId],
   });
 
-  useQuery({
-    queryKey: ["simulations"],
+  const [chunkNumber, setChunkNumber] = useState(0);
+
+  const { data: iterations } = useQuery<Iterations>({
+    queryKey: ["iterations", simulationId, chunkNumber],
+    queryFn: async () => {
+      const response = await httpClient.get("/iterations", {
+        params: {
+          simulation_id: simulationId,
+          chunk_number: chunkNumber,
+        },
+      });
+      return response.data;
+    },
+    enabled: !!simulationId,
   });
 
   const rotation = data?.rotation;
@@ -43,12 +56,12 @@ function SimulationDetail() {
     isFetching: isdecom,
     isRefetching: isredecom,
   } = useQuery({
-    queryKey: ["decompressedIterations", simulationId, data?.iterations, data],
+    queryKey: ["decompressedIterations", simulationId, iterations, iterations?.data],
     queryFn: () => {
-      if (!data?.iterations) {
+      if (!iterations?.data) {
         return [];
       }
-      const binaryString = atob(data!.iterations);
+      const binaryString = atob(iterations.data);
       const len = binaryString.length;
       const bytes = new Uint8Array(len);
       for (let i = 0; i < len; i++) {
@@ -105,6 +118,9 @@ function SimulationDetail() {
         });
         queryClient.invalidateQueries({
           queryKey: ["decompressedIterations", simulationId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["iterations", simulationId],
         });
         setIsRunning(false);
         return;
