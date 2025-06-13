@@ -7,6 +7,7 @@ import { FixedSizeList } from "react-window";
 interface Props {
   iterations: number[][][];
   ingredients: Simulation["ingredients"];
+  currentPage: number;
   rotationComponent?: string;
   reactions?: Simulation["reactions"];
 }
@@ -16,16 +17,16 @@ const IterationRow = ({
   index,
   style,
 }: {
-  data: { iterations: number[][][]; ingredients: Simulation["ingredients"] };
+    data: { iterations: number[][][]; ingredients: Simulation["ingredients"]; currentPage: number };
   index: number;
   style: React.CSSProperties;
 }) => {
-  const { iterations, ingredients } = data;
+  const { iterations, ingredients, currentPage } = data;
   const iteration = iterations[index];
 
   return (
     <div style={style} className="flex flex-col gap-2 items-center py-2">
-      <h2 className="text-lg font-bold">Iteration {index}</h2>
+      <h2 className="text-lg font-bold">Iteration {index + (currentPage * 1000)}</h2>
       <div
         className="grid gap-1"
         style={{ gridTemplateColumns: `repeat(${iteration[0].length}, 1fr)` }}
@@ -53,9 +54,10 @@ const SimulationGrid = forwardRef<
   FixedSizeList<{
     iterations: number[][][];
     ingredients: Simulation["ingredients"];
+    currentPage: number;
   }> | null,
   Props
->(function SimulationGrid({ iterations, ingredients }: Props, ref) {
+>(function SimulationGrid({ iterations, ingredients, currentPage }: Props, ref) {
   const [height, setHeight] = useState(window.innerHeight * 0.80);
 
   useEffect(() => {
@@ -71,7 +73,7 @@ const SimulationGrid = forwardRef<
         width="70%"
         itemCount={iterations.length}
         itemSize={20 * (iterations[0].length + 1)}
-        itemData={{ iterations, ingredients }}
+        itemData={{ iterations, ingredients, currentPage }}
         ref={ref}
       >
         {IterationRow}

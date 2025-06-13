@@ -16,8 +16,10 @@ import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { EditSimulation } from "@/components/editSimulation";
-import { lazy, Suspense } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Iterations } from "@/models/iterations";
+import { lazy, Suspense } from "react";
 const SimulationGrid = lazy(() => import("@/components/SimulationGrid"));
 
 export const Route = createFileRoute("/simulations/$simulationId")({
@@ -34,7 +36,7 @@ function SimulationDetail() {
 
   const [chunkNumber, setChunkNumber] = useState(0);
 
-  const { data: iterations } = useQuery<Iterations>({
+  const { data: iterations, isLoading: isLoadingIterations, isFetching: isFetchingIterations } = useQuery<Iterations>({
     queryKey: ["iterations", simulationId, chunkNumber],
     queryFn: async () => {
       const response = await httpClient.get("/iterations", {
@@ -56,7 +58,12 @@ function SimulationDetail() {
     isFetching: isdecom,
     isRefetching: isredecom,
   } = useQuery({
-    queryKey: ["decompressedIterations", simulationId, iterations, iterations?.data],
+    queryKey: [
+      "decompressedIterations",
+      simulationId,
+      iterations,
+      iterations?.data,
+    ],
     queryFn: () => {
       if (!iterations?.data) {
         return [];
@@ -75,10 +82,14 @@ function SimulationDetail() {
   const [isRunning, setIsRunning] = useState(false);
 
   const gridRef = useRef<any>(null);
-  
+
   const simulationGridMemo = useMemo(() => {
     console.log("Rendering SimulationGrid");
-    if (!decompressedIterations || decompressedIterations.length === 0 || !data) {
+    if (
+      !decompressedIterations ||
+      decompressedIterations.length === 0 ||
+      !data
+    ) {
       return (
         <div className="flex flex-col justify-center h-[70vh]">
           <h1 className="text-2xl font-bold text-gray-500">
@@ -93,9 +104,10 @@ function SimulationDetail() {
         iterations={decompressedIterations}
         ingredients={data.ingredients}
         reactions={data.reactions}
+        currentPage={chunkNumber}
       />
     );
-  }, [decompressedIterations, data]);
+  }, [decompressedIterations, data, chunkNumber]);
 
   const onRunSimulation = (simulationName?: string) => {
     const eventSource = new EventSource(
@@ -270,7 +282,7 @@ function SimulationDetail() {
   //   return <ReactP5Wrapper sketch={sketch} />;
   // }, []);
 
-  if (isLoading || isFetching || isDecompressing || isdecom || isredecom) {
+  if (areIterationsLoading()) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
         <Spinner size="large" />
@@ -282,9 +294,9 @@ function SimulationDetail() {
   return (
     <div className="flex-flex-col">
       <div className="flex justify-between">
-        <Link to="/simulations" className="">
-          <Button variant="outline" className="flex items-center gap-2">
-            <ChevronLeft className="h-4 w-4" />
+        <Link to="/simulations">
+          <Button variant="outline">
+            <ChevronLeft className="h-4 w-4 mr-2" />
             Back to Simulations
           </Button>
         </Link>
@@ -300,8 +312,14 @@ function SimulationDetail() {
 
         {/* Legend Section */}
         {(decompressedIterations?.length ?? 0) > 0 && (
-          <div className="flex flex-col gap-[4vh] fixed top-28 right-8 z-10 text-sm">
-            {data && <EditSimulation disabled={isRunning} complete={true} id={data.id} />}
+          <div className="flex flex-col gap-[4vh] fixed top-28 right-8 z-10">
+            {data && (
+              <EditSimulation
+                disabled={isRunning}
+                complete={true}
+                id={data.id}
+              />
+            )}
             <Button
               className="flex items-center justify-center gap-2"
               variant="secondary"
@@ -311,8 +329,7 @@ function SimulationDetail() {
               <Download className="h-4 w-4" />
               Download Results File
             </Button>
-            <div className="bg-white p-4 rounded-lg border shadow-sm">
-              <h3 className="font-semibold mb-4">Legend</h3>
+            <div className="bg-white p-4 rounded-lg border shadow-sm text-xs">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-gray-200" />
@@ -341,6 +358,21 @@ function SimulationDetail() {
                   );
                 })}
               </div>
+            </div>
+            <div className="text-xs flex items-center gap-2">
+              <Label className="w-1/2">Page:</Label>
+              <Input
+                type="number"
+                className="w-1/2"
+                value={chunkNumber}
+                onChange={(e) => setChunkNumber(Number(e.target.value))}
+                min={0}
+                max={
+                  data?.iterationsNumber
+                    ? (data?.iterationsNumber / 1000).toFixed()
+                    : 0
+                }
+              />
             </div>
           </div>
         )}
@@ -392,4 +424,8 @@ function SimulationDetail() {
       </div>
     </div>
   );
+
+  function areIterationsLoading() {
+    return isLoading || isFetching || isDecompressing || isdecom || isredecom || isLoadingIterations || isFetchingIterations;
+  }
 }
