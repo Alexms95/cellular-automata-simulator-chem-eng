@@ -128,7 +128,7 @@ class MainService:
         chunks = []
         for chunk_number, start in enumerate(range(0, len(resulting_matrix), 1000)):
             chunk_data = {
-                "chunk_number": chunk_number + 1,
+                "chunk_number": chunk_number,
                 "data": compress_matrix(
                     resulting_matrix[start : start + 1000]
                 ),

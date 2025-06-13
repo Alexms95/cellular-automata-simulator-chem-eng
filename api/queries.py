@@ -69,6 +69,11 @@ class SimulationData:
         query = select(SimulationModel).where(SimulationModel.id == simulation_id)
         db_simulation = self.db.execute(query).scalars().first()
 
+        # Clear existing iterations for the simulation
+        self.db.query(IterationsModel).filter(
+            IterationsModel.simulation_id == simulation_id
+        ).delete()
+
         for chunk_data in chunks:
             iteration_entry = IterationsModel(
                 simulation_id=simulation_id,
