@@ -23,7 +23,7 @@ function About() {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen dark:text-zinc-100">
       {/* Side Menu */}
       <div className="w-72 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 p-6 fixed h-full overflow-auto">
         <div className="mb-8">

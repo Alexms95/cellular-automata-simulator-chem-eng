@@ -253,7 +253,7 @@ export const EditSimulation = ({
         {complete ? (
           <Button
             variant="outline"
-            className="flex items-center justify-center gap-2"
+            className="flex items-center justify-center gap-2 dark:text-zinc-900 dark:bg-white"
             disabled={disabled}
           >
             <PenIcon className="h-4 w-4" />
@@ -265,7 +265,7 @@ export const EditSimulation = ({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%]">
+      <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%] dark:text-white">
         <DialogHeader>
           <DialogTitle>Edit Simulation</DialogTitle>
           <DialogDescription>

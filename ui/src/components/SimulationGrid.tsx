@@ -96,7 +96,7 @@ const IterationRow = ({
 
   return (
     <div style={style} className="flex flex-col gap-2 items-center py-2">
-      <h2 className="text-lg font-bold">
+      <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">
         Iteration {index + currentPage * 1000}
       </h2>
       <canvas

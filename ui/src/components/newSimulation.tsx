@@ -226,7 +226,7 @@ export const NewSimulation = () => {
           <PlusCircle className="mr-2 w-5 h-5"></PlusCircle>New Simulation
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%]">
+      <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%] dark:text-white">
         <DialogHeader>
           <DialogTitle>New Simulation</DialogTitle>
           <DialogDescription>
@@ -257,7 +257,7 @@ export const NewSimulation = () => {
           </div>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 flex flex-col"
+            className="space-y-4 flex flex-col dark:text-white"
             id="new-simulation-form"
           >
             <div className="flex space-x-4">
@@ -799,7 +799,9 @@ export const NewSimulation = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem key="None" value="None">None</SelectItem>
+                          <SelectItem key="None" value="None">
+                            None
+                          </SelectItem>
                           {componentIndexNames.map((c) => (
                             <SelectItem key={c.name} value={c.index}>
                               {c.name}
@@ -905,7 +907,10 @@ export const NewSimulation = () => {
           </form>
           <DialogFooter className="sm:justify-between">
             <DialogClose asChild>
-              <Button className="w-1/6" variant="outline">
+              <Button
+                className="w-1/6 dark:text-zinc-900 dark:bg-white"
+                variant="outline"
+              >
                 Cancel
               </Button>
             </DialogClose>

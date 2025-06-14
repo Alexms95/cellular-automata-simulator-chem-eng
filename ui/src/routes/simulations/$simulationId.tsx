@@ -285,8 +285,8 @@ function SimulationDetail() {
   if (areIterationsLoading()) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <Spinner size="large" />
-        <span className="text-lg">Loading iterations...</span>
+        <Spinner size="large" className="dark:text-zinc-100" />
+        <span className="text-lg dark:text-zinc-100">Loading iterations...</span>
       </div>
     );
   }
@@ -295,12 +295,12 @@ function SimulationDetail() {
     <div className="flex-flex-col">
       <div className="flex justify-between">
         <Link to="/simulations">
-          <Button variant="outline">
+          <Button variant="outline" className="dark:text-zinc-900 dark:bg-white">
             <ChevronLeft className="h-4 w-4 mr-2" />
             Back to Simulations
           </Button>
         </Link>
-        <h1 className="text-xl text-center font-bold mb-4">{data?.name}</h1>
+        <h1 className="text-xl text-center font-bold mb-4 dark:text-white">{data?.name}</h1>
         <Button
           className="flex items-center justify-center gap-2"
           onClick={() => onRunSimulation(data?.name)}
@@ -321,7 +321,7 @@ function SimulationDetail() {
               />
             )}
             <Button
-              className="flex items-center justify-center gap-2"
+              className="flex items-center justify-center gap-2 dark:text-zinc-900 dark:bg-white"
               variant="secondary"
               onClick={() => downloadCSV()}
               disabled={isRunning}
@@ -360,10 +360,10 @@ function SimulationDetail() {
               </div>
             </div>
             <div className="text-xs flex items-center gap-2">
-              <Label className="w-1/2">Page:</Label>
+              <Label className="w-1/2 dark:text-white">Page:</Label>
               <Input
                 type="number"
-                className="w-1/2"
+                className="w-1/2 dark:bg-zinc-900 dark:text-white"
                 value={chunkNumber}
                 onChange={(e) => setChunkNumber(Number(e.target.value))}
                 min={0}
@@ -414,8 +414,8 @@ function SimulationDetail() {
         <Suspense
           fallback={
             <div className="flex flex-col items-center justify-center h-screen gap-4">
-              <Spinner size="large" />
-              <span className="text-lg">Rendering simulation...</span>
+              <Spinner size="large" className="dark:text-zinc-100" />
+              <span className="text-lg dark:text-zinc-100">Rendering simulation...</span>
             </div>
           }
         >
