@@ -22,6 +22,8 @@ import { Iterations } from "@/models/iterations";
 import { lazy, Suspense } from "react";
 const SimulationGrid = lazy(() => import("@/components/SimulationGrid"));
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export const Route = createFileRoute("/simulations/$simulationId")({
   component: () => <SimulationDetail />,
 });
@@ -111,7 +113,7 @@ function SimulationDetail() {
 
   const onRunSimulation = (simulationName?: string) => {
     const eventSource = new EventSource(
-      `http://localhost:8000/simulations/${simulationId}/run`
+      `${API_URL}/simulations/${simulationId}/run`
     );
 
     setIsRunning(true);
@@ -153,7 +155,7 @@ function SimulationDetail() {
   const downloadCSV = async () => {
     const promise = (async () => {
       const response = await httpClient.get(
-        `http://localhost:8000/simulations/${simulationId}/results`,
+        `${API_URL}/simulations/${simulationId}/results`,
         {
           responseType: "blob",
         }
