@@ -1,10 +1,5 @@
 from config import get_settings
-from domain.schemas import (
-    IterationsResponse,
-    SimulationComplete,
-    SimulationCreate,
-    SimulationResponse,
-)
+from domain.schemas import IterationsResponse, SimulationCreate, SimulationResponse
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -95,7 +90,7 @@ def run_simulation(id: str, service: MainService = Depends(get_service)):
     return StreamingResponse(service.run_simulation(id), media_type="text/event-stream")
 
 
-@app.get("/simulations/{id}", response_model=SimulationComplete)
+@app.get("/simulations/{id}", response_model=SimulationResponse)
 def get_simulation(id: str, service: MainService = Depends(get_service)):
     logger.info(f"Fetching complete simulation with id {id}")
     return service.get_simulation(id)

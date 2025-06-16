@@ -58,13 +58,6 @@ class SimulationResponse(SimulationBase):
         from_attributes = True
 
 
-class SimulationComplete(SimulationResponse):
-    results: list[list] | None
-
-    class Config:
-        from_attributes = True
-
-
 class RotationInfo(TypedDict):
     component: int
     p_rot: float

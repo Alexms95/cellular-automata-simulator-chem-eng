@@ -26,8 +26,8 @@ class SimulationData:
         return self.db.execute(SELECT_WITHOUT_ITERATIONS).all()
 
     def get_simulation(self, simulation_id: str):
-        query = select(SimulationModel).where(SimulationModel.id == simulation_id)
-        return self.db.execute(query).scalars().first()
+        query = SELECT_WITHOUT_ITERATIONS.where(SimulationModel.id == simulation_id)
+        return self.db.execute(query).first()
 
     def get_simulation_by_name(self, name: str):
         query = SELECT_WITHOUT_ITERATIONS.where(SimulationModel.name == name)
@@ -50,6 +50,7 @@ class SimulationData:
     ):
         query = select(SimulationModel).where(SimulationModel.id == simulation_id)
         db_simulation = self.db.execute(query).scalars().first()
+        print(db_simulation.__dict__)
 
         for key, value in updatedSimulation.model_dump(exclude_unset=True).items():
             setattr(db_simulation, key, value)
