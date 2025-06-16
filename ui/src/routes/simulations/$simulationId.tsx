@@ -36,7 +36,7 @@ function SimulationDetail() {
     queryKey: ["simulations", simulationId],
   });
 
-  const [chunkNumber, setChunkNumber] = useState(0);
+  const [chunkNumber, setChunkNumber] = useState(1);
 
   const { data: iterations, isLoading: isLoadingIterations, isFetching: isFetchingIterations } = useQuery<Iterations>({
     queryKey: ["iterations", simulationId, chunkNumber],
@@ -44,7 +44,7 @@ function SimulationDetail() {
       const response = await httpClient.get("/iterations", {
         params: {
           simulation_id: simulationId,
-          chunk_number: chunkNumber,
+          chunk_number: chunkNumber - 1,
         },
       });
       return response.data;
@@ -323,7 +323,7 @@ function SimulationDetail() {
               />
             )}
             <Button
-              className="flex items-center justify-center gap-2 dark:text-zinc-900 dark:bg-white"
+              className="flex items-center justify-center gap-2 dark:text-zinc-900 dark:bg-white bg-zinc-200"
               variant="secondary"
               onClick={() => downloadCSV()}
               disabled={isRunning}
@@ -368,11 +368,11 @@ function SimulationDetail() {
                 className="w-1/2 dark:bg-zinc-900 dark:text-white"
                 value={chunkNumber}
                 onChange={(e) => setChunkNumber(Number(e.target.value))}
-                min={0}
+                min={1}
                 max={
                   data?.iterationsNumber
-                    ? (data?.iterationsNumber / 1000).toFixed()
-                    : 0
+                    ? (data?.iterationsNumber / 1000).toFixed(0) + 1
+                    : 1
                 }
               />
             </div>

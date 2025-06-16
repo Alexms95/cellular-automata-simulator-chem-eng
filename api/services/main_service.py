@@ -58,8 +58,10 @@ class MainService:
         simulation_data = self.dataAccess.get_simulation(simulation_id)
         if not simulation_data:
             raise HTTPException(status_code=400, detail="Simulation not found")
+        
+        print(simulation_data)
 
-        simulation = SimulationBase(**simulation_data.__dict__)
+        simulation = SimulationBase(**simulation_data._asdict())
 
         rotation_manager = RotationManager(simulation.rotation)
 
