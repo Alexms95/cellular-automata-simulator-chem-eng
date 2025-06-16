@@ -18,6 +18,7 @@ import {
 import { colors } from "@/models/colors";
 import { Simulation } from "@/models/simulation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRightIcon,
@@ -56,11 +57,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 export const EditSimulation = ({
   id,
   complete = false,
-  disabled = false
+  disabled = false,
 }: {
   id: string;
   complete: boolean;
-  disabled: boolean
+  disabled: boolean;
 }) => {
   const queryClient = useQueryClient();
 
@@ -260,7 +261,12 @@ export const EditSimulation = ({
             Edit Simulation
           </Button>
         ) : (
-          <Button variant="outline" size="icon" className="w-8 h-8" disabled={disabled}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="w-8 h-8"
+            disabled={disabled}
+          >
             <PenIcon className="m-2" />
           </Button>
         )}
@@ -878,9 +884,24 @@ export const EditSimulation = ({
               </div>
             </div>
             <Separator />
-            <h4 className="scroll-m-20 font-semibold tracking-tight">
-              Movement Parameters
-            </h4>
+            <div className="flex items-center gap-4">
+              <h4 className="scroll-m-20 font-semibold tracking-tight">
+                Movement Parameters
+              </h4>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InfoCircledIcon>
+                  </InfoCircledIcon>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {componentIndexNames.map((c) => (
+                    <div key={c.index}>
+                      {c.index}: ({c.name})
+                    </div>
+                  ))}
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="flex space-x-2">
               {fields.map((field, index) => (
                 <FormField

@@ -50,6 +50,7 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 
 export const NewSimulation = () => {
   const queryClient = useQueryClient();
@@ -110,9 +111,9 @@ export const NewSimulation = () => {
   useEffect(() => {
     const parameterJ = pairMatrix.map((pair, index) => ({
       relation: pair.join("|"),
-      value: form.getValues(`parameters.J.${index}.value`) || 1
+      value: form.getValues(`parameters.J.${index}.value`) || 1,
     }));
-    form.setValue('parameters.J', parameterJ, { shouldDirty: true });
+    form.setValue("parameters.J", parameterJ, { shouldDirty: true });
   }, [pairMatrix, form]);
 
   const molarFractionsSum = fields
@@ -212,7 +213,7 @@ export const NewSimulation = () => {
         const result = e.target?.result;
         if (typeof result === "string") {
           const values = JSON.parse(result) as SimulationForm;
-          form.reset({...values, name: values.name + "_new"});
+          form.reset({ ...values, name: values.name + "_new" });
         }
       };
       reader.readAsText(files[0]);
@@ -840,9 +841,23 @@ export const NewSimulation = () => {
               </div>
             </div>
             <Separator />
-            <h4 className="scroll-m-20 font-semibold tracking-tight">
-              Movement Parameters
-            </h4>
+            <div className="flex items-center gap-4">
+              <h4 className="scroll-m-20 font-semibold tracking-tight">
+                Movement Parameters
+              </h4>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InfoCircledIcon></InfoCircledIcon>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {componentIndexNames.map((c) => (
+                    <div key={c.index}>
+                      {c.index}: ({c.name})
+                    </div>
+                  ))}
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="flex space-x-2">
               {fields.map((field, index) => (
                 <FormField
