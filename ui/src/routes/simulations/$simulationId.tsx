@@ -321,7 +321,7 @@ function SimulationDetail() {
 
         {/* Legend Section */}
         {(decompressedIterations?.length ?? 0) > 0 && (
-          <div className="flex flex-col gap-[4vh] fixed top-28 right-8 z-10">
+          <div className="flex flex-col gap-[4vh] fixed top-28 right-8 z-10 w-1/8">
             {data && (
               <EditSimulation
                 disabled={isRunning}
@@ -330,13 +330,13 @@ function SimulationDetail() {
               />
             )}
             <Button
-              className="flex items-center justify-center gap-2 dark:text-zinc-900 dark:bg-white bg-zinc-200"
+              className="flex items-center justify-center gap-2 xl:text-sm text-xs dark:text-zinc-900 dark:bg-white bg-zinc-200 dark:hover:text-zinc-100"
               variant="secondary"
               onClick={() => downloadCSV()}
               disabled={isRunning}
             >
               <Download className="h-4 w-4" />
-              Download Results File
+              Download Results
             </Button>
             <div className="bg-white p-4 rounded-lg border shadow-sm text-xs">
               <div className="space-y-2">
