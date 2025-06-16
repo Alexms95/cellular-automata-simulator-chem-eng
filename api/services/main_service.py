@@ -59,8 +59,6 @@ class MainService:
         if not simulation_data:
             raise HTTPException(status_code=400, detail="Simulation not found")
         
-        print(simulation_data)
-
         simulation = SimulationBase(**simulation_data._asdict())
 
         rotation_manager = RotationManager(simulation.rotation)
@@ -90,6 +88,8 @@ class MainService:
             yield f"data: {json.dumps({'progress': current_iteration / total_iterations})}\n\n"
 
         resulting_matrix, molar_fractions_table = calculations.get_results()
+        
+        yield "data: Calculations completed, processing results...\n\n"
 
         self.save_simulation_results(
             simulation_id, resulting_matrix.tolist(), molar_fractions_table

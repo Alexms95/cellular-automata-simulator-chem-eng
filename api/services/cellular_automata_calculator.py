@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from math import floor
 from typing import List, Optional, Tuple
@@ -41,6 +42,7 @@ class CellularAutomataCalculator:
         self.simulation = simulation
         self.surface_type = surface_type
         self.EMPTY_FRAC = 0.31  # Fraction of empty cells
+        self.__current_progress_percentage = 0.0
 
         # Auxiliary services
         self.movement_analyzer = movement_analyzer
@@ -177,8 +179,17 @@ class CellularAutomataCalculator:
                 len(self.simulation.ingredients),
             )
 
-            if n % 10 == 0 or n == n_iter:
+            # Yield progress updates if percentage changed
+            progress_percentage = round(n / n_iter, 2)
+            if (
+                n % 10 == 0
+                and progress_percentage != self.__current_progress_percentage
+            ) or n == n_iter:
+                self.__current_progress_percentage = progress_percentage
                 yield n, n_iter
+                await asyncio.sleep(
+                    0.01
+                )  # Yield control to event loop. It helps to show separate progress updates
 
         end_time = datetime.now()
         elapsed_time = (end_time - start_time).total_seconds()
@@ -237,7 +248,12 @@ class CellularAutomataCalculator:
     ) -> bool:
         """Processes chemical reactions for a component and returns if any reaction occurred"""
         possible_reactions = self.reaction_processor.find_possible_reactions(
-            matrix, position, component, self.surface_type, self.check_constraints, self.simulation_state
+            matrix,
+            position,
+            component,
+            self.surface_type,
+            self.check_constraints,
+            self.simulation_state,
         )
 
         if possible_reactions:

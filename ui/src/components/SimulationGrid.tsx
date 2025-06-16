@@ -132,7 +132,7 @@ const SimulationGrid = forwardRef<
     <div className="">
       <FixedSizeList
         height={height}
-        width="80%"
+        width="85%"
         itemCount={iterations.length}
         itemSize={20 * (iterations[0].length + 1)}
         itemData={{ iterations, ingredients, currentPage }}

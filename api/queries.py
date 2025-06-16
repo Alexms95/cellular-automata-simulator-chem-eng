@@ -50,7 +50,6 @@ class SimulationData:
     ):
         query = select(SimulationModel).where(SimulationModel.id == simulation_id)
         db_simulation = self.db.execute(query).scalars().first()
-        print(db_simulation.__dict__)
 
         for key, value in updatedSimulation.model_dump(exclude_unset=True).items():
             setattr(db_simulation, key, value)

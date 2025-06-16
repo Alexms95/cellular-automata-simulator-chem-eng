@@ -122,9 +122,9 @@ function SimulationDetail() {
 
     const toastId = toast.loading("Starting simulation...");
     eventSource.onmessage = (event) => {
-      const data = event.data;
+      const data = event.data as string;
 
-      if (data === "Simulation completed!") {
+      if (data.includes("Simulation completed!")) {
         toast.success(`${name} run successfully!`, { id: toastId });
         eventSource.close();
         queryClient.invalidateQueries({
@@ -139,10 +139,17 @@ function SimulationDetail() {
         setIsRunning(false);
         return;
       }
-      const progress = parseFloat(JSON.parse(data).progress) * 100;
-      toast.loading(`Running ${name}... ${progress.toFixed()} % completed`, {
-        id: toastId,
-      });
+      else if (data.includes("progress")) {
+        const progress = parseFloat(JSON.parse(data).progress) * 100;
+        toast.loading(`Running ${name}... ${progress.toFixed()} % completed`, {
+          id: toastId,
+        });
+      }
+      else {
+        toast.loading(data, {
+          id: toastId,
+        });
+      }
     };
 
     eventSource.onerror = () => {

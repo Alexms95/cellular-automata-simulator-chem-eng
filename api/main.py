@@ -87,7 +87,11 @@ def delete_simulation(id: str, service: MainService = Depends(get_service)):
 @app.get("/simulations/{id}/run")
 def run_simulation(id: str, service: MainService = Depends(get_service)):
     logger.info(f"Running simulation with id {id}")
-    return StreamingResponse(service.run_simulation(id), media_type="text/event-stream")
+    return StreamingResponse(
+        service.run_simulation(id),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+    )
 
 
 @app.get("/simulations/{id}", response_model=SimulationResponse)
