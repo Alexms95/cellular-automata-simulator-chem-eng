@@ -898,7 +898,7 @@ export const NewSimulation = () => {
                     <FormField
                       control={form.control}
                       name={`parameters.J.${index}.value`}
-                      defaultValue={1}
+                      defaultValue={0}
                       shouldUnregister
                       render={({ field }) => (
                         <FormItem>

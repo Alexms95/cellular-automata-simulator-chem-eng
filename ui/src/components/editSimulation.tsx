@@ -737,7 +737,7 @@ export const EditSimulation = ({
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  step={0.1}
+                                  step={0.01}
                                   min={0}
                                   max={1}
                                   type="number"
@@ -941,7 +941,7 @@ export const EditSimulation = ({
                     <FormField
                       control={form.control}
                       name={`parameters.J.${index}.value`}
-                      defaultValue={1}
+                      defaultValue={0}
                       shouldUnregister
                       render={({ field }) => (
                         <FormItem>
