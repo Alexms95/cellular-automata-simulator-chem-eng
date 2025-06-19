@@ -241,13 +241,13 @@ class ReactionProcessor:
             return False
 
         # Add no-reaction option for non-intermediates
-        if not is_intermediate_component(component):
-            false_sum = len(possible_reactions) - true_sum
-            no_reaction = ReactionCandidate(-1, [], ((-1, -1), (-1, -1)), false_sum)
-            possible_reactions.append(no_reaction)
-            total_sum = true_sum + false_sum
-        else:
-            total_sum = true_sum
+        #if not is_intermediate_component(component):
+        false_sum = len(possible_reactions) - true_sum
+        no_reaction = ReactionCandidate(-1, [], ((-1, -1), (-1, -1)), false_sum)
+        possible_reactions.append(no_reaction)
+        total_sum = true_sum + false_sum
+        # else:
+        #     total_sum = true_sum
 
         # Normalize probabilities
         normalized_probs = [
