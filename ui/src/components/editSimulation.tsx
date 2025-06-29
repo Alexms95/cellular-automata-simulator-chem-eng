@@ -714,7 +714,7 @@ export const EditSimulation = ({
                             </FormLabel>
                             <FormControl>
                               <Input
-                                step={0.001}
+                                step={0.0001}
                                 min={0}
                                 max={1}
                                 type="number"
@@ -737,7 +737,7 @@ export const EditSimulation = ({
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  step={0.001}
+                                  step={0.0001}
                                   min={0}
                                   max={1}
                                   type="number"
@@ -764,7 +764,7 @@ export const EditSimulation = ({
                             </FormLabel>
                             <FormControl>
                               <Input
-                                step={0.001}
+                                step={0.0001}
                                 min={0}
                                 max={1}
                                 type="number"
@@ -788,7 +788,7 @@ export const EditSimulation = ({
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  step={0.001}
+                                  step={0.0001}
                                   min={0}
                                   max={1}
                                   type="number"
