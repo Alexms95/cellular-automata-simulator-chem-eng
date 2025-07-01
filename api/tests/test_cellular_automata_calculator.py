@@ -188,3 +188,5 @@ class TestCellularAutomataCalculator:
                 assert result == (r, c)
             else:
                 assert result is None
+
+    
