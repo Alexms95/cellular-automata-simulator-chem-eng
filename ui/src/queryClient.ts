@@ -4,7 +4,7 @@ import httpClient from "./lib/httpClient";
 const defaultQueryFn = async ({ queryKey }: { queryKey: QueryKey }) => {
   const path = queryKey.reduce((acc, cur) => `${acc}/${cur}`);
 
-  const { data } = await httpClient.get(`http://localhost:8000/${path}`);
+  const { data } = await httpClient.get(`/${path}`);
   return data;
 };
 

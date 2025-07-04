@@ -56,7 +56,7 @@ const InputWithIcon = React.forwardRef<HTMLInputElement, InputProps>(
         {EndIcon && (
           <div className="absolute bg-zinc-100 right-0 top-1/2 transform -translate-y-1/2 border px-2.5 py-2.5 rounded-y-md rounded-r-md">
             <EndIcon
-              className="text-muted-foreground"
+              className="text-muted-foreground dark:text-zinc-900"
               size={14}
               strokeWidth={1.5}
             />

@@ -16,8 +16,13 @@ import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { EditSimulation } from "@/components/editSimulation";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Iterations } from "@/models/iterations";
 import { lazy, Suspense } from "react";
 const SimulationGrid = lazy(() => import("@/components/SimulationGrid"));
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const Route = createFileRoute("/simulations/$simulationId")({
   component: () => <SimulationDetail />,
@@ -31,8 +36,20 @@ function SimulationDetail() {
     queryKey: ["simulations", simulationId],
   });
 
-  useQuery({
-    queryKey: ["simulations"],
+  const [chunkNumber, setChunkNumber] = useState(1);
+
+  const { data: iterations, isLoading: isLoadingIterations, isFetching: isFetchingIterations } = useQuery<Iterations>({
+    queryKey: ["iterations", simulationId, chunkNumber],
+    queryFn: async () => {
+      const response = await httpClient.get("/iterations", {
+        params: {
+          simulation_id: simulationId,
+          chunk_number: chunkNumber - 1,
+        },
+      });
+      return response.data;
+    },
+    enabled: !!simulationId,
   });
 
   const rotation = data?.rotation;
@@ -43,12 +60,17 @@ function SimulationDetail() {
     isFetching: isdecom,
     isRefetching: isredecom,
   } = useQuery({
-    queryKey: ["decompressedIterations", simulationId, data?.iterations, data],
+    queryKey: [
+      "decompressedIterations",
+      simulationId,
+      iterations,
+      iterations?.data,
+    ],
     queryFn: () => {
-      if (!data?.iterations) {
+      if (!iterations?.data) {
         return [];
       }
-      const binaryString = atob(data!.iterations);
+      const binaryString = atob(iterations.data);
       const len = binaryString.length;
       const bytes = new Uint8Array(len);
       for (let i = 0; i < len; i++) {
@@ -62,10 +84,22 @@ function SimulationDetail() {
   const [isRunning, setIsRunning] = useState(false);
 
   const gridRef = useRef<any>(null);
-  
+
   const simulationGridMemo = useMemo(() => {
     console.log("Rendering SimulationGrid");
-    if (!decompressedIterations || decompressedIterations.length === 0 || !data) {
+    if (areIterationsLoading()) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen gap-4">
+          <Spinner size="large" className="dark:text-zinc-100" />
+          <span className="text-lg dark:text-zinc-100">Loading simulation...</span>
+        </div>
+      );
+    }
+    if (
+      !decompressedIterations ||
+      decompressedIterations.length === 0 ||
+      !data
+    ) {
       return (
         <div className="flex flex-col justify-center h-[70vh]">
           <h1 className="text-2xl font-bold text-gray-500">
@@ -80,13 +114,14 @@ function SimulationDetail() {
         iterations={decompressedIterations}
         ingredients={data.ingredients}
         reactions={data.reactions}
+        currentPage={chunkNumber}
       />
     );
-  }, [decompressedIterations, data]);
+  }, [areIterationsLoading, decompressedIterations, data, chunkNumber]);
 
   const onRunSimulation = (simulationName?: string) => {
     const eventSource = new EventSource(
-      `http://localhost:8000/simulations/${simulationId}/run`
+      `${API_URL}/simulations/${simulationId}/run`
     );
 
     setIsRunning(true);
@@ -95,9 +130,9 @@ function SimulationDetail() {
 
     const toastId = toast.loading("Starting simulation...");
     eventSource.onmessage = (event) => {
-      const data = event.data;
+      const data = event.data as string;
 
-      if (data === "Simulation completed!") {
+      if (data.includes("Simulation completed!")) {
         toast.success(`${name} run successfully!`, { id: toastId });
         eventSource.close();
         queryClient.invalidateQueries({
@@ -106,13 +141,23 @@ function SimulationDetail() {
         queryClient.invalidateQueries({
           queryKey: ["decompressedIterations", simulationId],
         });
+        queryClient.invalidateQueries({
+          queryKey: ["iterations", simulationId],
+        });
         setIsRunning(false);
         return;
       }
-      const progress = parseFloat(JSON.parse(data).progress) * 100;
-      toast.loading(`Running ${name}... ${progress.toFixed()} % completed`, {
-        id: toastId,
-      });
+      else if (data.includes("progress")) {
+        const progress = parseFloat(JSON.parse(data).progress) * 100;
+        toast.loading(`Running ${name}... ${progress.toFixed()} % completed`, {
+          id: toastId,
+        });
+      }
+      else {
+        toast.loading(data, {
+          id: toastId,
+        });
+      }
     };
 
     eventSource.onerror = () => {
@@ -125,7 +170,7 @@ function SimulationDetail() {
   const downloadCSV = async () => {
     const promise = (async () => {
       const response = await httpClient.get(
-        `http://localhost:8000/simulations/${simulationId}/results`,
+        `${API_URL}/simulations/${simulationId}/results`,
         {
           responseType: "blob",
         }
@@ -169,110 +214,25 @@ function SimulationDetail() {
     );
   };
 
-  // const chunks = useRef<Blob[]>([]);
-
-  // const [isRecording, setIsRecording] = useState(false);
-
-  // const generateVideo = () => {
-  //   const blob = new Blob(chunks.current, { type: "video/mp4" });
-  //   const url = URL.createObjectURL(blob);
-  //   const a = document.createElement("a");
-  //   document.body.appendChild(a);
-  //   a.href = url;
-  //   a.download = "cellular_automata.mp4";
-  //   a.click();
-  //   window.URL.revokeObjectURL(url);
-  // };
-
-  // const memoizedReactP5Wrapper = useMemo(() => {
-  //   const sketch: Sketch = (p5) => {
-  //     let grid: number[][];
-  //     const cols = 100;
-  //     const rows = cols;
-  //     const resolution = 10;
-  //     const frameRate = 5;
-  //     let recorder: MediaRecorder;
-
-  //     p5.setup = () => {
-  //       p5.createCanvas(500, 500);
-  //       p5.frameRate(frameRate);
-  //       grid = createGrid();
-  //     };
-
-  //     p5.draw = () => {
-  //       if (p5.frameCount === 1) {
-  //         recorder = new MediaRecorder(
-  //           p5.drawingContext.canvas.captureStream(frameRate)
-  //         );
-
-  //         recorder.ondataavailable = (e) => {
-  //           if (e.data.size > 0) {
-  //             chunks.current.push(e.data);
-  //           }
-  //         };
-
-  //         recorder.onstop = () => {
-  //           setIsRecording(false);
-  //         };
-
-  //         recorder.start();
-  //         return;
-  //       }
-
-  //       if (p5.frameCount >= 32) {
-  //         if (isRecording) recorder.stop();
-  //         p5.noLoop();
-  //         return;
-  //       }
-
-  //       p5.background(220);
-
-  //       for (let i = 0; i < cols; i++) {
-  //         for (let j = 0; j < rows; j++) {
-  //           const x = i * resolution;
-  //           const y = j * resolution;
-  //           if (grid[j][i] === 1) {
-  //             p5.fill("orange");
-  //             p5.stroke(220);
-  //             p5.rect(x, y, resolution - 1, resolution - 1);
-  //           } else {
-  //             p5.fill("blue");
-  //             p5.stroke(220);
-  //             p5.rect(x, y, resolution - 1, resolution - 1);
-  //           }
-  //         }
-  //       }
-  //       grid = createGrid();
-  //     };
-
-  //     function createGrid() {
-  //       return Array.from({ length: rows }).map(() =>
-  //         Array.from({ length: cols }).map(() => p5.random([0, 1]))
-  //       );
-  //     }
-  //   };
-  //   return <ReactP5Wrapper sketch={sketch} />;
-  // }, []);
-
-  if (isLoading || isFetching || isDecompressing || isdecom || isredecom) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <Spinner size="large" />
-        <span className="text-lg">Loading iterations...</span>
-      </div>
-    );
-  }
+  // if (areIterationsLoading()) {
+  //   return (
+  //     <div className="flex flex-col items-center justify-center h-screen gap-4">
+  //       <Spinner size="large" className="dark:text-zinc-100" />
+  //       <span className="text-lg dark:text-zinc-100">Loading iterations...</span>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex-flex-col">
       <div className="flex justify-between">
-        <Link to="/simulations" className="">
-          <Button variant="outline" className="flex items-center gap-2">
-            <ChevronLeft className="h-4 w-4" />
+        <Link to="/simulations">
+          <Button variant="outline" className="dark:text-zinc-900 dark:bg-white">
+            <ChevronLeft className="h-4 w-4 mr-2" />
             Back to Simulations
           </Button>
         </Link>
-        <h1 className="text-xl text-center font-bold mb-4">{data?.name}</h1>
+        <h1 className="text-xl text-center font-bold mb-4 dark:text-white">{data?.name}</h1>
         <Button
           className="flex items-center justify-center gap-2"
           onClick={() => onRunSimulation(data?.name)}
@@ -284,19 +244,24 @@ function SimulationDetail() {
 
         {/* Legend Section */}
         {(decompressedIterations?.length ?? 0) > 0 && (
-          <div className="flex flex-col gap-[4vh] fixed top-28 right-8 z-10 text-sm">
-            {data && <EditSimulation disabled={isRunning} complete={true} id={data.id} />}
+          <div className="flex flex-col gap-[4vh] fixed top-28 right-8 z-10 w-1/8">
+            {data && (
+              <EditSimulation
+                disabled={isRunning}
+                complete={true}
+                id={data.id}
+              />
+            )}
             <Button
-              className="flex items-center justify-center gap-2"
+              className="flex items-center justify-center gap-2 xl:text-sm text-xs dark:text-zinc-900 dark:bg-white bg-zinc-200 dark:hover:text-zinc-100"
               variant="secondary"
               onClick={() => downloadCSV()}
               disabled={isRunning}
             >
               <Download className="h-4 w-4" />
-              Download Results File
+              Download Results
             </Button>
-            <div className="bg-white p-4 rounded-lg border shadow-sm">
-              <h3 className="font-semibold mb-4">Legend</h3>
+            <div className="bg-white p-4 rounded-lg border shadow-sm text-xs">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-gray-200" />
@@ -326,21 +291,25 @@ function SimulationDetail() {
                 })}
               </div>
             </div>
+            <div className="text-xs flex items-center gap-2">
+              <Label className="w-1/2 dark:text-white">Page:</Label>
+              <Input
+                type="number"
+                className="w-1/2 dark:bg-zinc-900 dark:text-white"
+                value={chunkNumber}
+                onChange={(e) => setChunkNumber(Number(e.target.value))}
+                min={1}
+                max={
+                  data?.iterationsNumber
+                    ? (data?.iterationsNumber / 1000).toFixed(0) + 1
+                    : 1
+                }
+              />
+            </div>
           </div>
         )}
       </div>
       <div className="space-y-4">
-        {/* Disabled for now
-        <Button className="w-1/2" disabled={true} onClick={generateVideo}>
-          {isRecording ? (
-            <Spinner size="small">
-              <span className="ml-2">Running simulation...</span>
-            </Spinner>
-          ) : (
-            "Generate mp4 video"
-          )}
-        </Button>
-        */}
 
         {/* Navigation Controls */}
         <div className="fixed bottom-10 right-20 space-x-8 z-10">
@@ -366,8 +335,8 @@ function SimulationDetail() {
         <Suspense
           fallback={
             <div className="flex flex-col items-center justify-center h-screen gap-4">
-              <Spinner size="large" />
-              <span className="text-lg">Rendering simulation...</span>
+              <Spinner size="large" className="dark:text-zinc-100" />
+              <span className="text-lg dark:text-zinc-100">Rendering simulation...</span>
             </div>
           }
         >
@@ -376,4 +345,8 @@ function SimulationDetail() {
       </div>
     </div>
   );
+
+  function areIterationsLoading() {
+    return isLoading || isFetching || isDecompressing || isdecom || isredecom || isLoadingIterations || isFetchingIterations;
+  }
 }

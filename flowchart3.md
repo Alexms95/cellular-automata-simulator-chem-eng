@@ -7,9 +7,8 @@ flowchart LR
     B --> C[Instantiate<br>CellularAutomataCalculator]:::calc
     C --> D[calculate_cellular_automata]:::calc
     D --> E[_initialize_simulation]:::calc
-    E --> F[_setup_auxiliary_services]:::calc
-    F --> G[Create SimulationState]:::calc
-    G --> H[_run_simulation_iterations]:::calc
+    E --> F[Create SimulationState]:::state
+    F --> G[_run_simulation_iterations]:::calc
 
     %% Iteration loop
     subgraph Iteration Loop
@@ -43,7 +42,7 @@ flowchart LR
         I11 -->|Yes| J([Simulation completed<br>Results available]):::api
     end
 
-    H --> I1
+    G --> I1
     I1 --> PROCESS_CELLS_START
 
     %% Visual cues for code structure

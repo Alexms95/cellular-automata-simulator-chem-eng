@@ -18,6 +18,7 @@ import {
 import { colors } from "@/models/colors";
 import { Simulation } from "@/models/simulation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRightIcon,
@@ -56,11 +57,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 export const EditSimulation = ({
   id,
   complete = false,
-  disabled = false
+  disabled = false,
 }: {
   id: string;
   complete: boolean;
-  disabled: boolean
+  disabled: boolean;
 }) => {
   const queryClient = useQueryClient();
 
@@ -253,19 +254,24 @@ export const EditSimulation = ({
         {complete ? (
           <Button
             variant="outline"
-            className="flex items-center justify-center gap-2"
+            className="flex items-center justify-center gap-2 dark:text-zinc-900 dark:bg-white"
             disabled={disabled}
           >
             <PenIcon className="h-4 w-4" />
             Edit Simulation
           </Button>
         ) : (
-          <Button variant="outline" size="icon" className="w-8 h-8" disabled={disabled}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="w-8 h-8"
+            disabled={disabled}
+          >
             <PenIcon className="m-2" />
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%]">
+      <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%] dark:text-white">
         <DialogHeader>
           <DialogTitle>Edit Simulation</DialogTitle>
           <DialogDescription>
@@ -708,7 +714,7 @@ export const EditSimulation = ({
                             </FormLabel>
                             <FormControl>
                               <Input
-                                step={0.1}
+                                step={0.0001}
                                 min={0}
                                 max={1}
                                 type="number"
@@ -731,7 +737,7 @@ export const EditSimulation = ({
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  step={0.1}
+                                  step={0.0001}
                                   min={0}
                                   max={1}
                                   type="number"
@@ -758,7 +764,7 @@ export const EditSimulation = ({
                             </FormLabel>
                             <FormControl>
                               <Input
-                                step={0.1}
+                                step={0.0001}
                                 min={0}
                                 max={1}
                                 type="number"
@@ -782,7 +788,7 @@ export const EditSimulation = ({
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  step={0.1}
+                                  step={0.0001}
                                   min={0}
                                   max={1}
                                   type="number"
@@ -878,9 +884,24 @@ export const EditSimulation = ({
               </div>
             </div>
             <Separator />
-            <h4 className="scroll-m-20 font-semibold tracking-tight">
-              Movement Parameters
-            </h4>
+            <div className="flex items-center gap-4">
+              <h4 className="scroll-m-20 font-semibold tracking-tight">
+                Movement Parameters
+              </h4>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InfoCircledIcon>
+                  </InfoCircledIcon>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {componentIndexNames.map((c) => (
+                    <div key={c.index}>
+                      {c.index}: ({c.name})
+                    </div>
+                  ))}
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="flex space-x-2">
               {fields.map((field, index) => (
                 <FormField
@@ -895,7 +916,7 @@ export const EditSimulation = ({
                       </FormLabel>
                       <FormControl>
                         <Input
-                          step={0.1}
+                          step={0.01}
                           min={0}
                           max={1}
                           type="number"
@@ -920,14 +941,14 @@ export const EditSimulation = ({
                     <FormField
                       control={form.control}
                       name={`parameters.J.${index}.value`}
-                      defaultValue={1}
+                      defaultValue={0}
                       shouldUnregister
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>J ({comb.join("|")})</FormLabel>
                           <FormControl>
                             <Input
-                              step={0.1}
+                              step={0.01}
                               min={0}
                               type="number"
                               {...field}

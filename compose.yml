@@ -21,6 +21,8 @@ services:
     container_name: nginx
     ports:
       - "9000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
     depends_on:
       - backend
   db:

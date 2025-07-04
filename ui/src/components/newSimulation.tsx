@@ -50,6 +50,7 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 
 export const NewSimulation = () => {
   const queryClient = useQueryClient();
@@ -110,9 +111,9 @@ export const NewSimulation = () => {
   useEffect(() => {
     const parameterJ = pairMatrix.map((pair, index) => ({
       relation: pair.join("|"),
-      value: form.getValues(`parameters.J.${index}.value`) || 1
+      value: form.getValues(`parameters.J.${index}.value`) || 1,
     }));
-    form.setValue('parameters.J', parameterJ, { shouldDirty: true });
+    form.setValue("parameters.J", parameterJ, { shouldDirty: true });
   }, [pairMatrix, form]);
 
   const molarFractionsSum = fields
@@ -212,7 +213,7 @@ export const NewSimulation = () => {
         const result = e.target?.result;
         if (typeof result === "string") {
           const values = JSON.parse(result) as SimulationForm;
-          form.reset({...values, name: values.name + "_new"});
+          form.reset({ ...values, name: values.name + "_new" });
         }
       };
       reader.readAsText(files[0]);
@@ -226,7 +227,7 @@ export const NewSimulation = () => {
           <PlusCircle className="mr-2 w-5 h-5"></PlusCircle>New Simulation
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%]">
+      <DialogContent className="sm:max-w-[80%] overflow-y-scroll max-h-[90%] dark:text-white">
         <DialogHeader>
           <DialogTitle>New Simulation</DialogTitle>
           <DialogDescription>
@@ -257,7 +258,7 @@ export const NewSimulation = () => {
           </div>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 flex flex-col"
+            className="space-y-4 flex flex-col dark:text-white"
             id="new-simulation-form"
           >
             <div className="flex space-x-4">
@@ -670,7 +671,7 @@ export const NewSimulation = () => {
                             </FormLabel>
                             <FormControl>
                               <Input
-                                step={0.1}
+                                step={0.0001}
                                 min={0}
                                 max={1}
                                 type="number"
@@ -693,7 +694,7 @@ export const NewSimulation = () => {
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  step={0.1}
+                                  step={0.0001}
                                   min={0}
                                   max={1}
                                   type="number"
@@ -720,7 +721,7 @@ export const NewSimulation = () => {
                             </FormLabel>
                             <FormControl>
                               <Input
-                                step={0.1}
+                                step={0.0001}
                                 min={0}
                                 max={1}
                                 type="number"
@@ -744,7 +745,7 @@ export const NewSimulation = () => {
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  step={0.1}
+                                  step={0.0001}
                                   min={0}
                                   max={1}
                                   type="number"
@@ -799,7 +800,9 @@ export const NewSimulation = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem key="None" value="None">None</SelectItem>
+                          <SelectItem key="None" value="None">
+                            None
+                          </SelectItem>
                           {componentIndexNames.map((c) => (
                             <SelectItem key={c.name} value={c.index}>
                               {c.name}
@@ -838,9 +841,23 @@ export const NewSimulation = () => {
               </div>
             </div>
             <Separator />
-            <h4 className="scroll-m-20 font-semibold tracking-tight">
-              Movement Parameters
-            </h4>
+            <div className="flex items-center gap-4">
+              <h4 className="scroll-m-20 font-semibold tracking-tight">
+                Movement Parameters
+              </h4>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InfoCircledIcon></InfoCircledIcon>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {componentIndexNames.map((c) => (
+                    <div key={c.index}>
+                      {c.index}: ({c.name})
+                    </div>
+                  ))}
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="flex space-x-2">
               {fields.map((field, index) => (
                 <FormField
@@ -881,7 +898,7 @@ export const NewSimulation = () => {
                     <FormField
                       control={form.control}
                       name={`parameters.J.${index}.value`}
-                      defaultValue={1}
+                      defaultValue={0}
                       shouldUnregister
                       render={({ field }) => (
                         <FormItem>
@@ -905,7 +922,10 @@ export const NewSimulation = () => {
           </form>
           <DialogFooter className="sm:justify-between">
             <DialogClose asChild>
-              <Button className="w-1/6" variant="outline">
+              <Button
+                className="w-1/6 dark:text-zinc-900 dark:bg-white"
+                variant="outline"
+              >
                 Cancel
               </Button>
             </DialogClose>

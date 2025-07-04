@@ -63,7 +63,7 @@ export function SimulationCard({
               </AlertDialogTrigger>
               <TooltipContent>Delete</TooltipContent>
             </Tooltip>
-            <AlertDialogContent>
+            <AlertDialogContent className="dark:text-white">
               <AlertDialogHeader>
                 <AlertDialogTitle>
                   Are you sure you want to delete {simulation.name}?
@@ -119,7 +119,7 @@ export function SimulationCard({
                 Create a copy
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="dark:text-white">
               <AlertDialogHeader>
                 <AlertDialogTitle>
                   Do you wish to create a copy of {simulation.name}?

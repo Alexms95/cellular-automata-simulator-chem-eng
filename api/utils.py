@@ -27,7 +27,7 @@ def get_component_letter(index: int) -> str:
 def compress_matrix(matrix: list) -> str:
     """Compress a matrix using gzip and encode it with base64.
     Args:
-        matrix (list): A 2D list (matrix) to be compressed.
+        matrix (list): A 3D list (matrix) to be compressed.
     Returns:
         str: The compressed and encoded matrix as a string.
     """

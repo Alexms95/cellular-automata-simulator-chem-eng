@@ -10,6 +10,7 @@ import { Spinner } from "./components/ui/spinner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { queryClient } from "./queryClient";
 import { routeTree } from "./routeTree.gen";
+import { ThemeProvider } from "./components/theme-provider";
 
 if (typeof window !== "undefined") {
   scan({
@@ -42,10 +43,17 @@ declare module "@tanstack/react-router" {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <Toaster duration={2000} expand={true} position="top-right" richColors />
-      <TooltipProvider delayDuration={300}>
-        <RouterProvider router={router} />
-      </TooltipProvider>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <Toaster
+          duration={2000}
+          expand={true}
+          position="top-right"
+          richColors
+        />
+        <TooltipProvider delayDuration={300}>
+          <RouterProvider router={router} />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
-  </StrictMode>
+  </StrictMode>,
 );

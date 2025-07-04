@@ -58,8 +58,8 @@ class MainService:
         simulation_data = self.dataAccess.get_simulation(simulation_id)
         if not simulation_data:
             raise HTTPException(status_code=400, detail="Simulation not found")
-
-        simulation = SimulationBase(**simulation_data.__dict__)
+        
+        simulation = SimulationBase(**simulation_data._asdict())
 
         rotation_manager = RotationManager(simulation.rotation)
 
@@ -88,20 +88,15 @@ class MainService:
             yield f"data: {json.dumps({'progress': current_iteration / total_iterations})}\n\n"
 
         resulting_matrix, molar_fractions_table = calculations.get_results()
-        compressed_matrix = compress_matrix(resulting_matrix.tolist())
+        
+        yield "data: Calculations completed, processing results...\n\n"
 
-        self.dataAccess.save_simulation_results(
-            simulation_id, compressed_matrix, molar_fractions_table
+        self.save_simulation_results(
+            simulation_id, resulting_matrix.tolist(), molar_fractions_table
         )
 
         yield "data: Simulation completed!\n\n"
 
-    def get_decompressed_iterations(self, simulation_id):
-        compressed_iterations = self.dataAccess.get_compressed_iterations(simulation_id)
-        if compressed_iterations is None:
-            return []
-
-        return decompress_matrix(compressed_iterations)
 
     def get_results(self, simulation_id):
         name, results = self.dataAccess.get_results(simulation_id)
@@ -111,6 +106,7 @@ class MainService:
             )
 
         return name, results
+    
 
     def _setup_rotation_info(self, simulation: SimulationBase) -> RotationInfo:
         """Sets up rotation information"""
@@ -126,3 +122,33 @@ class MainService:
             }
 
         return rotation_info
+
+    def save_simulation_results(
+        self, simulation_id, resulting_matrix: list[list[list]], molar_fractions_table
+    ):
+        # Divide into chunks (1000 iterations per chunk)
+        chunks = []
+        for chunk_number, start in enumerate(range(0, len(resulting_matrix), 1000)):
+            chunk_data = {
+                "chunk_number": chunk_number,
+                "data": compress_matrix(
+                    resulting_matrix[start : start + 1000]
+                ),
+            }
+            chunks.append(chunk_data)
+
+        self.dataAccess.save_simulation_results(
+            simulation_id, chunks, molar_fractions_table
+        )
+
+
+    def get_iterations_by_simulation(self, simulation_id: str, chunk_number: int = 0):
+        return self.dataAccess.get_iterations_by_simulation(simulation_id, chunk_number)
+
+    def get_decompressed_iterations(self, simulation_id: str, chunk_number: int = 0):
+        iterations = self.get_iterations_by_simulation(simulation_id, chunk_number)
+        if not iterations:
+            raise HTTPException(status_code=404, detail="No iterations found for this simulation")
+
+        decompressed_data = decompress_matrix(iterations.data)
+        return decompressed_data

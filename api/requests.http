@@ -1,5 +1,6 @@
-@baseUrl = http://localhost:8000
-@simulation_id = e3746600-4945-4e49-b527-04272d625d5c
+@baseUrl = http://172.29.143.196:8000
+@simulation_id = 45d9e2e3-a691-4fdc-af26-6e564a75efb2
+@chunk_number = 0
 
 GET {{baseUrl}}/simulations
 
@@ -48,7 +49,12 @@ Content-Type: application/json; charset=utf-8
 
 ###
 
-GET {{baseUrl}}/simulations/{{simulation_id}}/decompressed-iterations
+GET {{baseUrl}}/iterations?simulation_id={{simulation_id}}&chunk_number={{chunk_number}}
+Content-Type: application/json; charset=utf-8
+
+###
+
+GET {{baseUrl}}/iterations/decompressed?simulation_id={{simulation_id}}&chunk_number={{chunk_number}}
 Content-Type: application/json; charset=utf-8
 
 ###

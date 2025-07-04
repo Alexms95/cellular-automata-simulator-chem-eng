@@ -1,3 +1,4 @@
+import { ModeToggle } from "@/components/mode-toggle";
 import { NewSimulation } from "@/components/newSimulation";
 import { SimulationCard } from "@/components/SimulationCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,12 +69,17 @@ function SimulationsList() {
 
   return (
     <div className="flex flex-col">
-      <h1 className="scroll-m-20 text-lg font-extrabold tracking-tight lg:text-xl">
+      <div className="fixed top-10 left-4 p-4 z-50">
+        <ModeToggle />
+      </div>
+      <h1 className="scroll-m-20 text-lg font-extrabold tracking-tight lg:text-xl dark:text-zinc-200">
         CELLULAR AUTOMATA SIMULATOR
       </h1>
       <div className="space-y-4 flex flex-col">
         <div className="flex">
-          <h2 className="text-lg font-bold w-[54%] text-right">Simulations</h2>
+          <h2 className="text-lg font-bold w-[54%] text-right dark:text-zinc-200">
+            Simulations
+          </h2>
           <div className="ml-auto">
             <NewSimulation />
           </div>

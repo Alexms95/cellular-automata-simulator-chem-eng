@@ -5,6 +5,7 @@ WORKDIR /ui
 COPY ./ui/package*.json ./
 RUN npm install
 COPY ./ui ./
+COPY ./ui/.env.example .env
 RUN npm run build
 
 # Etapa 2: Imagem Nginx para servir Frontend + API (via proxy)
