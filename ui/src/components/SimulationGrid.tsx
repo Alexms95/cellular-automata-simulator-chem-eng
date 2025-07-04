@@ -74,10 +74,9 @@ const IterationRow = ({
             row * CELL_SIZE + CELL_SIZE / 2
           );
           let deg = 0;
-          if (cell % 10 === 1) deg = 0; // Right
-          else if (cell % 10 === 2) deg = 270; // Down
-          else if (cell % 10 === 3) deg = 180; // Left
-          else if (cell % 10 === 4) deg = 90; // Up
+          if (cell % 10 === 2) deg = 270; // left
+          else if (cell % 10 === 3) deg = 180; // down
+          else if (cell % 10 === 4) deg = 90; // right
           ctx.rotate((deg * Math.PI) / 180);
           ctx.beginPath();
           ctx.moveTo(0, -CELL_SIZE / 2);
