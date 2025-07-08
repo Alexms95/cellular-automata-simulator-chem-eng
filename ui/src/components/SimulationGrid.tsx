@@ -19,7 +19,7 @@ function getCellColor(
   if (cell === 0) return "#e5e7eb"; // bg-gray-200
   if (cell > 200) return "#f59e42"; // bg-yellow-500
   if (cell > 10 && cell < 200) {
-    return "#bae6fd"; // light blue
+    return "#fbcfe8"; // pink
   }
   if (cell <= 10) {
     const color = ingredients[cell - 1]?.color || "gray";

@@ -25,16 +25,16 @@ jobs:
         tags: |
           alexms/api-simulador-automatos-celulares:v${{ github.run_number }}
           alexms/api-simulador-automatos-celulares:latest
-    - name: Build and push UI image
-      uses: docker/build-push-action@v6.7.0
-      with:
-        context: .
-        file: ./Dockerfile
-        push: true
-        target: build-frontend
-        tags: |
-          alexms/ui-simulador-automatos-celulares:v${{ github.run_number }}
-          alexms/ui-simulador-automatos-celulares:latest
+    # - name: Build and push UI image
+    #   uses: docker/build-push-action@v6.7.0
+    #   with:
+    #     context: .
+    #     file: ./Dockerfile
+    #     push: true
+    #     target: build-frontend
+    #     tags: |
+    #       alexms/ui-simulador-automatos-celulares:v${{ github.run_number }}
+    #       alexms/ui-simulador-automatos-celulares:latest
     - name: Build and push nginx image
       uses: docker/build-push-action@v6.7.0
       with:
