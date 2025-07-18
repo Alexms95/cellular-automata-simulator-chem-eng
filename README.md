@@ -2,6 +2,24 @@
 
 This project is a simulator for cellular automata, allowing users to create, configure, and run simulations with custom parameters.
 
+## Instructions to Run the Application
+
+You can run the application by using Docker (recommended for just running and testing) or manually (recommended for studying the code).
+
+## 1. From Docker containers
+
+Download and Install [Docker](https://docs.docker.com/get-started/get-docker/) or [Rancher Desktop](https://rancherdesktop.io/).
+
+Download the `compose.yml` file from the repository root and run the following command from terminal in the same directory:
+
+```sh
+docker compose up -d
+```
+
+That's it! The application will be available at `http://localhost:9000` for the UI and `http://localhost:8000` for the API.
+
+## 2. By cloning and running the code
+
 ## Prerequisites
 
 - **Python**: Version 3.12.6.
@@ -9,13 +27,12 @@ This project is a simulator for cellular automata, allowing users to create, con
 - **npm**: Comes with Node.js.
 - **PostgreSQL**: Version 12 or higher.
 
-## Instructions to Run the Application
 
 ### 1. Clone the Repository
 
 ```sh
-git clone https://github.com/Alexms95/tcc-eng-quimica.git
-cd tcc-eng-quimica
+git clone https://github.com/Alexms95/cellular-automata-simulator-chem-eng.git
+cd cellular-automata-simulator-chem-eng
 ```
 
 ---
@@ -69,7 +86,7 @@ cd tcc-eng-quimica
 6. **Run the API**:
 
     ```sh
-    uvicorn main:app --host 0.0.0.0 --port 8000
+    uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
     ```
 
 ---
@@ -106,7 +123,7 @@ cd tcc-eng-quimica
   Run the tests in the `api` directory:
 
   ```sh
-  pytest tests.py
+  pytest -v
   ```
 
 - **Frontend Linting**:
