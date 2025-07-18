@@ -7,7 +7,6 @@ RUN npm ci
 COPY ./ui ./
 COPY ./ui/.env.example .env
 RUN npm run build
-RUN rm -rf node_modules
 
 # Etapa 2: Imagem Nginx para servir Frontend + API (via proxy)
 FROM nginx:alpine AS nginx-container
