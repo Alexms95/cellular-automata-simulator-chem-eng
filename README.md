@@ -10,7 +10,7 @@ You can run the application by using Docker (recommended for just running and te
 
 Download and Install [Docker](https://docs.docker.com/get-started/get-docker/) or [Rancher Desktop](https://rancherdesktop.io/).
 
-Download the `compose.yml` file from the repository root and run the following command from terminal in the same directory:
+Download the `compose.yml` file from the repository root and run the following command from your OS's terminal in the same directory:
 
 ```sh
 docker compose up -d
